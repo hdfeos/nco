@@ -17,6 +17,8 @@
 #include <antlr/CharStreamException.hpp>
 #include <antlr/TokenStreamException.hpp>
 #include "antlr/TokenStreamSelector.hpp"
+#include "ExitException.hpp"
+
 #include "Invoke.hh"
 
 #include "sdo_utl.hh" // SDO stand-alone utilities: dbg/err/wrn_prn()
@@ -38,7 +40,6 @@ int kdx;
 int mdx;
 int lcl_sz;
 int nbr_sz;
-var_sct *var;
 RefAST tr;
 
  static int wlk_nbr; // Same as number of threads
@@ -90,7 +91,7 @@ RefAST tr;
    } 
    */
 #ifdef _OPENMP
-#pragma omp parallel for default(none) private(kdx,wlk_lcl,var,tr) shared(wlk_ptr,idx,nbr_sz,inn_vtr )
+#pragma omp parallel for default(none) private(kdx,wlk_lcl,tr) shared(wlk_ptr,idx,nbr_sz,inn_vtr )
 #endif
    for(kdx=0 ;kdx< nbr_sz; kdx++) {      
      wlk_lcl= wlk_ptr[omp_get_thread_num()];
@@ -126,7 +127,8 @@ int parse_antlr(std::vector<prs_cls> &prs_vtr,char *fl_spt_usr,char *cmd_ln_sng)
   ANTLR_USING_NAMESPACE(antlr);
   
   const std::string fnc_nm("parse_antlr"); // [sng] Function name
-
+  bool bExit=false;
+  int iret;
   int idx;
   int thd_nbr=(int)prs_vtr.size();  
   std::string filename(fl_spt_usr);
@@ -212,9 +214,11 @@ int parse_antlr(std::vector<prs_cls> &prs_vtr,char *fl_spt_usr,char *cmd_ln_sng)
   
   t=a;
   
-  try {   
+  try 
+  {   
     ncoTree* wlk_obj;    
-    for(idx=0 ; idx< thd_nbr; idx++){
+    for(idx=0 ; idx< thd_nbr; idx++)
+    {
       wlk_obj=new ncoTree(&prs_vtr[idx]);  
       wlk_obj->initializeASTFactory(ast_factory);
       wlk_obj->setASTFactory(&ast_factory);
@@ -226,9 +230,19 @@ int parse_antlr(std::vector<prs_cls> &prs_vtr,char *fl_spt_usr,char *cmd_ln_sng)
     if(nco_dbg_lvl_get() >= nco_dbg_fl) dbg_prn(fnc_nm,"Walkers initialized");
   
     wlk_vtr[0]->run_exe(t,0);
-  }  catch(std::exception& e) {
-    cerr << "exception: " << e.what() << endl;
-  }	
+  }  
+    catch (ExitException &strExit)   
+    {
+      bExit=true;
+      // remember ExitEXception ONLY returns an int in a string
+      iret=atoi(strExit.getMessage().c_str());
+      if(nco_dbg_lvl_get() >= nco_dbg_fl) 
+         cerr<<"Exit Exception "<<iret<< endl;
+    }
+    catch(std::exception& e) 
+    {
+      cerr << "exception: " << e.what() << endl;
+    } 
   
   if(nco_dbg_lvl_get() >= nco_dbg_fl) dbg_prn(fnc_nm,"Walkers completed");
   
@@ -242,5 +256,9 @@ int parse_antlr(std::vector<prs_cls> &prs_vtr,char *fl_spt_usr,char *cmd_ln_sng)
 
   //(void)nco_free(filename);
   
-  return 1;
+  if(bExit)
+    return iret;
+  else
+    return 0;  
+
 } /* end parse_antlr() */

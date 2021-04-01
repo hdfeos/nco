@@ -3,7 +3,7 @@
 
 #include <antlr/config.hpp>
 #include "ncoParserTokenTypes.hpp"
-/* $ANTLR 2.7.7 (2006-11-01): "ncoGrammer.g" -> "ncoTree.hpp"$ */
+/* $ANTLR 2.7.7 (20200513): "ncoGrammer.g" -> "ncoTree.hpp"$ */
 #include <antlr/TreeParser.hpp>
 
 #line 1 "ncoGrammer.g"
@@ -12,10 +12,10 @@
 
 /* Purpose: ANTLR Grammar and support files for ncap2 */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
     // C Standard Headers
     #include <assert.h>
@@ -33,9 +33,12 @@
     #include <fstream>
     #include <string>
   
+    // custom exception -used for "exit" function
+    #include "ExitException.hpp" 
     // Custom Headers
     #include "prs_cls.hh"
     #include "ncap2_utl.hh"
+    #include "ncap2_att.hh"
     #include "fmc_cls.hh"
     #include "NcapVar.hh"
     #include "NcapVarVector.hh"
@@ -48,10 +51,10 @@
     ANTLR_USING_NAMESPACE(std);
     ANTLR_USING_NAMESPACE(antlr);
 
-#line 52 "ncoTree.hpp"
+#line 55 "ncoTree.hpp"
 class CUSTOM_API ncoTree : public ANTLR_USE_NAMESPACE(antlr)TreeParser, public ncoParserTokenTypes
 {
-#line 636 "ncoGrammer.g"
+#line 697 "ncoGrammer.g"
 
 
 private:
@@ -104,7 +107,8 @@ vector<ast_lmt_sct> &ast_lmt_vtr)
       nbr_dmn=lmt_peek(aRef);      
       //nbr_dmn=lRef->getNumberOfChildren();
 
-      for(idx=0 ; idx < nbr_dmn ; idx++){
+      for(idx=0 ; idx < nbr_dmn ; idx++)
+      {
          hyp.ind[0]=ANTLR_USE_NAMESPACE(antlr)nullAST;
          hyp.ind[1]=ANTLR_USE_NAMESPACE(antlr)nullAST;
          hyp.ind[2]=ANTLR_USE_NAMESPACE(antlr)nullAST;
@@ -112,19 +116,22 @@ vector<ast_lmt_sct> &ast_lmt_vtr)
        if(lRef->getType()!=LMT) 
             return 0;
        
-        eRef=lRef->getFirstChild();
-        nbr_cln=0;
+       eRef=lRef->getFirstChild();
+       nbr_cln=0;
         
-       while(eRef) {
-          if(eRef->getType() == COLON){
+       while(eRef) 
+       {
+          if(eRef->getType() == COLON)
+          {
             cRef=eRef;        
             nbr_cln++;
           }
            eRef=eRef->getNextSibling();
         }
       
-      // Initialise  to default markers
-       switch(nbr_cln) {
+       // Initialise  to default markers
+       switch(nbr_cln) 
+       {
           case 0: 
              break;
                 
@@ -142,9 +149,11 @@ vector<ast_lmt_sct> &ast_lmt_vtr)
         }
 
        eRef=lRef->getFirstChild();
+
        // point inidices to any expressions that exist
-        nbr_cln=0;
-       while(eRef) {
+       nbr_cln=0;
+       while(eRef) 
+       {
           if(eRef->getType() == COLON) 
              nbr_cln++; 
            else   
@@ -154,101 +163,216 @@ vector<ast_lmt_sct> &ast_lmt_vtr)
        }
        // save indices 
        ast_lmt_vtr.push_back(hyp);
-
        lRef=lRef->getNextSibling();
-     }
+
+      }
+
      return nbr_dmn;
 } 
 
-int 
+bool
+lmt_var_mk(
+int nbr_dmn,
+RefAST lmt,
+NcapVector<lmt_sct*> &lmt_vtr ) 
+{
+	long idx;
+	long jdx;
+	long sz;   
+    long dmn_sz;     
+	var_sct *var;
+	std::string fnc_nm="lmt_var_mk"; 
+	
+	
+	// calculate variables
+	var=out(lmt->getFirstChild()->getFirstChild());
+	// convert result to type int
+	var=nco_var_cnf_typ(NC_INT64,var);    
+	(void)cast_void_nctype((nc_type)NC_INT64,&var->val);
+	sz=var->sz;
+	dmn_sz=var->sz / nbr_dmn;
+    
+    if(nco_dbg_lvl_get() >= nco_dbg_scl)
+       dbg_prn("lmt_var_mk","using hyperslab indices from a single var"); 
+
+    // shape of var must be (nbr_dmn) or (nbr_dmn,2) or (nbr_dmn,3) 
+    if( dmn_sz * nbr_dmn != sz )
+	{
+	  var=nco_var_free(var);
+      return false;  
+    }
+
+    
+	
+    for(idx=0; idx<sz;idx+=dmn_sz)
+	 {
+
+		// fill out lmt structure
+		// use same logic as nco_lmt_prs 
+		lmt_sct* lmt_ptr=(lmt_sct*)nco_calloc((size_t)1,sizeof(lmt_sct));
+		lmt_ptr->nm=NULL;
+		//lmt_ptr->lmt_typ=-1;
+		lmt_ptr->is_usr_spc_lmt=True; /* True if any part of limit is user-specified, else False */
+		lmt_ptr->min_sng=NULL;
+		lmt_ptr->max_sng=NULL;
+		lmt_ptr->srd_sng=NULL;
+		lmt_ptr->is_usr_spc_min=False;
+		lmt_ptr->is_usr_spc_max=False;
+		/* rec_skp_ntl_spf is used for record dimension in multi-file operators */
+		lmt_ptr->rec_skp_ntl_spf=0L; /* Number of records skipped in initial superfluous files */
+
+	   
+       for(jdx=0;jdx<dmn_sz;jdx++)
+		{     
+		  
+         nco_int64 ival= var->val.i64p[idx+jdx];
+         switch(jdx){
+           case 0: 
+             lmt_ptr->is_usr_spc_min=True;
+             lmt_ptr->srt=ival;
+             break;
+           case 1: //end
+             lmt_ptr->is_usr_spc_max=True;
+             lmt_ptr->end=ival;             break;
+           case 2: //srd
+             lmt_ptr->srd_sng=strdup("~fill_in");
+             lmt_ptr->srd=ival;
+             break;			
+	       }
+
+		}
+		/* need to deal with situation where only start is defined -- ie picking only a single value */
+		if( lmt_ptr->is_usr_spc_min==True && lmt_ptr->is_usr_spc_max==False && lmt_ptr->srd_sng==NULL)
+		{
+			lmt_ptr->is_usr_spc_max=True;
+			lmt_ptr->end=lmt_ptr->srt; 
+       }    
+
+       lmt_vtr.push_back(lmt_ptr);		
+	}
+	 
+	cast_nctype_void((nc_type)NC_INT64,&var->val);
+	var=nco_var_free(var);  
+	
+   return true;
+
+}
+
+
+
+bool 
 lmt_mk(
+int nbr_dmn,
 RefAST lmt,
 NcapVector<lmt_sct*> &lmt_vtr ) 
 {   
-int nbr_dmn;
+
 int idx;
 int jdx;
+long ldx=0L;
+var_sct *var_out;
 lmt_sct *lmt_ptr;
 RefAST aRef;
-
 vector<ast_lmt_sct> ast_lmt_vtr;
 
+// deal with a single expression containing all indicies
+if(lmt->getNumberOfChildren()==1 && 
+   lmt->getFirstChild()->getNumberOfChildren()==1 &&
+   lmt->getFirstChild()->getFirstChild()->getType() != COLON)
+{
+   return lmt_var_mk(nbr_dmn,lmt,lmt_vtr);   ;            
+}
+
+
 // populate ast_lmt_vtr
-nbr_dmn=lmt_init(lmt,ast_lmt_vtr);
+if(nbr_dmn != lmt_init(lmt,ast_lmt_vtr))
+    return false;	
 
-  for(idx=0 ; idx <nbr_dmn ; idx++){
+for(idx=0;idx<nbr_dmn;idx++){
 
-     // fill out lmt structure
-     // use same logic as nco_lmt_prs 
-     lmt_ptr=(lmt_sct*)nco_calloc((size_t)1,sizeof(lmt_sct));
-     lmt_ptr->nm=NULL;
-     //lmt_ptr->lmt_typ=-1;
-     lmt_ptr->is_usr_spc_lmt=True; /* True if any part of limit is user-specified, else False */
-     lmt_ptr->min_sng=NULL;
-     lmt_ptr->max_sng=NULL;
-     lmt_ptr->srd_sng=NULL;
-     lmt_ptr->is_usr_spc_min=False;
-     lmt_ptr->is_usr_spc_max=False;
-     /* rec_skp_ntl_spf is used for record dimension in multi-file operators */
-     lmt_ptr->rec_skp_ntl_spf=0L; /* Number of records skipped in initial superfluous files */
+    // fill out lmt structure
+    // use same logic as nco_lmt_prs 
+    lmt_ptr=(lmt_sct*)nco_calloc((size_t)1,sizeof(lmt_sct));
+    lmt_ptr->nm=NULL;
+    //lmt_ptr->lmt_typ=-1;
+    lmt_ptr->is_usr_spc_lmt=True; /* True if any part of limit is user-specified, else False */
+    lmt_ptr->min_sng=NULL;
+    lmt_ptr->max_sng=NULL;
+    lmt_ptr->srd_sng=NULL;
+    lmt_ptr->is_usr_spc_min=False;
+    lmt_ptr->is_usr_spc_max=False;
+    /* rec_skp_ntl_spf is used for record dimension in multi-file operators */
+    lmt_ptr->rec_skp_ntl_spf=0L; /* Number of records skipped in initial superfluous files */
 
-    for(jdx=0 ; jdx <3 ; jdx++){
-      long ldx=0L;
-      var_sct *var_out;
+    // for a var limit  with a single index (or var) -(1D or nD) this case is handled by lmt_var_mk
+    //  we are here when  there is a single index for one of an nD specification
+    // a single limit mean a single index -by the parser this is 
+    // guaranteed to be non null  (that is ast_lmt_vtr[idx].ind[0] not null) 
+    if( ast_lmt_vtr[idx].ind[1]==ANTLR_USE_NAMESPACE(antlr)nullAST)
+    {  
+      var_out=out( ast_lmt_vtr[idx].ind[0] );
+      // convert result to type int
+      var_out=nco_var_cnf_typ(NC_INT64,var_out);    
+      (void)cast_void_nctype((nc_type)NC_INT64,&var_out->val);
+      // only interested in the first value.
+      ldx=var_out->val.i64p[0];
+      var_out=nco_var_free(var_out);
+
+      lmt_ptr->is_usr_spc_min=True;
+      lmt_ptr->srt=ldx;
+            
+      lmt_ptr->is_usr_spc_max=True;
+      lmt_ptr->end=ldx; 
+
+    } 
+    else 
+
+    for(jdx=0 ; jdx <3 ; jdx++)
+    {
 
       aRef=ast_lmt_vtr[idx].ind[jdx];
 
-      if(aRef && aRef->getType() != COLON ){
-        // Calculate number using out()
-        var_out=out(aRef);
-        // convert result to type int
-        var_out=nco_var_cnf_typ(NC_INT,var_out);    
-        (void)cast_void_nctype((nc_type)NC_INT,&var_out->val);
+      if(!aRef || aRef->getType() == COLON)
+        continue;
+
+      // Calculate number using out()
+      var_out=out(aRef);
+      // convert result to type int
+      var_out=nco_var_cnf_typ(NC_INT64,var_out);    
+      (void)cast_void_nctype((nc_type)NC_INT64,&var_out->val);
          // only interested in the first value.
-        ldx=var_out->val.ip[0];
-        var_out=nco_var_free(var_out);
-        
-        // switch jdx 0-srt,1-end,2-srd
-        switch(jdx){
+      ldx=var_out->val.i64p[0];
+      var_out=nco_var_free(var_out);
+
+      // switch jdx 0-srt,1-end,2-srd
+      switch(jdx)
+      {
+          //srt
           case 0: 
-             lmt_ptr->is_usr_spc_min=True;
-             lmt_ptr->srt=ldx;
-             break;
-          case 1: //end
-             lmt_ptr->is_usr_spc_max=True;
-             lmt_ptr->end=ldx;
-             break;
-          case 2: //srd
-             lmt_ptr->srd_sng=strdup("~fill_in");
-             lmt_ptr->srd=ldx;         
-             break;
-        }
+              lmt_ptr->is_usr_spc_min=True;
+              lmt_ptr->srt=ldx;
+              break;
+          // end
+          case 1: 
+              lmt_ptr->is_usr_spc_max=True;
+              lmt_ptr->end=ldx;
+              break;
+          //srd 
+          case 2: 
+              lmt_ptr->srd_sng=strdup("~fill_in");
+              lmt_ptr->srd=ldx;         
+              break;
       }
-    }// end jdx
-         
-    /* need to deal with situation where only start is defined -- ie picking only a single value */
-    if( lmt_ptr->is_usr_spc_min==True && lmt_ptr->is_usr_spc_max==False && lmt_ptr->srd_sng==NULL){
-        lmt_ptr->is_usr_spc_max=True;
-        lmt_ptr->end=lmt_ptr->srt; 
-    }    
+
+    }  
 
     lmt_vtr.push_back(lmt_ptr);
   } // end idx
 
-   return nbr_dmn;
+   return true;;
 } /* end lmt_mk */
 
-/* Legacy run -- will remove soon
-public:
-    void run(RefAST tr){
-        while(tr) {
-          (void)statements(tr);   
-          tr=tr->getNextSibling();   
-        }
-    }
-*/
 
-public:
     void run_dbl(RefAST tr,int icnt){
      int idx=0;
      RefAST ntr=tr;
@@ -260,11 +384,20 @@ public:
      int wlk_nbr);
 
      if(tr== ANTLR_USE_NAMESPACE(antlr)nullAST)
-        err_prn("run_dbl"," REPORTS given a null AST Refrence\n");
+        err_prn("run_dbl"," REPORTS given a null AST Reference\n");
             
      //small list dont bother with double parsing     
-     if(icnt <4) goto small;
-
+     // just do a final parse
+     if(icnt <4){
+       //Final scan
+       prs_arg->ntl_scn=False;
+       while(idx++ < icnt){
+          (void)statements(ntr);   
+          ntr=ntr->getNextSibling();   
+       }
+       return; 
+     }
+     
      //Initial scan
      prs_arg->ntl_scn=True;
      while(idx++ < icnt){
@@ -280,42 +413,40 @@ public:
     // see if below does anything ? 
     (void)nco_sync(prs_arg->out_id); 
 
-
+    //Final scan
+    if(!prs_arg->NCAP_MPI_SORT)
+    { 
+      idx=0;
+      ntr=tr;
+      prs_arg->ntl_scn=False;
+      while(idx++ < icnt){
+        (void)statements(ntr);   
+        ntr=ntr->getNextSibling();   
+      }
+    }
+    else
+    {  
     // Sort expressions - MPI preparation
-    if(prs_arg->NCAP_MPI_SORT){  
        prs_arg->ntl_scn=False;
       // nb A vector of vectors
       std::vector< std::vector<RefAST> > all_ast_vtr;
       ncoTree **wlk_vtr=(ncoTree**)NULL; 
 
       // Populate and sort  vector 
-      (void)ncap_mpi_srt(tr,icnt,all_ast_vtr,prs_arg);
-       
+      (void)ncap_mpi_srt(tr,icnt,all_ast_vtr,prs_arg);   
       // Evaluate expressions (execute)
       (void)ncap_omp_exe(all_ast_vtr,wlk_vtr,0);  
-      
+
       /*  
       for(unsigned vtr_idx=0 ; vtr_idx<all_ast_vtr.size(); vtr_idx++)
         for(unsigned jdx=0 ; jdx<all_ast_vtr[vtr_idx].size(); jdx++)
 	     (void)statements(all_ast_vtr[vtr_idx][jdx]);
       */
-      
-    goto end;
-    } //end if
+    }
+    return; 
 
-small: 
-     idx=0;
-     ntr=tr;
-     //Final scan
-     prs_arg->ntl_scn=False;
-     while(idx++ < icnt){
-       (void)statements(ntr);   
-       ntr=ntr->getNextSibling();   
-     }
-end: ;
-   }
-
-public:
+    }
+ 
     int run_exe(RefAST tr, int nbr_dpt){
     // number of statements in block
     int nbr_stmt=0;
@@ -348,7 +479,7 @@ public:
     for(idx=0 ; idx < nbr_stmt; idx++){
       ntyp=ntr->getType();
       // we have hit an IF or a basic block
-      if(ntyp==BLOCK || ntyp==IF ||ntyp==DEFDIM || ntyp==WHILE ||ntyp==FOR || ntyp==FEXPR ||ntyp==WHERE) {
+      if(ntyp==BLOCK || ntyp==IF ||ntyp==DEFDIM || ntyp==WHILE ||ntyp==FOR || ntyp==FEXPR ||ntyp==WHERE || ntyp==EXIT) {
       //  if(ntyp != EXPR ){ 
         if(icnt>0) 
          (void)run_dbl(etr,icnt);
@@ -374,19 +505,18 @@ exit: return iret;
 
     } // end run_exe
 
-public:
 RefAST nco_dupList(RefAST tr){
       RefAST otr;  
       // nb astFactory is protected- must call from within class
       otr=astFactory->dupList(tr);      
-      otr->setNextSibling( ANTLR_USE_NAMESPACE(antlr)nullAST ) ;
+      //otr->setNextSibling( ANTLR_USE_NAMESPACE(antlr)nullAST ) ;
       /*  
       if(otr->getNextSibling()!= ANTLR_USE_NAMESPACE(antlr)ASTNULL )     
         err_prn("nco_dupList", "NON NULL AST SIBLING\n");
       */ 
       return otr; 
      }
-#line 56 "ncoTree.hpp"
+#line 59 "ncoTree.hpp"
 public:
 	ncoTree();
 	static void initializeASTFactory( ANTLR_USE_NAMESPACE(antlr)ASTFactory& factory );
@@ -407,14 +537,18 @@ public:
 	public: int  statements(ANTLR_USE_NAMESPACE(antlr)RefAST _t);
 	public: var_sct * out(ANTLR_USE_NAMESPACE(antlr)RefAST _t);
 	public: var_sct * assign_ntl(ANTLR_USE_NAMESPACE(antlr)RefAST _t,
-		bool bram
+		bool bram,bool bret
 	);
 	public: var_sct * assign(ANTLR_USE_NAMESPACE(antlr)RefAST _t,
-		bool bram
+		bool bram,bool bret
 	);
 	public: var_sct * out_asn(ANTLR_USE_NAMESPACE(antlr)RefAST _t);
+	public: var_sct * att_plain(ANTLR_USE_NAMESPACE(antlr)RefAST _t);
+	public:  RefAST  att2var(ANTLR_USE_NAMESPACE(antlr)RefAST _t);
 	public: var_sct * value_list(ANTLR_USE_NAMESPACE(antlr)RefAST _t);
-	public: var_sct * value_list_string(ANTLR_USE_NAMESPACE(antlr)RefAST _t,
+	public: var_sct * value_list_string(ANTLR_USE_NAMESPACE(antlr)RefAST _t);
+	public: var_sct * value_list_old(ANTLR_USE_NAMESPACE(antlr)RefAST _t);
+	public: var_sct * value_list_string_old(ANTLR_USE_NAMESPACE(antlr)RefAST _t,
 		 std::vector<var_sct*> &exp_vtr
 	);
 	public: bool  where_assign(ANTLR_USE_NAMESPACE(antlr)RefAST _t,
@@ -437,10 +571,10 @@ protected:
 private:
 	static const char* tokenNames[];
 #ifndef NO_STATIC_CONSTS
-	static const int NUM_TOKENS = 116;
+	static const int NUM_TOKENS = 118;
 #else
 	enum {
-		NUM_TOKENS = 116
+		NUM_TOKENS = 118
 	};
 #endif
 	

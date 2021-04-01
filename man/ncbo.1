@@ -6,25 +6,26 @@
 .SH NAME
 ncbo \- netCDF Binary Operator
 .SH SYNTAX
-ncbo [\-3] [\-4] [\-6] [\-7] [\-A] [\-\-bfr
-.IR sz ] [\-C] [\-c] 
+ncbo [\-3] [\-4] [\-5] [\-6] [\-7] [\-A] [\-\-bfr
+.IR sz_byt ] [\-C] [\-c] 
 [\-\-cnk_byt
-.IR sz ] [\-\-cnk_dmn 
-.IR nm,sz ]
+.IR sz_byt ] [\-\-cnk_csh
+.IR sz_byt ] [\-\-cnk_dmn 
+.IR nm,sz_lmn ]
 [\-\-cnk_map 
 .IR map ]
 [\-\-cnk_min
-.IR sz ]
+.IR sz_byt ]
 [\-\-cnk_plc 
 .IR plc ]
 [\-\-cnk_scl 
-.IR sz ] [\-D 
+.IR sz_lmn ] [\-D 
 .IR dbg_lvl ]
 [\-d 
 .IR dim ,[
 .IR min ][,[
 .IR max ]]]
-[\-F] [\-G
+[-F] [--fl_fmt=fmt] [\-G
 .IR gpe_dsc ]
 [\-g  
 .IR grp [,...]]
@@ -32,16 +33,16 @@ ncbo [\-3] [\-4] [\-6] [\-7] [\-A] [\-\-bfr
 .IR att_name=
 .IR att_val ]]
 [\-h] [\-\-hdf] [\-\-hdr_pad
-.IR sz ]
+.IR sz_byt ] [\-\-hpss_try]
 [\-L 
 .IR dfl_lvl ] 
 [\-l 
 .IR path ]
-[\-\-msa] [\-\-no_tmp_fl] [\-O] [\-p 
+[\-\-msa] [\-\-no_cll_msr] [\-\-no_frm_trm] [\-\-no_tmp_fl] [\-O] [\-p 
 .IR path ]
 [\-R] [\-r] [\-\-ram_all] [\-t
 .IR thr_nbr ]
-[\--unn] [\-v 
+[\-\-uio] [\-\-unn] [\-v 
 .IR var [,...]]
 [\-X 
 .IR box ] 
@@ -149,7 +150,7 @@ dimensions which
 causes 
 .B ncbo
 to fail.
-To prevent this from occuring, use 
+To prevent this from occurring, use 
 .B ncwa
 to remove the 
 .B time
@@ -355,7 +356,7 @@ manual pages written by Charlie Zender and originally formatted by Brian Mays.
 Report bugs to <http://sf.net/bugs/?group_id=3331>.
 
 .SH COPYRIGHT
-Copyright \(co 1995-2015 Charlie Zender
+Copyright \(co 1995-2018 Charlie Zender
 .br
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -364,13 +365,13 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 The full documentation for
 .B NCO
 is maintained as a Texinfo manual called the 
-.B NCO User's Guide.
+.B NCO Users Guide.
 Because 
 .B NCO
 is mathematical in nature, the documentation includes TeX-intensive
 portions not viewable on character-based displays. 
 Hence the only complete and authoritative versions of the 
-.B NCO User's Guide 
+.B NCO Users Guide 
 are the PDF (recommended), DVI, and Postscript versions at
 <http://nco.sf.net/nco.pdf>, <http://nco.sf.net/nco.dvi>,
 and <http://nco.sf.net/nco.ps>, respectively.

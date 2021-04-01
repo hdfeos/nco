@@ -1,32 +1,242 @@
+nco (4.9.9-1) unstable; urgency=low
+
+  * new upstream version fxm:
+
+ -- Charlie Zender <zender@uci.edu>  Sun, 21 Jun 2021 12:25:47 -0700
+
+nco (4.9.8-1) unstable; urgency=low
+
+  * new upstream version Death Valley: ncap2: array(); ncclimo: mth_srt/end sbs, mali, xcl_var, srun, mem_mb; ncks: s1d pft mec; ncremap: tll fix sgs, s1d, fix nfr MALI, US/VS wrn, stg_grd
+
+ -- Charlie Zender <zender@uci.edu>  Sun, 21 Mar 2021 12:25:46 -0700
+
+nco (4.9.7-1) unstable; urgency=low
+
+  * new upstream version Oculus: S1D progress, nvcc, Andes, Chrysalis, nco_flt_enm; ncks, ncap2 --ccr; ncremap nfr MPAS; ncclimo fix tpd bug, glb_avg wait()
+
+ -- Charlie Zender <zender@uci.edu>  Sun, 27 Dec 2020 12:25:45 -0700
+
+nco (4.9.6-1) unstable; urgency=low
+
+  * new upstream version Windsor: netCDF-4.8.0 compatible; ncclimo mdl_nm=MOSART, var_xtr, cmem nodes, prc_typ; ncremap fix mpi nd_fl bug, msk_in/msk_out fix, nfr n2s rll, UDUNITS2_XML_FILE hints; ncra -N
+
+ -- Charlie Zender <zender@uci.edu>  Mon, 30 Nov 2020 12:25:44 -0700
+
+nco (4.9.5-1) unstable; urgency=low
+
+  * new upstream version RBG: intel cmp fix; ncatted prn mlt flt prms; ncclimo area_nm hrz_dmn; ncremap nsx fix RLL
+
+ -- Charlie Zender <zender@uci.edu>  Wed, 23 Sep 2020 12:25:43 -0700
+
+nco (4.9.4-1) unstable; urgency=low
+
+  * new upstream version Gooseneck Spout: all: simd, baa bit rnd, uio/NC_SHARE; autoconf: enable-gpu; ncclimo: kll rph kdz, hfc/hfs, sdd dfl; nces: per-fl-wgt; ncks: vrt fix, dt_fmt json/xml; ncra clm_nfo ilv prm_ints prw; ncremap no_amwg, si bgc, nco_dwe, xtr_xpn, xtr_nsp
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 04 Sep 2020 12:25:42 -0700
+
+nco (4.9.3-1) unstable; urgency=low
+
+  * new upstream version Outlander: ncap2 ess_rmt demos planck.nco;ncks cmp vrs clang;ncremap cxl --volumetric, default cell_area_nco, rgr_opt fix, experimental GPU offloads
+
+ -- Charlie Zender <zender@uci.edu>  Sun, 31 May 2020 12:25:41 -0700
+
+nco (4.9.2-1) unstable; urgency=low
+
+  * new upstream version Delirium: Re-license from GPL3 to BSD;ncks chk_map, lz4.cdl;ncpdq -U -v lat fix;ncremap prs->hyb, crv axis/crd atts, fv2fv opt, ne1024pg2, NaN area, fl_fmt/hdr_pad, sml_crc
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 14 Feb 2020 12:25:40 -0700
+
+nco (4.9.1-1) unstable; urgency=low
+
+  * new upstream version Skyglow: autoconf EXTERNL netcdf_mem.h;automake libnco.la;ncclimo --glb_avg;ncpdq flt_dbl;ncremap vrt_ntp fix, nco_con dfl;nco_copy_att() _NCProperties
+
+ -- Charlie Zender <zender@uci.edu>  Thu, 19 Dec 2019 12:25:39 -0700
+
+nco (4.9.0-1) unstable; urgency=low
+
+  * new upstream version Balasana: ncremap att_flg, centroid opt, fv2fv_flx/stt, gss n2s nfr fix, HRRR, IFS, MPAS BGC, msh_fl, ntp_mth rhea SLURM, rnr=0.0 == destonly, SGS rewrite/parallelize, TR MWF SCRIP, TR volumetric, vrt_nm, vrt prs tm_nbr fix;ncks area_wgt, chk_nan, chk_map, json dcm pnt fix;ncap2 -O fix
+
+ -- Charlie Zender <zender@uci.edu>  Wed, 04 Dec 2019 12:25:38 -0700
+
+nco (4.8.1-1) unstable; urgency=low
+
+  * new upstream version INDICES: ncclimo job_nbr csn;ncremap msh_fl, n2s CCW gss nfr, IFS, vrt_xtr mss_val;ncap2 -O;copyright
+
+ -- Charlie Zender <zender@uci.edu>  Mon, 01 Jul 2019 12:25:37 -0700
+
+nco (4.8.0-1) unstable; urgency=low
+
+  * new upstream version Becoming: ncremap se2se/fv2fv, no_stdin, vrt_fl, xcl_var;ncclimo job_nbr, OMP_PROC_BIND;ncap2 no foo.nc;ncks chk_nan
+
+ -- Charlie Zender <zender@uci.edu>  Wed, 15 May 2019 12:25:36 -0700
+
+nco (4.7.9-1) unstable; urgency=low
+
+  * new upstream version Guru Benji: ncremap sgs fix, sgs --map, lat/lon_dmn_nm, whitespace ok, mpas depth, add_depth.py;ncclimo nd_fl, nd_nbr fix;ncrcat rec_apn rbs;ncatted --hdn
+
+ -- Charlie Zender <zender@uci.edu>  Thu, 20 Feb 2019 12:25:35 -0700
+
+nco (4.7.8-1) unstable; urgency=low
+
+  * new upstream version Paradise Lost: ncremap/ncclimo CMIP6, d2f, no frac_b, deprecate USE_NC4_SRD_WORKAROUND; ERWG no_log; ncks byte-swap; ncatted typ_mch fix
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 16 Nov 2018 12:25:34 -0700
+
+nco (4.7.7-1) unstable; urgency=low
+
+  * new upstream version Bravura: theta;ilev;doc dap dep wht_lst;ignore_degenerate;rgr n2s, doc, gss sym ntf;ncpdq dbl_flt;ncremap skl_fl cnv_mpas
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 21 Sep 2018 12:25:33 -0700
+
+nco (4.7.6-1) unstable; urgency=low
+
+  * new upstream version Honaunau: ncremap RRG, MWF, -d&-g, -g&-G; aux w/o std_nm; HPSS_TRY
+
+ -- Charlie Zender <zender@uci.edu>  Sat, 11 Aug 2018 12:25:32 -0700
+
+nco (4.7.5-1) unstable; urgency=low
+
+  * new upstream version Salient Detail: Fix ncremap 4.7.4 CLM PJCS bug;ncml:XML;CDL/XML/JSN ENUM/VLEN;dap4://;ncap2 pack();mpassi
+
+ -- Charlie Zender <zender@uci.edu>  Sun, 10 Jun 2018 12:25:31 -0700
+
+nco (4.7.4-1) unstable; urgency=low
+
+  * new upstream version CSSI: CF OOG; CDF5 fix; support ESMF 7.1.0r conserve2nd, extrapolation; prn S5P L1B/L2; fix whitelist; enm/vln stubs
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 06 Apr 2018 12:25:30 -0700
+
+nco (4.7.3-1) unstable; urgency=low
+
+  * new upstream version Avid Poi: sanitize, --a2o, --nm_typ, --fmt_val, --fl_prn, deprecate ncap
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 03 Mar 2018 12:25:29 -0700
+
+nco (4.7.2-1) unstable; urgency=low
+
+  * new upstream version Sapiens: splitter ypf, tempest2 boutique, ncremap psn arg, cheyenne
+
+ -- Charlie Zender <zender@uci.edu>  Thu, 25 Jan 2018 12:25:28 -0700
+
+nco (4.7.1-1) unstable; urgency=low
+
+  * new upstream version WIN64 ABI; Conda Windows; JSON tweaks; fix clm_md=dly,ann
+
+ -- Charlie Zender <zender@uci.edu>  Thu, 21 Dec 2017 12:25:27 -0700
+
+nco (4.7.0-1) unstable; urgency=low
+
+  * new upstream version ncremap/ncclimo dfl_lvl, fl_fmt;ncclimo ppc;ncra/ncrcat neg hyp;quiet CDF5, ncrename
+
+ -- Charlie Zender <zender@uci.edu>  Wed, 08 Nov 2017 12:25:26 -0700
+
+nco (4.6.9-1) unstable; urgency=low
+
+  * new upstream version CDF5, CMake, MPAS-O/I
+
+ -- Charlie Zender <zender@uci.edu>  Mon, 18 Sep 2017 12:25:25 -0700
+
+nco (4.6.8-1) unstable; urgency=low
+
+  * new upstream version ncap2 cnk, ncks dt_fmt, seasons, msk=none, ncwa_hyp_msk_wgt bug
+
+ -- Charlie Zender <zender@uci.edu>  Wed, 16 Aug 2017 12:25:24 -0700
+
+nco (4.6.7-1) unstable; urgency=low
+
+  * new upstream version ncap2 in-fill, MTA flags, ERWG rgn hints, SGS, ncremap re-org, ncatted nc4 fll_val
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 26 May 2017 12:25:23 -0700
+
+nco (4.6.6-1) unstable; urgency=low
+
+  * new upstream version no_cll_msr,no_frm_trm,no_stg_grd,hsi,lst_rnk_ge2,UGRID 2D,JSON shape,OMI
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 21 Apr 2017 12:25:22 -0700
+
+nco (4.6.5-1) unstable; urgency=low
+
+  * new upstream version cnk csh, EXIT_FAILURE, ncclimo/ncremap version/vrb_lvl, ncks --cal, nfr() refactor, POP fix
+
+ -- Charlie Zender <zender@uci.edu>  Wed, 15 Mar 2017 12:25:20 -0700
+
+nco (4.6.4-1) unstable; urgency=low
+
+  * new upstream version splitter, stdin, clm_md=dly, cll_msr, frm_trm, cln=365 and srd fixes
+
+ -- Charlie Zender <zender@uci.edu>  Tue, 07 Feb 2017 12:25:18 -0700
+
+nco (4.6.3-1) unstable; urgency=low
+
+  * new upstream version rebasing, long options, JSON brackets, udunits(), binary/annual climos
+
+ -- Charlie Zender <zender@uci.edu>  Fri, 23 Dec 2016 12:25:17 -0700
+
+nco (4.6.2-1) unstable; urgency=low
+
+  * new upstream version JSON, multi-args, better behavior in modules
+
+ -- Charlie Zender <zender@uci.edu>  Thu, 16 Nov 2016 12:25:16 -0700
+
+nco (4.6.1-1) unstable; urgency=low
+
+  * new upstream version nco_fl_mv(), cnk doc, ncremap crv, ncatted dot, ncclimo ncr md, ncflint -N, provenance
+
+ -- Charlie Zender <zender@uci.edu>  Sat, 06 Aug 2016 12:25:15 -0700
+
+nco (4.6.0-1) unstable; urgency=low
+
+  * new upstream version ncclimo, ncap2	vlists, climatology bounds, CF, terraref, ncpdq fixes
+
+ -- Charlie Zender <zender@uci.edu>  Thu, 12 May 2016 12:25:14 -0700
+
+nco (4.5.5-1) unstable; urgency=low
+
+  * new upstream version crv brnch-cut
+
+ -- Charlie Zender <zender@uci.edu>  Thu, 07 Feb 2016 12:25:13 -0700
+
+nco (4.5.4-1) unstable; urgency=low
+
+  * new upstream version ncremap fix ncpdq nfr cap, XML _Unsigned, crv dateline, GSL2
+
+ -- Charlie Zender <zender@uci.edu>  Thu, 07 Jan 2016 12:25:12 -0700
+
+nco (4.5.3-1) unstable; urgency=low
+
+  * new upstream version nfr skl crv snwe frc_out bugs airs ncecat gag ncatted del
+
+ -- Charlie Zender <zender@uci.edu>  Sun, 18 Oct 2015 12:25:11 -0700
+
 nco (4.5.2-1) unstable; urgency=low
 
-  * new upstream version fxm
+  * new upstream version ncra --wgt nrm, --grid, --glb, Newton Gaussian
 
- -- Charlie Zender <zender@uci.edu>  Fri, 24 Jul 2014 12:25:10 -0700
+ -- Charlie Zender <zender@uci.edu>  Sun, 06 Sep 2015 12:25:10 -0700
 
 nco (4.5.1-1) unstable; urgency=low
 
   * new upstream version ncra --wgt=wgt_nm, ncap2 mibs/mabs/mebs, Tempest
 
- -- Charlie Zender <zender@uci.edu>  Fri, 10 Jul 2014 12:25:09 -0700
+ -- Charlie Zender <zender@uci.edu>  Fri, 10 Jul 2015 12:25:09 -0700
 
 nco (4.5.0-1) unstable; urgency=low
 
   * new upstream version --map, --rnr=wgt, -A provenance, [date/time]_written, ncdismember
 
- -- Charlie Zender <zender@uci.edu>  Thu, 11 Jun 2014 12:25:08 -0700
+ -- Charlie Zender <zender@uci.edu>  Thu, 11 Jun 2015 12:25:08 -0700
 
 nco (4.4.9-1) unstable; urgency=low
 
   * new upstream version (git, -x warn, crd att, cnk nco lfp, shuffle on, MM3->MM4 off, ncecat fix, climatology, ncra wgt)
 
- -- Charlie Zender <zender@uci.edu>  Thu, 21 May 2014 12:25:07 -0700
+ -- Charlie Zender <zender@uci.edu>  Thu, 21 May 2015 12:25:07 -0700
 
 nco (4.4.8-1) unstable; urgency=low
 
   * new upstream version (-A warn, PPC, cnk nco=rew+lfp, mabs/mebs/mibs())
 
- -- Charlie Zender <zender@uci.edu>  Mon, 09 Feb 2014 12:25:05 -0700
+ -- Charlie Zender <zender@uci.edu>  Mon, 09 Feb 2015 12:25:05 -0700
 
 nco (4.4.7-1) unstable; urgency=low
 
@@ -761,7 +971,6 @@ nco (1.1.45-2) unstable; urgency=low
 
   * Added patch from Jim Studt <jim@federated.com> to port nco to ARM.
     (Closes: Bug#59095)
-
 
  -- Brian Mays <brian@debian.org>  Thu,  2 Mar 2000 14:55:03 -0500
 

@@ -16,7 +16,7 @@
 class ncoTree;
 
 
-enum vtl_typ { VVAR,VLVAR,VDVAR, VATT,VLATT,VDATT,VDIM, VDIM_SIZE,VEXPR,VCALL_REF };
+enum vtl_typ { VVAR,VLVAR,VDVAR, VATT,VLATT,VDATT,VDIM, VDIM_SIZE,VEXPR,VCALL_REF,VPOINTER,VSTRING };
 
 class vtl_cls: public ncoParserTokenTypes {
 public:
@@ -74,6 +74,19 @@ public:
 	        lcl_typ=VCALL_REF;
                 break;      
 
+    case UTIMES:
+               {
+		 if(nbr_chd ==1 && chd_typ==ATT_ID)   
+                   lcl_typ=VPOINTER;
+		 else
+                   lcl_typ=VEXPR;    
+               }      
+               break;
+
+    case NSTRING:
+    case N4STRING:    
+              lcl_typ=VSTRING;  
+              break; 
       default:
            lcl_typ=VEXPR;
            break;

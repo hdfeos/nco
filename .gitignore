@@ -1,7 +1,6 @@
 # Git-ignore patterns for ~/nco
 
 # Autoconf/Automake
-
 Makefile.in
 .deps
 .libs
@@ -18,8 +17,15 @@ Makefile.in
 /missing
 /Makefile
 
-# Odd files
+# CMake
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+
+# Odd files, litter
 gmon.out
+PET0.RegridWeightGen.Log
+texput.log
 
 # Editors
 

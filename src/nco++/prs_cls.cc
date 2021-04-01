@@ -3,10 +3,10 @@
 /* Purpose: netCDF arithmetic processor */
 /* prs_cls -- symbol table - class methods */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 // Standard C++ headers
 #include <algorithm>
@@ -17,6 +17,7 @@
 // Standard C headers
 #include <assert.h>
 #include <ctype.h>
+#include <nco.h>
 
 // Personal headers
 #include "ncap2_utl.hh"
@@ -309,9 +310,10 @@ prs_cls::ncap_var_write_omp(
   /*  const char mss_val_sng[]="missing_value"; *//* [sng] Unidata standard string for missing value */
   const char add_fst_sng[]="add_offset"; /* [sng] Unidata standard string for add offset */
   const char scl_fct_sng[]="scale_factor"; /* [sng] Unidata standard string for scale factor */
-  const char fnc_nm[]="prs_cls::ncap_var_write"; 
-  
-  int rcd; /* [rcd] Return code */
+  const char fnc_nm[]="prs_cls::ncap_var_write";
+
+
+
   int var_out_id;
   
   bool bdef=false;
@@ -456,19 +458,41 @@ prs_cls::ncap_var_write_omp(
     /* Define variable */   
     if(!bdef){
       (void)nco_def_var(out_id,var->nm,var->type,var->nbr_dim,var->dmn_id,&var_out_id);
+
+      if(var->cnk_sz)
+        var->cnk_sz=(size_t*)nco_free(var->cnk_sz);
       
       /* Set HDF Lempel-Ziv compression level, if requested */
       int fl_fmt; /* [enm] Output file format */
       (void)nco_inq_format(out_id,&fl_fmt);
-      if(fl_fmt == NC_FORMAT_NETCDF4 || fl_fmt == NC_FORMAT_NETCDF4_CLASSIC){
-	if(var->nbr_dim > 0){
-	  if(dfl_lvl >= 0) (void)nco_def_var_deflate(out_id,var_out_id,var->shuffle,(int)True,dfl_lvl); else if(var->dfl_lvl >= 0) (void)nco_def_var_deflate(out_id,var_out_id,var->shuffle,(int)True,var->dfl_lvl);    
-	  
-	  /* Set chunk sizes, if requested */
-	  // fxm: must first allow cnk_sz specification in ncap2.cc main()
-	  //if(var->cnk_sz && var->nbr_dim > 0) (void)nco_def_var_chunking(out_id,var_id,(int)NC_CHUNKED,var->cnk_sz);
-	} /* endif netCDF4 */
-      } /* endif */
+      if( (fl_fmt == NC_FORMAT_NETCDF4 || fl_fmt == NC_FORMAT_NETCDF4_CLASSIC) && var->nbr_dim > 0)
+      {
+        dmn_cmn_sct cmn[NC_MAX_VAR_DIMS];
+        ncap_pop_dmn_cmn();
+        ncap_pop_var_dmn_cmn(var, cmn);
+        (void)nco_cnk_sz_set_trv(in_id,out_id,cnk_in, var->nm,cmn);
+
+        if(dfl_lvl >= 0)
+          (void)nco_def_var_deflate(out_id,var_out_id,var->shuffle, True,dfl_lvl);
+        else if(var->dfl_lvl >= 0)
+          (void)nco_def_var_deflate(out_id,var_out_id,var->shuffle, True,var->dfl_lvl);
+
+        /*
+          flg_cnk=ncap_get_cnk_sz(var);
+
+          for(idx=0;idx<var->nbr_dim;idx++)
+            if( var->dim[idx]->is_rec_dmn )
+              break;
+
+          // chunk if it contains a record dim, deeflated, or chunking inherited form Input
+          if( idx<var->nbr_dim || dfl_lvl >=0 || var->dfl_lvl >=0 || flg_cnk )
+            (void)nco_def_var_chunking(out_id,var_out_id,(int)NC_CHUNKED,var->cnk_sz);
+          else
+            (void)nco_def_var_chunking(out_id,var_out_id,(int)NC_CONTIGUOUS,var->cnk_sz);
+        */
+
+	  } /* endif netCDF4 */
+
     } // bdef
     /* Put missing value 
        if(var->has_mss_val) (void)nco_put_att(out_id,var_out_id,nco_mss_val_sng_get(),var->type,1,var->mss_val.vp);
@@ -476,8 +500,8 @@ prs_cls::ncap_var_write_omp(
     
     /* Write/overwrite scale_factor and add_offset attributes */
     if(var->pck_ram){ /* Variable is packed in memory */
-      if(var->has_scl_fct) (void)nco_put_att(out_id,var_out_id,scl_fct_sng,var->typ_upk,1,var->scl_fct.vp);
-      if(var->has_add_fst) (void)nco_put_att(out_id,var_out_id,add_fst_sng,var->typ_upk,1,var->add_fst.vp);
+      if(var->has_scl_fct && var->scl_fct.vp) (void)nco_put_att(out_id,var_out_id,scl_fct_sng,var->typ_upk,1,var->scl_fct.vp);
+      if(var->has_add_fst && var->add_fst.vp) (void)nco_put_att(out_id,var_out_id,add_fst_sng,var->typ_upk,1,var->add_fst.vp);
     } /* endif pck_ram */
     
     /* Take output file out of define mode */
@@ -526,67 +550,245 @@ prs_cls::ncap_var_write_omp(
   return True;
 }
 
-void prs_cls::ncap_def_ntl_scn(void)
-{
+void prs_cls::ncap_def_ntl_scn(void) {
   int idx;
+
   int sz;
   int var_id;
+
+  // size_t cnks[NC_MAX_VAR_DIMS] = {0};
   NcapVar *Nvar;
   NcapVar *Cvar;
   var_sct *var1;
-  
-  const std::string fnc_nm("prs_cls::ncap_def_ntl_scn"); 
-  
-  if(nco_dbg_lvl_get() >= nco_dbg_scl) dbg_prn(fnc_nm, "Entered function");
-  
-  sz=int_vtr.size();
-  
-  for(idx=0;idx<sz;idx++){
+  dmn_cmn_sct cmn[NC_MAX_DIMS];
+
+  ncap_pop_dmn_cmn();
+
+  int fl_fmt; /* [enm] Output file format */
+
+
+  const std::string fnc_nm("prs_cls::ncap_def_ntl_scn");
+
+  if (nco_dbg_lvl_get() >= nco_dbg_scl) dbg_prn(fnc_nm, "Entered function");
+
+  sz = int_vtr.size();
+
+  (void) nco_inq_format(out_id, &fl_fmt);
+
+  for (idx = 0; idx < sz; idx++) {
     // De-reference
-    Nvar=int_vtr[idx];
-    var1=Nvar->var;
-    if(!Nvar->flg_udf && Nvar->xpr_typ==ncap_var){
-      
-      if(nco_dbg_lvl_get() >= nco_dbg_scl) dbg_prn(fnc_nm, Nvar->getFll()+ (!Nvar->flg_mem ? " defined in output": " RAM variable"));
-      
+    Nvar = int_vtr[idx];
+    var1 = Nvar->var;
+    if (!Nvar->flg_udf && Nvar->xpr_typ == ncap_var) {
+
+      if (nco_dbg_lvl_get() >= nco_dbg_scl)
+        dbg_prn(fnc_nm, Nvar->getFll() + (!Nvar->flg_mem ? " defined in output" : " RAM variable"));
+
       // Define variable
-      if(!Nvar->flg_mem){
-	(void)nco_def_var(out_id,var1->nm,var1->type,var1->nbr_dim,var1->dmn_id,&var_id);
-	
-	Nvar->var->id=var_id;
-	Nvar->var->nc_id=out_id;
-	Nvar->flg_stt=1;
-	
-	/* Set HDF Lempel-Ziv compression level, if requested */
-	int fl_fmt; /* [enm] Output file format */
-	int rcd; /* [rcd] Return code */
-	(void)nco_inq_format(out_id,&fl_fmt);
-	if(fl_fmt == NC_FORMAT_NETCDF4 || fl_fmt == NC_FORMAT_NETCDF4_CLASSIC){
-	  if(var1->nbr_dim > 0){ 
-	    if(dfl_lvl >= 0) (void)nco_def_var_deflate(out_id,var_id,var1->shuffle,(int)True,dfl_lvl); else if(var1->dfl_lvl >= 0) (void)nco_def_var_deflate(out_id,var_id,var1->shuffle,(int)True,var1->dfl_lvl);    
-	    
-	    /* Set chunk sizes, if requested */
-	    // fxm: must first allow cnk_sz specification in ncap2.cc main()
-	    //if(var1->cnk_sz && var1->nbr_dim > 0) (void)nco_def_var_chunking(out_id,var_id,(int)NC_CHUNKED,var1->cnk_sz);
-	  } /* endif */
-	} /* endif netCDF4 */
-	
-      } else { 
-	//deal with RAM only var        
-	Nvar->var->id=-1;
-	Nvar->var->nc_id=-1;
-	Nvar->flg_stt=1;
+      if (!Nvar->flg_mem) {
+        (void) nco_def_var(out_id, var1->nm, var1->type, var1->nbr_dim, var1->dmn_id, &var_id);
+
+        Nvar->var->id = var_id;
+        Nvar->var->nc_id = out_id;
+        Nvar->flg_stt = 1;
+
+        // set cnk_sz to null
+        if (var1->cnk_sz)
+          var1->cnk_sz = (size_t *) nco_free(var1->cnk_sz);
+
+        /* Set HDF Lempel-Ziv compression level, if requested */
+
+        if ((fl_fmt == NC_FORMAT_NETCDF4 || fl_fmt == NC_FORMAT_NETCDF4_CLASSIC) && var1->nbr_dim) {
+          // use chunking inheritance
+          ncap_pop_var_dmn_cmn(var1, cmn);
+          (void) nco_cnk_sz_set_trv(in_id, out_id, cnk_in, var1->nm, cmn);
+
+          if (dfl_lvl >= 0)
+            (void) nco_def_var_deflate(out_id, var_id, var1->shuffle, True, dfl_lvl);
+          else if (var1->dfl_lvl >= 0)
+            (void) nco_def_var_deflate(out_id, var_id, var1->shuffle, True, var1->dfl_lvl);
+
+
+          /*
+          {
+          int flg_cnk;
+          if (dfl_lvl >= 0)
+            (void) nco_def_var_deflate(out_id, var_id, var1->shuffle, (int) True, dfl_lvl);
+          else if (var1->dfl_lvl >= 0)
+            (void) nco_def_var_deflate(out_id, var_id, var1->shuffle, (int) True, var1->dfl_lvl);
+
+
+          for (jdx = 0; jdx < var1->nbr_dim; jdx++)
+            if (var1->dim[jdx]->is_rec_dmn)
+              break;
+
+          //  nb ncap_get_cnk_sz() checks the var->nm  in input. IF AND ONLY IF it is the same shape as var1
+          //  then the chunking is copied over
+          flg_cnk = ncap_get_cnk_sz(var1);
+          // chunk if var contains rec_dmn, deflated , or valid chunking from Input
+          if (jdx < var1->nbr_dim || dfl_lvl >= 0 || var1->dfl_lvl >= 0 || flg_cnk)
+            (void) nco_def_var_chunking(out_id, var_id, (int) NC_CHUNKED, var1->cnk_sz);
+          else
+            (void) nco_def_var_chunking(out_id, var_id, (int) NC_CONTIGUOUS, var1->cnk_sz);
+
+        }
+
+        */
+        }
+
+      } else {
+        //deal with RAM only var
+        Nvar->var->id = -1;
+        Nvar->var->nc_id = -1;
+        Nvar->flg_stt = 1;
       }
-      
+
       // Save newly defined variable in output vector
-      Cvar=new NcapVar(*Nvar);
+      Cvar = new NcapVar(*Nvar);
       var_vtr.push(Cvar);
-    } 
-    delete Nvar;  
+    }
+    delete Nvar;
+
   }
-  
   // Empty int_vtr n.b pointers have all been deleted
   int_vtr.clear();
+}
+
+void prs_cls::ncap_pop_dmn_cmn(void){
+
+  int idx;
+  int sz;
+  dmn_cmn_sct *dmn_cmn;
+  if(dmn_out_vtr.size() == dmn_cmn_vtr.size() )
+    return;
+   sz=dmn_out_vtr.size();
+
+   for(idx=0;idx<sz; idx++ )
+     if(!dmn_cmn_vtr.find( dmn_out_vtr[idx]->nm) ){
+       dmn_cmn=(dmn_cmn_sct*)nco_malloc( sizeof(dmn_cmn_sct) );
+       dmn_cmn->nm_fll=strdup(dmn_out_vtr[idx]->nm);
+       // dmn_cmn->nm_fll=(char*)NULL;
+       strcpy(dmn_cmn->nm, dmn_out_vtr[idx]->nm);
+       dmn_cmn->id=dmn_out_vtr[idx]->id;
+       dmn_cmn->NON_HYP_DMN=True;
+       dmn_cmn->is_rec_dmn=dmn_out_vtr[idx]->is_rec_dmn;
+       dmn_cmn->dmn_cnt=dmn_out_vtr[idx]->cnt;
+       dmn_cmn->sz=dmn_out_vtr[idx]->cnt;
+
+       dmn_cmn_vtr.push_back(dmn_cmn);
+       // wrn_prn("prs_cls::ncap_pop_dmn_cmn",SCS(dmn_cmn->nm));
+     }
+
+   return;
+
+}
+
+/* populate cmn from dmn_cmn_vtr - nb this assumes that cmn array size has already be
+   been allocated */
+void prs_cls::ncap_pop_var_dmn_cmn(var_sct* var, dmn_cmn_sct *cmn){
+
+  int idx;
+  int fdx;
+  int nbr_dim;
+
+  nbr_dim=var->nbr_dim;
+
+  for(idx=0;idx<nbr_dim;idx++)
+    /* nb this search should ALLWAYS succeed */
+    if( (fdx=dmn_cmn_vtr.findi(var->dim[idx]->nm)) >=0 )
+      cmn[idx]=*dmn_cmn_vtr[fdx];
+    else
+      (void)err_prn("prs_cls::ncap_pop_var_dmn_cmn", "could not find "+ SCS(var->dim[idx]->nm)+ " in dmn_cmn_vtr\n" );
+
+   return;
+
+}
+
+
+int prs_cls::ncap_get_cnk_sz(var_sct *var){
+
+  nco_bool shp_chk=False;
+  int rcd;
+  int idx;
+  int jdx;
+  int sz;
+  int var_id=-1;
+  int dmn_var_nbr=0;
+  int *dim_id=NULL_CEWI;
+  int srg_typ=0; /* [enm] Storage type */
+  long *cnt=NULL_CEWI;
+  size_t *lcl_cnk_sz=NULL_CEWI;
+
+
+  if( nco_inq_varid_flg(in_id,var->nm,&var_id) !=NC_NOERR)
+    return shp_chk;
+
+
+  rcd=nco_inq_varndims(in_id,var_id,&dmn_var_nbr);
+  if(rcd != NC_NOERR || dmn_var_nbr==0 || var->nbr_dim != dmn_var_nbr )
+    return shp_chk;
+
+
+
+  (void)nco_inq_var_chunking(in_id,var_id,&srg_typ,(size_t *)NULL);
+  if(srg_typ == NC_CONTIGUOUS)
+    return shp_chk;
+
+
+
+  dim_id=(int *)nco_malloc(dmn_var_nbr*sizeof(int));
+  cnt=(long *)nco_malloc(dmn_var_nbr*sizeof(long));
+  lcl_cnk_sz=(size_t*)nco_calloc(dmn_var_nbr,sizeof(size_t));
+
+  nco_inq_vardimid(in_id,var_id,dim_id);
+
+
+ /* get shape of var in input - put in cnt */
+  sz=dmn_in_vtr.size();
+  for(idx=0;idx<dmn_var_nbr;idx++){
+    for(jdx=0;jdx< sz;jdx++  )
+      if (dmn_in_vtr[jdx]->id == dim_id[idx]) break;
+    
+    cnt[idx]= ( jdx<sz ?   dmn_in_vtr[jdx]->cnt: 0);
+
+  }
+
+
+  // compare disc var cnt with var->cnt
+  for(idx=0;idx<dmn_var_nbr;idx++)
+    if( cnt[idx]==0 || var->dim[idx]->cnt != cnt[idx]   )
+      break;
+
+  /* var and disc var have the same shape so get chunking and put in var*/
+  if(idx==dmn_var_nbr)
+  {
+    srg_typ = NC_CHUNKED;
+    (void) nco_inq_var_chunking(in_id, var_id, &srg_typ, lcl_cnk_sz);
+
+    /* free up existing chunking */
+    if (var->cnk_sz)
+      var->cnk_sz = (size_t *) nco_free(var->cnk_sz);
+
+    var->cnk_sz = lcl_cnk_sz;
+
+    shp_chk=True;
+
+  }
+  else
+  {
+    lcl_cnk_sz=(size_t*)nco_free(lcl_cnk_sz);
+    shp_chk=False;
+  }
+
+
+  dim_id=(int *)nco_free(dim_id);
+  cnt=(long *)nco_free(cnt);
+
+
+
+  return shp_chk;
+
+
 }
 
 /********End prs_cls methods********************************************************/

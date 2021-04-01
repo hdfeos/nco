@@ -2,10 +2,10 @@
 
 /* Purpose: Group utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_var_utl.h" *//* Group utilities */
@@ -51,7 +51,12 @@ typedef struct {
 extern "C" {
 #endif /* __cplusplus */
 
-nm_id_sct *                           /* O [sct] Extraction list */  
+void
+nco_chk_nan                           /* [fnc] Check file for NaNs */
+(const int nc_id,                     /* I [ID] netCDF input file ID */
+ const trv_tbl_sct * const trv_tbl);   /* I [sct] GTT (Group Traversal Table) */
+
+  nm_id_sct *                           /* O [sct] Extraction list */  
 nco_trv_tbl_nm_id                     /* [fnc] Create extraction list of nm_id_sct from traversal table */
 (const int nc_id_in,                  /* I [ID] netCDF input file ID */
  const int nc_id_out,                 /* I [ID] netCDF output file ID */
@@ -152,8 +157,26 @@ nco_xtr_xcl                          /* [fnc] Convert extraction list to exclusi
  trv_tbl_sct * const trv_tbl); /* I/O [sct] GTT (Group Traversal Table) */
 
 void
+nco_xtr_xcl_chk /* [fnc] Convert extraction list to exclusion list */
+(char ** var_lst_in, /* I [sng] User-specified list of variables */
+ const int var_xtr_nbr, /* I [nbr] Number of variables in list */
+ trv_tbl_sct * const trv_tbl); /* I [sct] GTT (Group Traversal Table) */
+
+void
 nco_xtr_crd_add                       /* [fnc] Add all coordinates to extraction list */
 (trv_tbl_sct * const trv_tbl);        /* I/O [sct] Traversal table */
+
+void
+nco_xtr_lst /* [fnc] Print extraction list and exit */
+(trv_tbl_sct * const trv_tbl); /* I [sct] GTT (Group Traversal Table) */
+
+void
+nco_xtr_ND_lst /* [fnc] Print extraction list of N>=D variables and exit */
+(trv_tbl_sct * const trv_tbl); /* I [sct] GTT (Group Traversal Table) */
+
+void
+nco_xtr_ilev_add                      /* [fnc] Add ilev coordinate to extraction list */
+(trv_tbl_sct * const trv_tbl);         /* I/O [sct] Traversal table */
 
 void
 nco_xtr_cf_add                        /* [fnc] Add to extraction list variable associated with CF convention */
@@ -354,7 +377,7 @@ nco_prc_cmn                            /* [fnc] Process objects (ncbo only) */
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const nco_bool FIX_REC_CRD,           /* I [flg] Do not interpolate/multiply record coordinate variables (ncflint only) */
  CST_X_PTR_CST_PTR_CST_Y(dmn_sct,dmn_xcl),   /* I [sct] Dimensions not allowed in fixed variables */
  const int nbr_dmn_xcl,                /* I [nbr] Number of altered dimensions */
@@ -375,7 +398,7 @@ nco_cpy_fix                            /* [fnc] Copy fixed object (ncbo only) */
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const nco_bool FIX_REC_CRD,           /* I [flg] Do not interpolate/multiply record coordinate variables (ncflint only) */
  CST_X_PTR_CST_PTR_CST_Y(dmn_sct,dmn_xcl),   /* I [sct] Dimensions not allowed in fixed variables */
  const int nbr_dmn_xcl,                /* I [nbr] Number of altered dimensions */
@@ -403,6 +426,13 @@ nco_var_typ_trv                        /* [fnc] Transfer variable type into GTT 
  CST_X_PTR_CST_PTR_CST_Y(var_sct,var), /* I [sct] Array of extracted variables */
  trv_tbl_sct * const trv_tbl);         /* I/O [sct] Traversal table */
 
+void
+nco_set_prm_typ_out /* [fnc] Set GTT variable output type to unpacked, arithmetically promoted type for integers */
+(nco_bool const PROMOTE_INTS, /* I/O [flg] Promote integers to floating point in output */
+ const int prc_nbr, /* I [nbr] Number of processed variables */
+ CST_X_PTR_CST_PTR_CST_Y(var_sct,var), /* I [sct] Array of extracted variables */
+ trv_tbl_sct * const trv_tbl); /* I/O [sct] Traversal table */
+
 var_sct *                              /* O [sct] Variable structure */
 nco_var_fll_trv                        /* [fnc] Allocate variable structure and fill with metadata */
 (const int nc_id,                      /* I [id] netCDF file ID */
@@ -423,13 +453,6 @@ nco_cpy_var_dfn_trv                    /* [fnc] Define specified variable in out
  dmn_cmn_sct **dmn_cmn_out,            /* I/O [sct] List of all dimensions in output file (used for RETAIN_ALL_DIMS) */
  int *nbr_dmn_cmn_out,                 /* I/O [sct] Number of all dimensions in output file (used for RETAIN_ALL_DIMS) */
  trv_tbl_sct * const trv_tbl);         /* I/O [sct] GTT (Group Traversal Table) */
-
-void
-nco_dmn_rdr_trv                        /* [fnc] Transfer dimension structures to be re-ordered (ncpdq) into GTT */
-(int **dmn_idx_out_in,                 /* I [idx] Dimension correspondence, output->input, output of nco_var_dmn_rdr_mtd() */
- const int nbr_var_prc,                /* I [nbr] Size of above array (number of processed variables) */
- var_sct **var_prc_out,                /* I [sct] Processed variables */
- trv_tbl_sct * const trv_tbl);         /* I/O [sct] Traversal table */
 
 void
 nco_var_dmn_rdr_mtd_trv               /* [fnc] Determine and set new dimensionality in metadata of each re-ordered variable */
@@ -544,6 +567,8 @@ nco_bld_trv_tbl                       /* [fnc] Construct GTT, Group Traversal Ta
  const nco_bool GRP_XTR_VAR_XCL,      /* I [flg] Extract matching groups, exclude matching variables */
  const nco_bool EXCLUDE_INPUT_LIST,   /* I [flg] Exclude rather than extract groups and variables specified with -v */ 
  const nco_bool EXTRACT_ASSOCIATED_COORDINATES,  /* I [flg] Extract all coordinates associated with extracted variables? */ 
+ const nco_bool EXTRACT_CLL_MSR, /* I [flg] Extract cell_measures variables */
+ const nco_bool EXTRACT_FRM_TRM, /* I [flg] Extract formula_terms variables */
  const int nco_pck_plc,               /* I [enm] Packing policy */
  nco_dmn_dne_t **flg_dne,             /* I/O [lst] Flag to check if input dimension -d "does not exist" */
  trv_tbl_sct * const trv_tbl);        /* I/O [sct] Traversal table */
@@ -556,6 +581,16 @@ nco_bld_lmt                           /* [fnc] Assign user specified dimension l
  lmt_sct **lmt,                       /* I [sct] Structure comming from nco_lmt_prs() */
  nco_bool FORTRAN_IDX_CNV,            /* I [flg] Hyperslab indices obey Fortran convention */
  trv_tbl_sct * const trv_tbl);        /* I/O [sct] Traversal table */
+
+void
+nco_bld_lmt_var                       /* [fnc] Assign user specified dimension limits to one GTT variable */
+(const int nc_id,                     /* I [ID] netCDF file ID */
+  nco_bool MSA_USR_RDR,               /* I [flg] Multi-Slab Algorithm returns hyperslabs in user-specified order */
+  int lmt_nbr,                        /* I [nbr] Number of user-specified dimension limits */
+  lmt_sct **lmt,                      /* I [sct] Structure comming from nco_lmt_prs() */
+  nco_bool FORTRAN_IDX_CNV,           /* I [flg] Hyperslab indices obey Fortran convention */
+  trv_sct *wgt_trv);                  /* I/O [sct] GTT variable (used for weight/mask) */
+ 
 
 void 
 nco_msa_var_get_rec_trv             /* [fnc] Read one record of a variable */
@@ -571,10 +606,14 @@ nco_skp_var                          /* [fnc] Skip variable while doing record  
  const char * const rec_nm_fll,      /* I [sng] Full name of record being done in loop (trv_tbl->lmt_rec[idx_rec]->nm_fll ) */
  const trv_tbl_sct * const trv_tbl); /* I [sct] Traversal table */
 
-var_sct *                             /* O [sct] Variable (weight) */  
+var_sct *                             /* O [sct] Variable (weight or mask) */  
 nco_var_get_wgt_trv                   /* [fnc] Retrieve weighting or mask variable */
 (const int nc_id,                     /* I [id] netCDF file ID */
- const char * const wgt_nm,           /* I [sng] Weight variable name (relative) */
+ const int lmt_nbr,                   /* I [nbr] number of dimensions with limits */
+ CST_X_PTR_CST_PTR_CST_Y(char, lmt_arg), /* I [sng] List of user-specified dimension limits */
+ nco_bool MSA_USR_RDR,                /* I [flg] Multi-Slab Algorithm returns hyperslabs in user-specified order */
+ nco_bool FORTRAN_IDX_CNV,            /* I [flg] Hyperslab indices obey Fortran convention */
+ const char * const wgt_nm,           /* I [sng] Weight or mask variable name (relative or absolute) */
  const var_sct * const var,           /* I [sct] Variable that needs the weight/mask variable */
  const trv_tbl_sct * const trv_tbl);  /* I [lst] Traversal table */
 
@@ -630,11 +669,20 @@ nco_cmp_aux_crd_dpt                    /* [fnc] Compare two aux_crd_sct's by gro
 (const void *val_1,                    /* I [sct] aux_crd_sct * to compare */
  const void *val_2);                   /* I [sct] aux_crd_sct * to compare */
 
-void
+int                                    /* [flg] True if at least one standard_name="latitude/longitude" pair have been found  */      
 nco_bld_crd_aux                        /* [fnc] Build auxiliary coordinates information into table */
 (const int nc_id,                      /* I [ID] netCDF file ID */
  trv_tbl_sct *trv_tbl);                /* I [sct] GTT (Group Traversal Table) */
 
+int                                    /* [flg] True if at least one nm_lat,nm_lon pair have been found  */            
+nco_bld_crd_nm_aux                     /* [fnc] Build auxiliary coordinates information into table  using named latitude and longitude*/
+(const int nc_id,                      /* I [ID] netCDF file ID */
+ const char * const nm_lat,            /* I [sng] name of "latitude" variable to find  */
+ const char * const nm_lon,            /* I [sng] name of "latitude" variable to find  */
+ trv_tbl_sct *trv_tbl);                /* I [sct] GTT (Group Traversal Table) */
+
+
+  
 void
 nco_lmt_aux_tbl                       /* [fnc] Apply limits to variable in table */
 (const int nc_id,                     /* I [ID] netCDF file ID */
@@ -687,7 +735,7 @@ void
 nco_bld_nsm                           /* [fnc] Build ensembles */
 (const int nc_id,                     /* I [id] netCDF file ID */
  const nco_bool flg_fix_xtr,          /* I [flg] Mark fized variables as extracted  */
- const nco_bool CNV_CCM_CCSM_CF,      /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,           /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_pck_plc,               /* I [enm] Packing policy */
  trv_tbl_sct * const trv_tbl);        /* I/O [sct] Traversal table */
 
@@ -716,7 +764,7 @@ nco_prc_rel_mch                        /* [fnc] Relative match of object in tabl
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_op_typ,                 /* I [enm] Operation type (command line -y) */
  trv_sct * var_trv,                    /* I [sct] Table variable object (can be from table 1 or 2) */
  const nco_bool flg_tbl_1,             /* I [flg] Table variable object is from table1 for True, otherwise is from table 2 */
@@ -744,7 +792,7 @@ nco_prc_cmn_var_nm_fll                 /* [fnc] Process (define, write) absolute
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_op_typ,                 /* I [enm] Operation type (command line -y) */
  trv_tbl_sct * const trv_tbl_1,        /* I/O [sct] GTT (Group Traversal Table) */
  trv_tbl_sct * const trv_tbl_2,        /* I/O [sct] GTT (Group Traversal Table) */
@@ -762,7 +810,7 @@ nco_grp_brd2                           /* [fnc] Group broadcasting (ncbo only) *
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_op_typ,                 /* I [enm] Operation type (command line -y) */
  trv_tbl_sct * const trv_tbl_1,        /* I/O [sct] GTT (Group Traversal Table) */
  trv_tbl_sct * const trv_tbl_2,        /* I/O [sct] GTT (Group Traversal Table) */
@@ -778,7 +826,7 @@ nco_grp_brd                            /* [fnc] Group broadcasting (ncbo only) *
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_op_typ,                 /* I [enm] Operation type (command line -y) */
  trv_tbl_sct * const trv_tbl_1,        /* I/O [sct] GTT (Group Traversal Table) */
  trv_tbl_sct * const trv_tbl_2,        /* I/O [sct] GTT (Group Traversal Table) */
@@ -803,7 +851,7 @@ nco_prc_cmn_nsm                        /* [fnc] Process (define, write) variable
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_op_typ,                 /* I [enm] Operation type (command line -y) */
  trv_tbl_sct * const trv_tbl_1,        /* I/O [sct] GTT (Group Traversal Table) */
  trv_tbl_sct * const trv_tbl_2,        /* I/O [sct] GTT (Group Traversal Table) */
@@ -820,7 +868,7 @@ nco_prc_nsm                            /* [fnc] Process (define, write) variable
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_op_typ,                 /* I [enm] Operation type (command line -y) */
  trv_tbl_sct * const trv_tbl_1,        /* I/O [sct] GTT (Group Traversal Table) */
  trv_tbl_sct * const trv_tbl_2,        /* I/O [sct] GTT (Group Traversal Table) */
@@ -858,7 +906,7 @@ nco_prc_rel_cmn_nm                     /* [fnc] Process common relative objects 
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_op_typ,                 /* I [enm] Operation type (command line -y) */
  trv_tbl_sct * const trv_tbl_1,        /* I/O [sct] GTT (Group Traversal Table) */
  trv_tbl_sct * const trv_tbl_2,        /* I/O [sct] GTT (Group Traversal Table) */
@@ -896,7 +944,7 @@ nco_prc_cmn_nsm_att                    /* [fnc] Process (define, write) variable
  const gpe_sct * const gpe,            /* I [sct] GPE structure */
  gpe_nm_sct *gpe_nm,                   /* I/O [sct] GPE name duplicate check array */
  int nbr_gpe_nm,                       /* I/O [nbr] Number of GPE entries */  
- const nco_bool CNV_CCM_CCSM_CF,       /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,            /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const int nco_op_typ,                 /* I [enm] Operation type (command line -y) */
  trv_tbl_sct * const trv_tbl_1,        /* I/O [sct] GTT (Group Traversal Table) */
  trv_tbl_sct * const trv_tbl_2,        /* I/O [sct] GTT (Group Traversal Table) */
@@ -919,6 +967,33 @@ nco_nsm_wrt_att                      /* [fnc] Save ncge metadata attribute */
  const gpe_sct * const gpe,          /* I [sct] GPE structure */
  trv_tbl_sct * const trv_tbl);       /* I/O [sct] GTT (Group Traversal Table) */
 
+void
+nco_wrt_atr
+(const int nc_id,                    /* I [id] netCDF input file ID */
+ const int grp_out_id,               /* I [id] netCDF output group ID */
+ const int var_out_id,               /* I [id] netCDF output variable ID */
+ const trv_sct *var_trv);            /* I [sct] traversal variable */
+
+const char *
+nco_get_dmn_nm_fll                     /* [fnc] Return name corresponding to input dimension ID (debug) */
+(const int dmn_id,                     /* I [id] ID of dimension */
+ const dmn_cmn_sct * const dmn_cmn,    /* I [sct] Dimension structure array */
+ const int nbr_dmn);                   /* I [nbr] Number of dimensions (size of above array) */
+
+void
+nco_var_xtr_trv                       /* [fnc] Print all variables to extract (debug) */
+(const trv_tbl_sct * const trv_tbl);  /* I [sct] Traversal table */
+
+crd_sct*
+nco_get_crd_sct                       /* [fnc] Return a coordinate variable crd_sct for a given table variable var_trv */
+(trv_sct * const var_trv,             /* I [sct] GTT Variable */
+ int lmt_nbr,                         /* I [nbr] Number of user-specified dimension limits */
+ lmt_sct **lmt);                      /* I [sct] Limit array. Structure comming from nco_lmt_prs() */
+
+void
+nco_srt_aux                           /* [fnc] sort auxiliary coordinates */  
+(const trv_tbl_sct * const trv_tbl);  /* I [sct] Traversal table */
+  
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif /* __cplusplus */

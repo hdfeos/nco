@@ -2,10 +2,10 @@
 
 /* Purpose: Arithmetic controls and utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_rth_utl.h" *//* Arithmetic controls and utilities */
@@ -82,6 +82,11 @@ vec_set /* [fnc] Fill every value of first operand with value of second operand 
  const long sz, /* I [nbr] size (in elements) of operand */
  ptr_unn op1, /* I [sct] Values of first operand */
  const double op2); /* I [frc] Value to fill vector with */
+
+void
+nco_zero_double /* [fnc] Zero all values of double array */
+(const long sz, /* I [nbr] Size (in elements) of operand */
+ double * restrict const op1); /* I/O [nbr] Array to be zeroed */
 
 void
 nco_zero_long /* [fnc] Zero all values of long array */

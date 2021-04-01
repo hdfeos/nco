@@ -2,10 +2,10 @@
 
 /* Purpose: List utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_lst_utl.h" *//* List utilities */
@@ -55,6 +55,18 @@ nco_lst_rx_search /* [fnc] Search for pattern matches in var string list */
  nm_id_sct *var_lst_all, /* I [sct] All variables in input file (with IDs) */
  char *rx_sng, /* I [sng] Regular expression pattern */
  nco_bool *var_xtr_rqs); /* O [flg] Matched vars holder */
+
+nco_bool /* O [flg] Both var_nm and bnds_nm are in rgd_arr_lst */
+nco_rgd_arr_lst_chk /* [fnc] Check list of ragged arrays for presence of var_nm and bnds_nm */
+(char ***rgd_arr_lst, /* I [sct] List of ragged arrays */
+ int nbr_lst, /* I [nbr] Number of ragged arrays in list */
+ char *var_nm, /* I [sng] Variable name to search for */
+ char *bnds_nm); /* I [sng] Bounds name to search for */
+
+void
+nco_rgd_arr_lst_free /* [fnc] Free memory associated with rgd_arr_lst, a list of ragged arrays */
+(char ***rgd_arr_lst, /* I/O [sct] List of ragged arrays */
+ int nbr_lst); /* I [nbr] Number of ragged arrays in list */
 
 void 
 nco_srt_ntg /* [fnc] Sort array of integers */

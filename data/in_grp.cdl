@@ -42,6 +42,7 @@ netcdf in_grp {
   lat=2;
   lev=3;
   lon=4;
+  coord=2;
   time=unlimited; 
   vrt_nbr=2;
   gds_crd=8;
@@ -72,15 +73,19 @@ netcdf in_grp {
   
   float lev(lev);
   lev:units = "hybrid_sigma_pressure";
-  lev:bounds = "ilev";
+  lev:bounds = "lev_bnd";
    
-  float ilev(lev,vrt_nbr);
-  ilev:purpose = "Cell boundaries for lev coordinate"; 
+  float lev_bnd(lev,vrt_nbr);
+  lev_bnd:purpose = "Cell boundaries for lev coordinate"; 
   
   float area(lat);
   area:units = "meter2";
 
+  float non_coord(coord);
+ non_coord:purpose = "Test whether netCDF4 supports renaming non-coordinates to coordinates";
+  
   float one;
+ one:long_name = "one";
   
   float val_one_mss(lat);
   val_one_mss:long_name = "one regular value, one missing value";
@@ -92,8 +97,49 @@ netcdf in_grp {
   unique:purpose = "the only variable of this name in this file, to test smallest possible access requests"; 
   
   float lat_lon(lat,lon);
+
+  float att_var(time);
+ att_var:byte_att = '\000','\001','\002','\177','\200','\201','\376','\377';
+ att_var:char_att = "Sentence one.\nSentence two.\n";
+ att_var:short_att = 37s;
+ att_var:int_att = 73;
+ att_var:long_att = 73;
+ att_var:float_att = 73.0f,72.0f,71.0f,70.010f,69.0010f,68.010000f,67.01000100f;
+ att_var:double_att = 73.0,72.0,71.0,70.010,69.0010,68.010000,67.01000100;
   
-  //global attributes
+  int att_var_jsn;
+ att_var_jsn:char\ att\ with\ whitespace = "cf-json.org <http://cf-json.org>";
+ att_var_jsn:double\ att\ with\ whitespace = 3.14;
+ att_var_jsn:int\ att\ with\ whitespace = 1;
+ att_var_jsn:int_array\ att\ with\ whitespace = 1,2;
+ string att_var_jsn:string_array\ att\ with\ whitespace = "1","2";
+  
+  // Purpose: Test special characters in names
+  // Most special characters need backslash protection
+  int att_var_spc_chr;
+ att_var_spc_chr:space\ in\ name = "foo";
+ att_var_spc_chr:comma_in_name\, = "foo";
+ att_var_spc_chr:lt_in_name\< = "foo";
+ att_var_spc_chr:gt_in_name\> = "foo";
+ att_var_spc_chr:hash_in_name\# = "foo";
+ att_var_spc_chr:xclaim_in_name\! = "foo";
+ att_var_spc_chr:dollar_in_name\$ = "foo";
+ att_var_spc_chr:ampersand_in_name\& = "foo";
+ att_var_spc_chr:equals_in_name\= = "foo";
+ att_var_spc_chr:semicolon_in_name\; = "foo";
+ att_var_spc_chr:colon_in_name\: = "foo";
+ att_var_spc_chr:lbrace_in_name\{ = "foo";
+ att_var_spc_chr:rbrace_in_name\} = "foo";
+ att_var_spc_chr:lparen_in_name\( = "foo";
+ att_var_spc_chr:rparen_in_name\) = "foo";
+ att_var_spc_chr:lbracket_in_name\[ = "foo";
+ att_var_spc_chr:rbracket_in_name\] = "foo";
+ att_var_spc_chr:plus_in_name+ = "foo";
+  //  : period_in_name. = "foo"; // Likely to cause DAP server error
+ att_var_spc_chr:hyphen_in_name- = "foo";
+ att_var_spc_chr:at_in_name@ = "foo";
+  
+// Global attributes
   :Conventions = "CF-1.0";
   :history = "History global attribute.\n";
   :julian_day = 200000.04;
@@ -106,7 +152,7 @@ netcdf in_grp {
   area=10.,10.;
   lat=-90,90;
   lat_lon=1.,2.,3.,4.,5.,6.,7.,8;
-  ilev=0,300,300,750,750,1013.25;
+  lev_bnd=0,300,300,750,750,1013.25;
   lev=100,500,1000;
   lon=0,90,180,270;
   one=1.;
@@ -114,6 +160,9 @@ netcdf in_grp {
   time=1.,2.,3.,4.,5.,6.,7.,8.,9.,10.;
   unique=73;
   val_one_mss=1.,1.0e36;
+  att_var=10.0,10.1,10.20,10.3000,10.40101,10.500001,10.60000001,10.7000001,10.80,10.9900;
+  att_var_jsn=73;
+  att_var_spc_chr=73;
 
  group: g1 { 
   :history = "History group attribute.\n";
@@ -133,7 +182,7 @@ netcdf in_grp {
   ppc_dbl:purpose = "test --ppc switches";
   ppc_dbl:original_values="123456789e-10,123456789e-9,123456789e-8,123456789e-7,123456789e-6,123456789e-5,123456789e-4,123456789e-3,123456789e-2,123456789e-1";
   
-    //coordinate variable (/lon)
+    // Coordinate variable (/lon)
     float lon(lon);
     lon:units = "degrees_east";
     float scl;
@@ -184,7 +233,7 @@ netcdf in_grp {
   
  group: g2 { 
   variables:
-    //coordinate variable (dimension at root)
+    // Coordinate variable (dimension at root)
     double time(time);
     float lon(lon);
     float scl;
@@ -272,7 +321,7 @@ netcdf in_grp {
         ppc_dbl:original_values="123456789e-10,123456789e-9,123456789e-8,123456789e-7,123456789e-6,123456789e-5,123456789e-4,123456789e-3,123456789e-2,123456789e-1";
 
   
-    //coordinate variable (/g7/gds_crd)
+    // Coordinate variable (/g7/gds_crd)
     float gds_crd(gds_crd);
     gds_crd:long_name = "Geodesic coordinate";
     gds_crd:units = "degree";
@@ -449,6 +498,18 @@ netcdf in_grp {
     uint uint_arr(lat);
   uint_arr:long_name = "uint-type array variable";
     
+    uint uint32_var;
+  uint32_var:purpose = "uint32 with big-endian value 0x12345678 = 2018915346 so that byte-swapped (little-endian) value is 0x78563412";
+
+    uint uint32_var_bs;
+  uint32_var_bs:purpose = "uint32 with big-endian value 0x78563412 = fxm so that byte-swapped (little-endian) value is 0x12345678";
+
+ uint64 uint64_tst;
+  uint64_tst:long_name = "uint64 with big-endian value 0x12345678 = 2018915346 so that byte-swapped (little-endian) value is 0x78563412";
+    
+    uint uint64_tst_bs;
+  uint64_tst_bs:purpose = "uint64 with big-endian value 0x78563412 = fxm so that byte-swapped (little-endian) value is 0x12345678";
+
     uint64 uint64_var;
   uint64_var:long_name = "uint64-type variable";
     
@@ -475,6 +536,10 @@ netcdf in_grp {
     // uint_var=4294967295; // UINT_MAX = 4294967295, NC_FILL_UINT is 4294967295U
     uint_var=0; // UINT_MAX = 4294967295, NC_FILL_UINT is 4294967295U
     uint_arr=4294967295,4294967295; // UINT_MAX = 4294967295, NC_FILL_UINT is 4294967295U
+    uint32_var=0x12345678; // netCDF assumes hexadecimal input is Big-endian, could be stored as little-endian with byte-swapped value = 0x78563412
+    uint32_var_bs=0x78563412; // netCDF assumes hexadecimal input is Big-endian, could be stored as little-endian with byte-swapped value = 0x12345678
+    uint64_tst=0x12345678; // netCDF assumes hexadecimal input is Big-endian, could be stored as little-endian with byte-swapped value = 0x78563412
+    uint64_tst_bs=0x78563412; // netCDF assumes hexadecimal input is Big-endian, could be stored as little-endian with byte-swapped value = 0x12345678
     //    uint64_var=18446744073709551615; // ULLONG_MAX = 18446744073709551615, NC_FILL_UINT is 18446744073709551614ULL, 20131120: XML treats unsigned as signed types, so toolsui produces errors when reading maximum uint64 values (though not when reading maxium ubyte, ushort, and uint values)
     uint64_var = 0ul; // 20130712: ncgen 4.3.0 chokes on ull, ULL suffix for uint64 attributes, 
     ushort_var=65535; // USHRT_MAX = 65535, NC_FILL_USHORT = 65535
@@ -483,6 +548,7 @@ netcdf in_grp {
  group: g12 { // Level 1
     // Purpose: Test special characters in names
     // Most special characters need backslash protection
+  : space\ in\ name = "foo";
   : comma_in_name\, = "foo";
   : lt_in_name\< = "foo";
   : gt_in_name\> = "foo";

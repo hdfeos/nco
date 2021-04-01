@@ -136,7 +136,7 @@ appending history to file.
 This script is part of the netCDF Operators package:
 http://nco.sf.net
 
-Copyright 1995--2015 Charlie Zender
+Copyright 1995--present Charlie Zender
 
 USAGE
 exit(0);
@@ -150,8 +150,8 @@ sub bm_ntl($$){
     my $dbg_lvl; # [flg] Debugging level
     ($bch_flg,$dbg_lvl)=@_;
 # Enumerate operators to test
-    @opr_lst_all = qw( ncap2 ncdiff ncatted ncbo ncflint nces ncecat ncks ncpdq ncra ncrcat ncrename ncwa net);
-    @opr_lst_mpi = qw( ncbo ncecat ncflint ncpdq ncra ncwa ncpdq ncra);
+    @opr_lst_all = qw( ncap2 ncdiff ncatted ncbo ncclimo ncflint nces ncecat ncks ncpdq ncra ncrcat ncremap ncrename ncwa net);
+    @opr_lst_mpi = qw( ncbo ncecat ncflint ncpdq ncra ncwa ncpdq ncra );
     $opr_sng_mpi = "ncbo ncdiff ncecat ncflint nces ncpdq ncra ncwa "; # ncpdq ncra MPI, but fail bench
     $opr_rgr_mpi = "ncbo ncdiff ncecat ncflint nces ncpdq ncra ncwa ncrcat"; # need all of them for regression
     
@@ -183,7 +183,8 @@ sub bm_ntl($$){
 # If libtool created shared libraries, then point to real executables
 # in ../src/nco/.libs
     my $dotlib = '';
-    $dotlib = ".libs/lt-" if `head -1 $MY_BIN_DIR/ncatted` =~ m/sh/;
+# 20170608: Removed at suggestion of Daniel Neumann
+#    $dotlib = ".libs/lt-" if `head -1 $MY_BIN_DIR/ncatted` =~ m/sh/;
     $sym_link{ncdiff}=$dotlib . "ncbo";
     $sym_link{nces}=$dotlib . "ncra";
     $sym_link{ncrcat}=$dotlib . "ncra";
@@ -419,7 +420,6 @@ sub drc_dat_set{
 # tst_run() consumes @tst_cmd array and executes them in order
 #################################################################################
 sub tst_run {
-    
     my %fl_nm_lcl = ( # fl_nm_lcl = local_file_name
 		'%stdouterr%'   => "", # stdouterr has to be left to generate stderr
 		'%tmp_fl_00%'    => "$drc_dat/tmp_fl_00.nc", # Default replacement for $fl_out
@@ -573,7 +573,6 @@ sub tst_run {
 	delete $cmd_lst[$#cmd_lst]; # and now the $cmd_lst is the same as it ever was..
 	
 #print "\nDEBUG:in tst_run:613, \$mpi_prc=[$mpi_prc] \$pfx_mpi=[$pfx_mpi] \$mpi_fk=[$mpi_fk]\n";
-	
 	foreach (@cmd_lst){
 #			print "\nforeach cmd_lst = $_\n";
 	    my $md5_chk = 1;
@@ -687,7 +686,7 @@ sub tst_run {
 	    $cmd_lst_cnt++;
 	    if ($dbg_lvl > 2) {
 		print "\ntst_run: test cycle held - hit <Enter> to continue\n";
-		my $wait = <STDIN>;
+		#		my $wait = <STDIN>;
 	    }
 	} # end loop: 	foreach (@cmd_lst)
     } # end of client side 'else'
@@ -717,9 +716,8 @@ sub tst_run {
     else{ #print "DEBUG: \$nsr_xpc is not numeric: $nsr_xpc \n";
 	$xpc_is_nbr = 0;
     }
-    
     # Compare numeric results
-    if($cmd_rsl_is_nbr && $xpc_is_nbr){ # && it equals the expected value
+    if($cmd_rsl_is_nbr && $xpc_is_nbr && length($cmd_rsl)>0){ # && it equals the expected value
 #print "\n \$nsr_xpc [$nsr_xpc] considered a number\n";
 	$dbg_sng.="DEBUG: \$nsr_xpc assumed to be numeric: $nsr_xpc & actual  \$cmd_rsl = [$cmd_rsl]\n";
 	if($nsr_xpc == $cmd_rsl){
@@ -736,7 +734,7 @@ sub tst_run {
 	    my $diff = abs($nsr_xpc - $cmd_rsl);
 	    $dbg_sng .= "DEBUG: !!FAILED (Numeric output) [expected: $nsr_xpc vs result: $cmd_rsl].  Difference = $diff.\n";
 	}
-    }elsif(!$cmd_rsl_is_nbr && !$xpc_is_nbr){# Compare non-numeric tests
+    }elsif(!$cmd_rsl_is_nbr && !$xpc_is_nbr && length($cmd_rsl)>0){# Compare non-numeric tests
 	 dbg_msg(2,"DEBUG: expected value assumed to be alphabetic: $nsr_xpc\n\$cmd_rsl = $cmd_rsl\n");
 #print "\n \$nsr_xpc [$nsr_xpc] considered a string\n";
 	 
@@ -912,7 +910,7 @@ sub SS_prepare {
 ####################
 sub failed {
     $failure{$opr_nm}++;
-    $err_sng .= "   ERR: FAILURE in $opr_nm failure: $dsc_sng\n";
+    $err_sng .= "   ERR: FAILED in $opr_nm test: $dsc_sng\n";
     foreach(@cmd_lst) { $err_sng .= "   $_\n";}
     $err_sng .= "   ERR::EXPLAIN: Result: [$cmd_rsl] != Expected: [$nsr_xpc]\n\n" ;
     return;

@@ -2,10 +2,10 @@
 
 /* Purpose: Software configuration management */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_scm.h" *//* Software configuration management */
@@ -35,12 +35,18 @@ char * /* O [sng] CVS version string */
 cvs_vrs_prs(void); /* [fnc] Return CVS version string */
 
 void
+nco_cpy_prn(void); /* [fnc] Print copyright notice */
+
+void
+nco_lbr_vrs_prn(void); /* [fnc] Print netCDF library version */
+
+const char * /* O [sng] Mnemonic that describes current NCO version */
+nco_nmn_get(void); /* [fnc] Return mnemonic that describes current NCO version */
+
+void
 nco_vrs_prn /* [fnc] Print NCO version */
 (const char * const CVS_Id, /* I [sng] CVS identification string */
  const char * const CVS_Revision); /* I [sng] CVS revision string */
-
-void
-nco_cpy_prn(void); /* [fnc] Print copyright notice */
 
 #ifdef __cplusplus
 } /* end extern "C" */

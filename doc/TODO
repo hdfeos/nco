@@ -112,7 +112,7 @@ nco148. Put in more useful error diagnostics for Schweitzer's data holes
         ncrcat -O -C -d lon,10.0,80.0 -v time_lon in.nc foo.nc;ncks -H foo.nc
 nco149. Add ncks hyperslab tests to nco_tst.pl to catch inconsistencies like #148
 nco151. Dynamically modify web pages so files with changing version numbers can be directly linked
-nco158. Add policy for hyperslabbing single level values to User's Guide
+nco158. Add policy for hyperslabbing single level values to Users Guide
         Multi-file operators with record coordinate
         treat single point hyperslabs differently than single file operators 
         or than any operators with single point cuts on non-record coordinates.
@@ -252,11 +252,11 @@ nco514. MPI builds call superfluous linker steps:
 nco516. Implement SDO-wide data pipes, e.g., ncra in*.nc | ncwa | ncrename t,tpt foo.nc
         This would bring us one step closer to grid services, too
 nco527. Purify ncatted memory: 
-        valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncatted -D 5 -O -a float_att,,c,f,74 -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
-        valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncatted -D 5 -O -a char_att,att_var,a,c,"and appended Sentence three,with,lots,of,commas" -a short_att,att_var,c,s,37,38,39 -a float_att,att_var,d,,, -a long_att,att_var,o,l,37 -a new_att,att_var,o,d,73,74,75 -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
-        valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncatted -D 5 -O -a float_att,,a,f,74,75,76 -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+        valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncatted -D 5 -O -a float_att,,c,f,74 -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+        valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncatted -D 5 -O -a char_att,att_var,a,c,"and appended Sentence three,with,lots,of,commas" -a short_att,att_var,c,s,37,38,39 -a float_att,att_var,d,,, -a long_att,att_var,o,l,37 -a new_att,att_var,o,d,73,74,75 -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+        valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncatted -D 5 -O -a float_att,,a,f,74,75,76 -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
 # Commas at end of following aed_sct appear never to be free()'d, are responsible for three unfree'd bytes
-        valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncatted -D 5 -O -a float_att,att_var,d,,, -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+        valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncatted -D 5 -O -a float_att,att_var,d,,, -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
 nco533. Implement C99 mathematical special functions: lgamma_r, j0, j1, jn, y0, y1, yn
 nco542. Put batch scripts, executables in ${DATA}/nco_bm/CASEID? Where to put created files
 nco546. Use makeatletter command in CCSM example in nco.texi?
@@ -286,7 +286,7 @@ nco612. ncks ncdump-like features for netCDF4 files structures
 nco616: netCDF4 breaks assumption that range/precision increases with nc_type enum
 nco622. NULL'ify opt_crr unless opt_lng detected?
 nco624. mpi: Document MPI in users guide/manual
-nco630. Change if thr_nbr > 0 to if thr_nbr > 1 for nco_thr_att_cat()?
+nco630. Change if thr_nbr > 0 to if thr_nbr > 1 for nco_thr_att_cat()? Done 20180708
 nco631. Change usleep() to nanosleep()
 nco635. ncwa: MACOSX "regressions" caused by broken FREEBSD/MACOSX 'cut' binary
         Solution may be to install GNU textutils?
@@ -358,8 +358,8 @@ nco756. thr: Make nco_ddra() thread-safe
 nco757. ncbo bug: works with --mmr_drt, fails with --mmr_cln
 	ncwa -O -a time -p ~/nco/data in.nc ~/foo_avg.nc
 	ncbo --mmr_cln -O -D 1 ~/nco/data/in.nc ~/foo_avg.nc ~/foo.nc
-	valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncbo --mmr_cln -O ~/nco/data/in.nc ~/foo_avg.nc ~/foo.nc > ~/foo 2>&1
-	valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncbo --mmr_cln -O -v one_dmn_rec_var ~/nco/data/in.nc ~/foo_avg.nc ~/foo.nc > ~/foo 2>&1
+	valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncbo --mmr_cln -O ~/nco/data/in.nc ~/foo_avg.nc ~/foo.nc > ~/foo 2>&1
+	valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncbo --mmr_cln -O -v one_dmn_rec_var ~/nco/data/in.nc ~/foo_avg.nc ~/foo.nc > ~/foo 2>&1
 nco757. Make sure above ncbo bug is not in ncflint
 nco759. Document --mmr_cln flag
 nco761. mpi: Merge timer srt/end calls to MPI codes
@@ -606,9 +606,6 @@ nco1054. nco: ncap2 rgr 11 Casting variable with a single dim of sz=1. works for
 	 ncap2 -O -C -v -s 'defdim("a",1);b[$a]=10;c=b(0:0);' ~/nco/data/in.nc ~/foo.nc
 nco1014. nco: option to eliminate ncap2 intermediate tmp file writing
 	 ncap2 -s 'time=time+999999' ~/nco/data/in.nc
-nco1058. ncap2: allow new variables within where() statement
-	 ncap2 -v -O -s 'valid=0*time;where(time<7) valid=time;' ~/nco/data/in.nc ~/foo.nc # works
-	 ncap2 -v -O -s 'valid=0*time;time2=time;where(time2<7) valid=time;' ~/nco/data/in.nc ~/foo.nc # fails
 nco1059. nco: ncatted keep type same by default when modifying/overwriting attribute
 nco1063. use '--with-nc-config=path' in configure when possible (rich signell idea) 
 nco1065. ncra2.c move input_complete break to precede record loop but remember to close open filehandles
@@ -663,9 +660,6 @@ nco1113. nco: rsp parker norton help srd slowdown issue help 20140718 completely
 nco1114. ncrcat fails when single record dimension is not first dimension
 nco1116. --add_bnds for creating bounds variables
 nco1117. ncks human-readable times
-nco1119. nco: ncap2 RNG works with arrays, fails with scalars (john 20150317)
-      ncap2 -O -s 'defdim("r1",10);data[r1]=10;data=gsl_rng_uniform_int(data);print(data);' ~/nco/data/in.nc ~/foo.nc # works
-      ncap2 -O -s 'data=10;data=gsl_rng_uniform_int(data);print(data);' ~/nco/data/in.nc ~/foo.nc # borken
 nco1120. brendan discussion 20150312 autoconf requires both --enable-netcdf4=no --and enable-netcdf-4=no to get "ENABLE_NETCDF4....... no" and avoid the "configure: Bad news: Simple program does not compile and link with netCDF4 library" message.
 nco1121. ncap2 attribute propagation occurs for re-defined input variables Christine Smit https://sourceforge.net/p/nco/discussion/9829/thread/142457da/?limit=25
 nco1122. cnk slowdown Barry McInnes 3/9
@@ -675,7 +669,46 @@ nco1122. cnk slowdown Barry McInnes 3/9
 nco1123. ESGF access
       ncks -M http://esgf-data2.ceda.ac.uk/thredds/dodsC/cmip5.output1.MOHC.HadGEM2-ES.rcp85.mon.ocean.Omon.r1i1p1.uo.20111014.aggregation.1
 nco1124. ncra fix ncra --wgt_nm to work (i.e., correctly normalize) with missing values
-nco1125. 
+nco1125. ncpdq add option for user-specified scale_factor/add_offset
+nco1126. ncra segfault with MSA christine smit regardless of presence of scale_factor, add_offset. appears that ncra does not play well with MSA on record dimension. leads to free() error.
+      ncra -O -d time,1,1 -d time,3,3 ~/christine.nc ~/foo.nc # borken
+      ncra -O -C -v one_dmn_rec_var -d time,0,0 -d time,2,2 ~/nco/data/in.nc ~/foo.nc # borken
+      ncra -O -C -v one_dmn_rec_var -d time,0,0 -d time,1,1 ~/nco/data/in.nc ~/foo.nc # works
+nco1127. nco: replicate nco_var_dpl() method of deep-copying NC_STRING in nco_var_avg() so nco_var_free() can correctly free() var_sct for NC_STRING
+nco1128. nco: ncrename --lowercase --uppercase options? MERRA2 merra
+       ncrename -v all,lowercase in.nc out.nc
+       ncrename --lowercase --var .ONE,.TWO,... in.nc out.nc
+nco1129. ncks allow --mk_rec_dmn to change multiple dimensions at one time
+       ncks -O --mk_rec_dmn lat,lon ~/nco/data/in_grp.nc ~/foo.nc
+nco1130. ncatted support for '.' (dot) in names (reported by emontgomery 20160726 finished 20160729)
+       ncatted treats dot.name as rx then fails to find match
+       ncatted -O -a dot.name,global,o,c,value ~/nco/data/in.nc ~/foo.nc
+nco1131. nco: ncra --cb wrong unless single record per input file (see note tagged 20160824 in ncra.c)
+       ncks -O -v three_dmn_var_dbl ~/nco/data/in.nc ~/foo.nc
+       ncra -O --cb -d time,3,6 -v three_dmn_var_dbl ~/foo.nc ~/foo2.nc
+       ncks --cdl -v climatology_bounds ~/foo2.nc
+       climatology_bounds are [0.5,1.5] but should be [2.5,6.5]
+nco1132. nco: ncclimo fails when input files have different variable orders. Allow user to suppress cb, or make ncra.c re-read cb IDs each file (Guido 20161101)
+nco1133. ncks CDL-mode do UDUnits time conversions to ISO (added 20161116, finished 20170315)
+	 ncks -H -v tm_.? ~/nco/data/in.nc
+	 ncdump -t ~/nco/data/in.nc | grep tm_
+nco1134. MSA: wrapped limit with an additional limit pvn20160211 -- bug found that happens in nco 4.2.0 also
+	 ncks -O -C --msa -g g19 -v time -d time,9,0 -d time,1,2 ~/nco/data/in_grp_3.nc ~/foo.nc
+nco1135. USE_NC4_SRD_WORKAROUND is broken: (added 20170201, finished/fixed 20170207)
+	 ncks -v zg -H -C -d time,0,1 -d lev,0,2,2 ~/nco/data/in.nc # works
+      	 ncks -v zg -H -C -d time,0,1 -d lev,0,2,2 ~/nco/data/in_4c.nc # borken
+nco1136. ncra valid_range, unpacked_valid_range, actual_range problem antonio rodriges https://sourceforge.net/p/nco/discussion/9830/thread/07f71305 (only valid_range is netCDF standard convention). One "solution" is to unpack valid_range attribute[s] using scale_factor, add_offset from first file. # added 20170407
+nco1137. ncwa chunking fails with --rdd reported by Joy 20170605
+	 https://sourceforge.net/p/nco/discussion/9829/thread/663d5468/
+	 Due to incorrect contents of dmn_cmn on entry to nco_cnk_sz_set_trv() pedro?
+	 mv 1.clim.tile.nc4 ~/cnk_bug.nc4
+	 ncwa -D 7 -O --rdd -a lat,lon ~/cnk_bug.nc4 ~/foo.nc # borken
+	 ncwa -D 7 -O -a lat,lon ~/cnk_bug.nc4 ~/foo.nc # works
+nco1138. ncwa masking broken reported 20170602 by Tony Leboissetier pedro?
+	 https://sourceforge.net/p/nco/discussion/9830/thread/f1cb00d7/?limit=25#7622
+	 ncwa -O -C -y ttl -v orog -d lat,0.,90. --mask_condition 'ORO > 0.0' ~/nco/data/in.nc ~/foo.nc # borken
+	 ncks -H -v orog ~/foo.nc # Correct answer is 4 not 1
+nco1139. 	 
 qrk
 ************************************************************************
 End ncoXXX TODOs
@@ -746,33 +779,33 @@ Begin valgrind section
 ************************************************************************
 Valgrind: Archive of valgrind tests which are memory-error and leak-free
 vg1. ncap
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncap -O -S ${HOME}/nco/data/ncap.in -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncap -O -S ${HOME}/nco/data/ncap.in -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
      ncap2
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncap2 -O -D 1 -S ~/nco/data/ncap2_tst.nco ~/nco/data/in.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncap2 -O -D 1 -S ~/nco/data/ncap2_tst.nco ~/nco/data/in.nc ~/foo.nc > ~/foo 2>&1
 vg2. ncbo
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncbo -t 2 -O -C -d lon,1 -p ${HOME}/nco/data -l /tmp in.nc in.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncbo -t 2 -O -C -d lon,1 -p ${HOME}/nco/data -l /tmp in.nc in.nc ~/foo.nc > ~/foo 2>&1
 vg3. nces
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck nces -t 2 -O -C -D 3 -d lon,1 -n 3,4,1 -v one -p ${HOME}/nco/data -l ${HOME}/nco/data h0001.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck nces -t 2 -O -C -D 3 -d lon,1 -n 3,4,1 -v one -p ${HOME}/nco/data -l ${HOME}/nco/data h0001.nc ~/foo.nc > ~/foo 2>&1
 vg4. ncecat
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncecat -t 2 -O -C -D 3 -d lon,1 -n 3,4,1 -p ${HOME}/nco/data -l ${HOME}/nco/data h0001.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncecat -t 2 -O -C -D 3 -d lon,1 -n 3,4,1 -p ${HOME}/nco/data -l ${HOME}/nco/data h0001.nc ~/foo.nc > ~/foo 2>&1
 vg5. ncflint
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncflint -t 2 -O -C -d lon,1 -p ${HOME}/nco/data -l /tmp in.nc in.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncflint -t 2 -O -C -d lon,1 -p ${HOME}/nco/data -l /tmp in.nc in.nc ~/foo.nc > ~/foo 2>&1
 vg6. ncks
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncks -O -C -d lat,1,1 -d lev,2,2 -d lon,0,3 -d lon,1,3 -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncks -O -C -d lat,1,1 -d lev,2,2 -d lon,0,3 -d lon,1,3 -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
 vg7. ncpdq (re-order)
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncpdq -t 2 -O -D 3 -a lat,lev,lon -v three_dmn_var ~/nco/data/in.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncpdq -t 2 -O -D 3 -a lat,lev,lon -v three_dmn_var ~/nco/data/in.nc ~/foo.nc > ~/foo 2>&1
 vg8. ncpdq (pack)
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncpdq -t 2 -O -D 3 -P all_new -v three_dmn_var ~/nco/data/in.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncpdq -t 2 -O -D 3 -P all_new -v three_dmn_var ~/nco/data/in.nc ~/foo.nc > ~/foo 2>&1
 vg9. ncra
-   valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncra -t 2 -O -C -D 3 -d lon,1 -n 3,4,1 -v one_dmn_rec_var_sng -p ${HOME}/nco/data -l ${HOME}/nco/data h0001.nc ~/foo.nc > ~/foo 2>&1
+   valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncra -t 2 -O -C -D 3 -d lon,1 -n 3,4,1 -v one_dmn_rec_var_sng -p ${HOME}/nco/data -l ${HOME}/nco/data h0001.nc ~/foo.nc > ~/foo 2>&1
 vg10. ncrcat
-    valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncrcat -t 2 -O -C -D 3 -d lon,1 -n 3,4,1 -v one_dmn_rec_var_sng -p ${HOME}/nco/data -l ${HOME}/nco/data h0001.nc ~/foo.nc > ~/foo 2>&1
+    valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncrcat -t 2 -O -C -D 3 -d lon,1 -n 3,4,1 -v one_dmn_rec_var_sng -p ${HOME}/nco/data -l ${HOME}/nco/data h0001.nc ~/foo.nc > ~/foo 2>&1
 vg11. ncrename
-    valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncrename -O -D 3 -d lon,new_lon -v scalar_var,new_scalar_var -a long_name,new_long_name -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+    valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncrename -O -D 3 -d lon,new_lon -v scalar_var,new_scalar_var -a long_name,new_long_name -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
 vg12. ncwa
-    valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncwa -D 3 -t 2 -O -C -a lat,lon,time -w gw -m gw -v PS -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+    valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck ncwa -D 3 -t 2 -O -C -a lat,lon,time -w gw -m gw -v PS -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
     callgrind ncwa -D 3 -t 2 -O -C -w gw -m gw -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
-    valgrind --suppressions=${HOME}/nco/doc/valgrind.txt --tool=callgrind ncwa -D 3 -t 2 -O -C -a lat,lon,time -w gw -m gw -v PS -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
+    valgrind --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=callgrind ncwa -D 3 -t 2 -O -C -a lat,lon,time -w gw -m gw -v PS -p ${HOME}/nco/data -l /tmp in.nc ~/foo.nc > ~/foo 2>&1
     kcachegrind ncwa &
 ************************************************************************
 End valgrind section
@@ -793,7 +826,7 @@ Status 20050920:
    sand: Ubuntu, dual x86_64, LAM-MPI, gcc-4.0
 
 0. MPI with valgrind example
-   mpirun -np 3 /usr/bin/valgrind --leak-check=yes --show-reachable=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck mpirun -np 3 ${MY_BIN_DIR}/mpncbo -O -D 3 -p ${HOME}/nco/data in.nc in.nc ~/foo.nc > ~/foo 2>&1
+   mpirun -np 3 /usr/bin/valgrind --leak-check=yes --show-reachable=yes --track-origins=yes --suppressions=${HOME}/nco/doc/valgrind.txt --tool=memcheck mpirun -np 3 ${MY_BIN_DIR}/mpncbo -O -D 3 -p ${HOME}/nco/data in.nc in.nc ~/foo.nc > ~/foo 2>&1
 1. mpncbo
    mpirun -np 3 ${MY_BIN_DIR}/mpncbo -O -D 3 -p ${HOME}/nco/data in.nc in.nc ~/foo.nc > ~/foo 2>&1
 2. mpnces

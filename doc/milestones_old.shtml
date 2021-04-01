@@ -9,7 +9,7 @@ file:///home/zender/nco/doc/milestones_old.shtml
 
 Usage:
 /usr/bin/scp ~/nco/doc/milestones_old.shtml zender,nco@web.sf.net:/home/project-web/nco/htdocs
-scp -p ~/nco/doc/milestones_old.shtml dust.ess.uci.edu:/var/www/html/nco
+scp -p ~/nco/doc/milestones_old.shtml dust.ess.uci.edu:Sites/nco
 -->
 
 <!doctype html public "-//W3C//DTD HTML 3.2//EN">
@@ -23,11 +23,69 @@ scp -p ~/nco/doc/milestones_old.shtml dust.ess.uci.edu:/var/www/html/nco
 <body bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink="#008080" alink="#FF0000">
 
 <dt><a name="News"></a></dt>
-<h2>Releases &amp; Milestones from 2003&ndash;2012 (versions 2.8.4&ndash;4.2.3)</h2>
+<h2>Releases &amp; Milestones from 2003&ndash;2017 (versions 2.8.4&ndash;4.7.1)</h2>
 
 <ul>
-<li>2012 Dec&nbsp;05: NCO <a href="http://dust.ess.uci.edu/smn/smn_nco_agu_201212.pdf">Talk</a> at Fall AGU, San Francisco, California</li>
-<li>2012 Nov&nbsp;28: NCO <a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201211.pdf">Poster</a> at NASA ESDSWG, Annapolis, Maryland</li>
+
+<li>2017 Dec&nbsp;21: 4.7.1 Conda Windows port
+<li>2017 Nov&nbsp;08: 4.7.0 Sundry features/fixes
+<li>2017 Sep&nbsp;18: 4.6.9 CDF5, CMake
+<li>2017 Aug&nbsp;16: 4.6.8 Sundry features/fixes
+<li>2017 May&nbsp;26: 4.6.7 Sub-gridscale regridding
+<li>2017 Apr&nbsp;21: 4.6.6 UGRID
+<li>2017 Mar&nbsp;15: 4.6.5 Sundry features/fixes
+<li>2017 Feb&nbsp;07: 4.6.4 <tt>ncclimo</tt> splitter
+<li>2017 Jan&nbsp;27: <i>Geosci. Model Dev.</i> publishes compression-error trade-off <a href="http://www.geosci-model-dev.net/10/413/2017">paper</a></li>
+<li>2016 Dec&nbsp;23: 4.6.3 Sundry features/fixes
+<li>2016 Nov&nbsp;16: 4.6.2 JSON
+<li>2016 Sep&nbsp;19: <i>Geosci. Model Dev.</i> publishes PPC <a href="http://www.geosci-model-dev.net/9/3199/2016">paper</a></li>
+<li>2016 Aug&nbsp;06: 4.6.1 Sundry features/fixes
+<li>2016 Jul&nbsp;06: Submitted compression-error trade-off <a href="http://www.geosci-model-dev-discuss.net/gmd-2016-177">manuscript</a> to <i>Geosci. Model Dev.</i></li>
+<li>2016 May&nbsp;12: 4.6.0 <tt>ncclimo</tt>
+<li>2016 Apr&nbsp;06: <a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201604.pdf">Poster</a> at NASA ESDSWG, Greenbelt</li>
+<li>2016 Apr&nbsp;05: <a href="http://dust.ess.uci.edu/smn/smn_nco_gsfc_201604.pdf">Talk</a> at NASA GES DISC, Greenbelt</li>
+<li>2016 Mar&nbsp;22: Submitted PPC manuscript to <i>Geosci. Model Dev.</i></li>
+<li>2016 Feb&nbsp;17: 4.5.5 Sundry features/fixes
+<li>2016 Jan&nbsp;07: 4.5.4 <tt>ncremap</tt>
+<li>2015 Dec&nbsp;16: <a href="http://dust.ess.uci.edu/smn/pst_nco_agu_201512.pdf">Poster</a> at Fall AGU, San Francisco</li>
+<li>2015 Nov&nbsp;04: <a href="http://dust.ess.uci.edu/smn/smn_nco_acme_201511.pdf">Talk</a> at DOE ACME, Albuquerque</li>
+<li>2015 Oct&nbsp;20: 4.5.3 Curvilinear
+<li>2015 Sep&nbsp;06: 4.5.2 Generate SCRIP
+<li>2015 Sep&nbsp;01: NSF EarthCube <a href="#prp_e3">project</a> commences</li>
+<li>2015 Jul&nbsp;10: 4.5.1 Sundry features/fixes
+<li>2015 Jun&nbsp;11: 4.5.0 Regridding
+<li>2015 May&nbsp;21: 4.4.9 <tt>ncra</tt> weights
+<li>2015 Feb&nbsp;16: 4.4.8 Precision-Preserving Compression
+<li>2014 Dec&nbsp;15: DOE ACME <a href="#prp_acme">project</a> commences</li>
+<li>2014 Nov&nbsp;26: 4.4.7 Chunking features
+<li>2014 Oct&nbsp;01: 4.4.6 <tt>ncra, ncwa</tt> packing bugfixes, stride optimization
+<li>2014 Aug&nbsp;26: 4.4.5 Sundry features/fixes
+<li>2014 Jul&nbsp;01: NASA ACCESS 2013 <a href="#prp_axs">project</a> commences</li>
+<li>2014 May&nbsp;29: 4.4.4 (Stability)
+<li>2014 Apr&nbsp;02: 4.4.3 (Stability)
+<li>2014 Mar&nbsp;27: <a href="http://dust.ess.uci.edu/smn/smn_nco_gsfc_201403.pdf">Talk</a> at NASA GSFC, Greenbelt</li>
+<li>2014 Mar&nbsp;25: <a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201403.pdf">Poster</a> at NASA GES DISC, Greenbelt</li>
+<li>2014 Feb&nbsp;20: 4.4.2 (Stability)
+<li>2014 Jan&nbsp;29: 4.4.1 (Stability)
+<li>2014 Jan&nbsp;09: 4.4.0 (Stability)
+<li>2013 Dec&nbsp;13: <a href="http://dust.ess.uci.edu/smn/smn_nco_agu_201312.pdf">Talk</a> at Fall AGU, San Francisco</li>
+<li>2013 Dec&nbsp;02: 4.3.9 (new operator, <tt>nces</tt>)
+<li>2013 Nov&nbsp;06: 4.3.8 (<tt>ncatted</tt> groups)
+<li>2013 Oct&nbsp;17: 4.3.7 (HDF4, XML, <tt>ncrename</tt> groups)
+<li>2013 Oct&nbsp;02: <a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201310.pdf">Poster</a> at NASA ESDSWG, Greenbelt</li>
+<li>2013 Sep&nbsp;27: 4.3.6 (<tt>--dbl</tt> default, <tt>ncdismember</tt>)
+<li>2013 Sep&nbsp;20: 4.3.5 (<tt>nces</tt>, <tt>ncra</tt>, <tt>ncrcat</tt> groups)
+<li>2013 Aug&nbsp;01: 4.3.4 (<tt>ncpdq</tt> bugfix, HDF unpacking)
+<li>2013 Jul&nbsp;24: 4.3.3 (<tt>ncrename</tt>, <tt>ncwa</tt> groups, CDL, XML)
+<li>2013 Jul&nbsp;05: 4.3.2 (<tt>ncflint</tt>, <tt>ncpdq</tt> groups)</li>
+<li>2013 Jun&nbsp;03: Submitted NASA ACCESS 2013 <a href="http://dust.ess.uci.edu/prp/prp_axs/prp_axs.pdf">proposal</a></li>
+<li>2013 May&nbsp;01: 4.3.1 (Group broadcasting)</li>
+<li>2013 Mar&nbsp;28: 4.3.0 (<tt>ncbo</tt> groups)</li>
+<li>2013 Mar&nbsp;19: 4.2.6</li>
+<li>2013 Jan&nbsp;28: 4.2.5</li>
+<li>2013 Jan&nbsp;21: 4.2.4</li>
+<li>2012 Dec&nbsp;05: NCO <a href="http://dust.ess.uci.edu/smn/smn_nco_agu_201212.pdf">Talk</a> at Fall AGU, San Francisco</li>
+<li>2012 Nov&nbsp;28: NCO <a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201211.pdf">Poster</a> at NASA ESDSWG, Annapolis</li>
 <li>2012 Nov&nbsp;13: NCO 4.2.3 (GPE)</li>
 <li>2012 Oct&nbsp;29: NCO 4.2.2 (<tt>ncks, ncecat</tt> Groups)</li>
 <li>2012 Aug&nbsp;02: NCO 4.2.1 (RAM disks)</li>
@@ -56,7 +114,7 @@ scp -p ~/nco/doc/milestones_old.shtml dust.ess.uci.edu:/var/www/html/nco
 <li>2008 May&nbsp;11: NCO 3.9.5</li>
 <li>2008 Apr&nbsp;28: NCO <a href="http://dust.ess.uci.edu/ppr/ppr_Zen08.pdf">overview</a> paper in EMS</li>
 <li>2008 Mar&nbsp;04: NCO 3.9.4</li>
-<li>2007 Dec&nbsp;10: SWAMP <a href="http://dust.ess.uci.edu/ppr/pst_WZJ074.pdf">Poster</a> at Fall AGU, San Francisco, California</li>
+<li>2007 Dec&nbsp;10: SWAMP <a href="http://dust.ess.uci.edu/ppr/pst_WZJ074.pdf">Poster</a> at Fall AGU, San Francisco</li>
 <li>2007 Dec&nbsp;07: NCO 3.9.3 (SWAMP!)</li>
 <li>2007 Dec&nbsp;04: NCO <a href="http://dust.ess.uci.edu/ppr/ppr_ZeM07.pdf">scaling paper</a> in IJHPCA</li>
 <li>2007 Aug&nbsp;29: NCO 3.9.2 (<tt>_FillValue</tt>s)</li>
@@ -67,10 +125,10 @@ scp -p ~/nco/doc/milestones_old.shtml dust.ess.uci.edu:/var/www/html/nco
 <li>2007 Apr&nbsp;20: NCO 3.2.0</li>
 <li>2007 Mar&nbsp;29: NCO 3.1.9 x86_64 RPMs</li>
 <li>2007 Mar&nbsp;10: NCO 3.1.9 (i386/x86_64 debs and i386 RPMs)</li>
-<li>2007 Feb&nbsp;22: SWAMP <a href="http://dust.ess.uci.edu/smn/smn_WZJ07_opendap_200702.pdf">Talk</a> at OPeNDAP Developer's Workshop, Boulder, Colorado</li>
+<li>2007 Feb&nbsp;22: SWAMP <a href="http://dust.ess.uci.edu/smn/smn_WZJ07_opendap_200702.pdf">Talk</a> at OPeNDAP Developer's Workshop, Boulder</li>
 <li>2007 Jan&nbsp;15: <a href="http://dust.ess.uci.edu/smn/smn_nco_ams_200701.pdf">Talk</a> and <a href="http://dust.ess.uci.edu/ppr/abs_xtn_ZeW07.pdf">Extended Abstract</a> on NCO Scaling at AMS IIPS, San Antonio, Texas</li>
-<li>2007 Jan&nbsp;09: <a href="http://dust.ess.uci.edu/ppr/pst_ZMW06.pdf">Poster</a> on NCO Scaling at Fall AGU, San Francisco, California</li>
-<li>2006 Dec&nbsp;09: <a href="http://dust.ess.uci.edu/ppr/pst_WZJ06.pdf">Poster</a> on SWAMP at Fall AGU, San Francisco, California</li>
+<li>2007 Jan&nbsp;09: <a href="http://dust.ess.uci.edu/ppr/pst_ZMW06.pdf">Poster</a> on NCO Scaling at Fall AGU, San Francisco</li>
+<li>2006 Dec&nbsp;09: <a href="http://dust.ess.uci.edu/ppr/pst_WZJ06.pdf">Poster</a> on SWAMP at Fall AGU, San Francisco</li>
 <li>2006 Dec&nbsp;06: NCO 3.1.8</li>
 <li>2006 Nov&nbsp;11: NCO 3.1.7</li>
 <li>2006 Sep&nbsp;18: NCO 3.1.6</li>

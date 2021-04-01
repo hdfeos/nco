@@ -5,20 +5,19 @@
 /* Purpose: Compute averages of specified hyperslabs of specfied variables
    in a single input netCDF file and output them to a single file. */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3.
-   As a special exception to the terms of the GPL, you are permitted 
-   to link the NCO source code with the HDF, netCDF, OPeNDAP, and UDUnits
+   3-Clause BSD License.
+   You are permitted to link NCO with the HDF, netCDF, OPeNDAP, and UDUnits
    libraries and to distribute the resulting executables under the terms 
-   of the GPL, but in addition obeying the extra stipulations of the 
+   of the BSD, but in addition obeying the extra stipulations of the 
    HDF, netCDF, OPeNDAP, and UDUnits licenses.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-   See the GNU General Public License for more details.
+   See the 3-Clause BSD License for more details.
    
    The original author of this software, Charlie Zender, seeks to improve
    it with your suggestions, contributions, bug-reports, and patches.
@@ -66,7 +65,9 @@
 /* Personal headers */
 /* #define MAIN_PROGRAM_FILE MUST precede #include libnco.h */
 #define MAIN_PROGRAM_FILE
-#include "ncap.h" /* netCDF arithmetic processor-specific definitions (symbol table, ...) */
+#ifdef HAVE_BISON_FLEX
+  # include "ncap_utl.h" /* netCDF arithmetic processor-specific definitions (symbol table, ...) */
+#endif /* !HAVE_BISON_FLEX */
 #include "libnco.h" /* netCDF Operator (NCO) library */
 
 /* Global variables (keep consistent with global variables declared in ncap.c) */ 
@@ -101,7 +102,7 @@ main(int argc,char **argv)
 
   const char * const CVS_Id="$Id$"; 
   const char * const CVS_Revision="$Revision$";
-  const char * const opt_sht_lst="3467Aa:B:bCcD:d:FhIL:l:M:m:nNOo:p:rRST:t:v:Ww:xy:-:";
+  const char * const opt_sht_lst="34567Aa:B:bCcD:d:FhIL:l:M:m:nNOo:p:rRST:t:v:Ww:xy:-:";
   
   cnk_dmn_sct **cnk_dmn=NULL_CEWI;
   
@@ -144,6 +145,7 @@ main(int argc,char **argv)
   int idx_avg;
   int in_id;
   int lmt_nbr=0; /* Option d. NB: lmt_nbr gets incremented */
+  int log_lvl=0; /* [enm] netCDF library debugging verbosity [0..5] */
   int md_open; /* [enm] Mode flag for nc_open() call */
   int nbr_dmn_fl;
   int nbr_dmn_out=0;
@@ -164,7 +166,7 @@ main(int argc,char **argv)
   
   lmt_sct **lmt;
   
-  nco_bool CNV_CCM_CCSM_CF;
+  cnv_sct *cnv; /* [sct] Convention structure */
   nco_bool DO_CONFORM_MSK=False; /* Did nco_var_cnf_dmn() find truly conforming mask? */
   nco_bool DO_CONFORM_WGT=False; /* Did nco_var_cnf_dmn() find truly conforming weight? */
   nco_bool EXCLUDE_INPUT_LIST=False; /* Option c */
@@ -176,6 +178,7 @@ main(int argc,char **argv)
   nco_bool FORCE_OVERWRITE=False; /* Option O */
   nco_bool FORTRAN_IDX_CNV=False; /* Option F */
   nco_bool HISTORY_APPEND=True; /* Option h */
+  nco_bool HPSS_TRY=False; /* [flg] Search HPSS for unfound files */
   nco_bool MULTIPLY_BY_TALLY=False; /* Not currently implemented */
   nco_bool MUST_CONFORM=False; /* [flg] Must nco_var_cnf_dmn() find truly conforming variables? */
   nco_bool NORMALIZE_BY_TALLY=True; /* Not currently implemented */
@@ -183,10 +186,12 @@ main(int argc,char **argv)
   nco_bool NRM_BY_DNM=True; /* Option N Normalize by denominator */
   nco_bool RAM_CREATE=False; /* [flg] Create file in RAM */
   nco_bool RAM_OPEN=False; /* [flg] Open (netCDF3-only) file(s) in RAM */
+  nco_bool SHARE_CREATE=False; /* [flg] Create (netCDF3-only) file(s) with unbuffered I/O */
+  nco_bool SHARE_OPEN=False; /* [flg] Open (netCDF3-only) file(s) with unbuffered I/O */
   nco_bool RM_RMT_FL_PST_PRC=True; /* Option R */
   nco_bool WGT_MSK_CRD_VAR=True; /* [flg] Weight and/or mask coordinate variables */
   nco_bool WRT_TMP_FL=True; /* [flg] Write output to temporary file */
-  nco_bool flg_cln=False; /* [flg] Clean memory prior to exit */
+  nco_bool flg_mmr_cln=False; /* [flg] Clean memory prior to exit */
   nco_bool flg_ddra=False; /* [flg] DDRA diagnostics */
   nco_bool flg_opt_a=False; /* Option a */
   nco_bool flg_rdd=False; /* [flg] Retain degenerate dimensions */
@@ -198,6 +203,7 @@ main(int argc,char **argv)
   prs_sct prs_arg;  /* I/O [sct] Global information required in ncwa parser */
   
   size_t bfr_sz_hnt=NC_SIZEHINT_DEFAULT; /* [B] Buffer size hint */
+    size_t cnk_csh_byt=NCO_CNK_CSH_BYT_DFL; /* [B] Chunk cache size */
   size_t cnk_min_byt=NCO_CNK_SZ_MIN_BYT_DFL; /* [B] Minimize size of variable to chunk */
   size_t cnk_sz_byt=0UL; /* [B] Chunk size in bytes */
   size_t cnk_sz_scl=0UL; /* [nbr] Chunk size scalar */
@@ -234,7 +240,6 @@ main(int argc,char **argv)
   
   static struct option opt_lng[]={ /* Structure ordered by short option key if possible */
     /* Long options with no argument, no short option counterpart */
-    {"cln",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"clean",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"mmr_cln",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"drt",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
@@ -242,10 +247,15 @@ main(int argc,char **argv)
     {"mmr_drt",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
     {"ddra",no_argument,0,0}, /* [flg] DDRA diagnostics */
     {"mdl_cmp",no_argument,0,0}, /* [flg] DDRA diagnostics */
-    {"ram_all",no_argument,0,0}, /* [flg] Open (netCDF3) and create file(s) in RAM */
+    {"ram_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) in RAM */
     {"create_ram",no_argument,0,0}, /* [flg] Create file in RAM */
     {"open_ram",no_argument,0,0}, /* [flg] Open (netCDF3) file(s) in RAM */
-    {"diskless_all",no_argument,0,0}, /* [flg] Open (netCDF3) and create file(s) in RAM */
+    {"diskless_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) in RAM */
+    {"share_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
+    {"create_share",no_argument,0,0}, /* [flg] Create (netCDF3) file(s) with unbuffered I/O */
+    {"open_share",no_argument,0,0}, /* [flg] Open (netCDF3) file(s) with unbuffered I/O */
+    {"unbuffered_io",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
+    {"uio",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
     {"wrt_tmp_fl",no_argument,0,0}, /* [flg] Write output to temporary file */
     {"write_tmp_fl",no_argument,0,0}, /* [flg] Write output to temporary file */
     {"no_tmp_fl",no_argument,0,0}, /* [flg] Do not write output to temporary file */
@@ -272,11 +282,17 @@ main(int argc,char **argv)
     {"glb_att_add",required_argument,0,0}, /* [sng] Global attribute add */
     {"hdr_pad",required_argument,0,0},
     {"header_pad",required_argument,0,0},
+    {"log_lvl",required_argument,0,0}, /* [enm] netCDF library debugging verbosity [0..5] */
+    {"log_level",required_argument,0,0}, /* [enm] netCDF library debugging verbosity [0..5] */
     /* Long options with short counterparts */
     {"3",no_argument,0,'3'},
     {"4",no_argument,0,'4'},
-    {"64bit",no_argument,0,'4'},
     {"netcdf4",no_argument,0,'4'},
+    {"5",no_argument,0,'5'},
+    {"64bit_data",no_argument,0,'5'},
+    {"cdf5",no_argument,0,'5'},
+    {"pnetcdf",no_argument,0,'5'},
+    {"64bit_offset",no_argument,0,'6'},
     {"7",no_argument,0,'7'},
     {"average",required_argument,0,'a'},
     {"avg",required_argument,0,'a'},
@@ -285,10 +301,13 @@ main(int argc,char **argv)
     {"msk_cnd_sng",required_argument,0,'B'},
     {"retain-degenerate-dimensions",no_argument,0,'b'}, /* [flg] Retain degenerate dimensions */
     {"rdd",no_argument,0,'b'}, /* [flg] Retain degenerate dimensions */
-    {"no-coords",no_argument,0,'C'},
-    {"no-crd",no_argument,0,'C'},
+    {"xtr_ass_var",no_argument,0,'c'},
+    {"xcl_ass_var",no_argument,0,'C'},
+    {"no_coords",no_argument,0,'C'},
+    {"no_crd",no_argument,0,'C'},
     {"coords",no_argument,0,'c'},
     {"crd",no_argument,0,'c'},
+    {"dbg_lvl",required_argument,0,'D'},
     {"debug",required_argument,0,'D'},
     {"nco_dbg_lvl",required_argument,0,'D'},
     {"dimension",required_argument,0,'d'},
@@ -403,8 +422,8 @@ main(int argc,char **argv)
 	cnk_plc_sng=(char *)strdup(optarg);
 	cnk_plc=nco_cnk_plc_get(cnk_plc_sng);
       } /* endif cnk */
-      if(!strcmp(opt_crr,"cln") || !strcmp(opt_crr,"mmr_cln") || !strcmp(opt_crr,"clean")) flg_cln=True; /* [flg] Clean memory prior to exit */
-      if(!strcmp(opt_crr,"drt") || !strcmp(opt_crr,"mmr_drt") || !strcmp(opt_crr,"dirty")) flg_cln=False; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"mmr_cln") || !strcmp(opt_crr,"clean")) flg_mmr_cln=True; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"drt") || !strcmp(opt_crr,"mmr_drt") || !strcmp(opt_crr,"dirty")) flg_mmr_cln=False; /* [flg] Clean memory prior to exit */
       if(!strcmp(opt_crr,"ddra") || !strcmp(opt_crr,"mdl_cmp")) ddra_info.flg_ddra=flg_ddra=True; /* [flg] DDRA diagnostics */
       if(!strcmp(opt_crr,"fl_fmt") || !strcmp(opt_crr,"file_format")) rcd=nco_create_mode_prs(optarg,&fl_out_fmt);
       if(!strcmp(opt_crr,"gaa") || !strcmp(opt_crr,"glb_att_add")){
@@ -415,8 +434,15 @@ main(int argc,char **argv)
         hdr_pad=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
       } /* endif "hdr_pad" */
-      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"create_ram") || !strcmp(opt_crr,"diskless_all")) RAM_CREATE=True; /* [flg] Open (netCDF3) file(s) in RAM */
-      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"open_ram") || !strcmp(opt_crr,"diskless_all")) RAM_OPEN=True; /* [flg] Create file in RAM */
+      if(!strcmp(opt_crr,"log_lvl") || !strcmp(opt_crr,"log_level")){
+	log_lvl=(int)strtol(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+	if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtol",sng_cnv_rcd);
+	nc_set_log_level(log_lvl);
+      } /* !log_lvl */
+      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"create_ram") || !strcmp(opt_crr,"diskless_all")) RAM_CREATE=True; /* [flg] Create (netCDF3) file(s) in RAM */
+      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"open_ram") || !strcmp(opt_crr,"diskless_all")) RAM_OPEN=True; /* [flg] Open (netCDF3) file(s) in RAM */
+      if(!strcmp(opt_crr,"share_all") || !strcmp(opt_crr,"unbuffered_io") || !strcmp(opt_crr,"uio") || !strcmp(opt_crr,"create_share")) SHARE_CREATE=True; /* [flg] Create (netCDF3) file(s) with unbuffered I/O */
+      if(!strcmp(opt_crr,"share_all") || !strcmp(opt_crr,"unbuffered_io") || !strcmp(opt_crr,"uio") || !strcmp(opt_crr,"open_share")) SHARE_OPEN=True; /* [flg] Open (netCDF3) file(s) with unbuffered I/O */
       if(!strcmp(opt_crr,"vrs") || !strcmp(opt_crr,"version")){
 	(void)nco_vrs_prn(CVS_Id,CVS_Revision);
 	nco_exit(EXIT_SUCCESS);
@@ -431,8 +457,11 @@ main(int argc,char **argv)
     case '3': /* Request netCDF3 output storage format */
       fl_out_fmt=NC_FORMAT_CLASSIC;
       break;
-    case '4': /* Catch-all to prescribe output storage format */
-      if(!strcmp(opt_crr,"64bit")) fl_out_fmt=NC_FORMAT_64BIT; else fl_out_fmt=NC_FORMAT_NETCDF4; 
+    case '4': /* Request netCDF4 output storage format */
+      fl_out_fmt=NC_FORMAT_NETCDF4; 
+      break;
+    case '5': /* Request netCDF3 64-bit offset+data storage (i.e., pnetCDF) format */
+      fl_out_fmt=NC_FORMAT_CDF5;
       break;
     case '6': /* Request netCDF3 64-bit offset output storage format */
       fl_out_fmt=NC_FORMAT_64BIT;
@@ -468,7 +497,6 @@ main(int argc,char **argv)
     case 'D': /* Debugging level. Default is 0. */
       nco_dbg_lvl=(unsigned short int)strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
       if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
-      nc_set_log_level(nco_dbg_lvl);
       break;
     case 'd': /* Copy limit argument for later processing */
       lmt_arg[lmt_nbr]=(char *)strdup(optarg);
@@ -608,8 +636,8 @@ main(int argc,char **argv)
   /* Ensure we do not attempt to normalize by non-existent weight */
   if(wgt_nm == NULL) NORMALIZE_BY_WEIGHT=False;
   
-  /* Process positional arguments and fill in filenames */
-  fl_lst_in=nco_fl_lst_mk(argv,argc,optind,&fl_nbr,&fl_out,&FL_LST_IN_FROM_STDIN);
+  /* Process positional arguments and fill-in filenames */
+  fl_lst_in=nco_fl_lst_mk(argv,argc,optind,&fl_nbr,&fl_out,&FL_LST_IN_FROM_STDIN,FORCE_OVERWRITE);
   
   /* Make uniform list of user-specified chunksizes */
   if(cnk_nbr > 0) cnk_dmn=nco_cnk_prs(cnk_nbr,cnk_arg);
@@ -624,9 +652,10 @@ main(int argc,char **argv)
   /* Parse filename */
   fl_in=nco_fl_nm_prs(fl_in,0,&fl_nbr,fl_lst_in,abb_arg_nbr,fl_lst_abb,fl_pth);
   /* Make sure file is on local system and is readable or die trying */
-  fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,&FL_RTR_RMT_LCN);
+  fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,HPSS_TRY,&FL_RTR_RMT_LCN);
   /* Open file using appropriate buffer size hints and verbosity */
   if(RAM_OPEN) md_open=NC_NOWRITE|NC_DISKLESS; else md_open=NC_NOWRITE;
+  if(SHARE_OPEN) md_open=md_open|NC_SHARE;
   rcd+=nco_fl_open(fl_in,md_open,&bfr_sz_hnt,&in_id);
   
   /* Get number of variables, dimensions, and record dimension ID of input file */
@@ -639,14 +668,14 @@ main(int argc,char **argv)
   /* Change included variables to excluded variables */
   if(EXCLUDE_INPUT_LIST) xtr_lst=nco_var_lst_xcl(in_id,nbr_var_fl,xtr_lst,&xtr_nbr);
   
-  /* Is this a CCM/CCSM/CF-format history tape? */
-  CNV_CCM_CCSM_CF=nco_cnv_ccm_ccsm_cf_inq(in_id);
+  /* Determine conventions (ARM/CCM/CCSM/CF/MPAS) for treating file */
+  cnv=nco_cnv_ini(in_id);
   
   /* Add all coordinate variables to extraction list */
-  if(EXTRACT_ALL_COORDINATES) xtr_lst=nco_var_lst_crd_add(in_id,nbr_dmn_fl,nbr_var_fl,xtr_lst,&xtr_nbr,CNV_CCM_CCSM_CF);
+  if(EXTRACT_ALL_COORDINATES) xtr_lst=nco_var_lst_crd_add(in_id,nbr_dmn_fl,nbr_var_fl,xtr_lst,&xtr_nbr,cnv);
   
   /* Extract coordinates associated with extracted variables */
-  if(EXTRACT_ASSOCIATED_COORDINATES) xtr_lst=nco_var_lst_crd_ass_add(in_id,xtr_lst,&xtr_nbr,CNV_CCM_CCSM_CF);
+  if(EXTRACT_ASSOCIATED_COORDINATES) xtr_lst=nco_var_lst_crd_ass_add(in_id,xtr_lst,&xtr_nbr,cnv);
   
   /* Sort extraction list by variable ID for fastest I/O */
   if(xtr_nbr > 1) xtr_lst=nco_lst_srt_nm_id(xtr_lst,xtr_nbr,False);
@@ -760,7 +789,7 @@ main(int argc,char **argv)
   xtr_lst=nco_nm_id_lst_free(xtr_lst,xtr_nbr);
   
   /* Divide variable lists into lists of fixed variables and variables to be processed */
-  (void)nco_var_lst_dvd(var,var_out,xtr_nbr,CNV_CCM_CCSM_CF,True,nco_pck_plc_nil,nco_pck_map_nil,dmn_avg,dmn_avg_nbr,&var_fix,&var_fix_out,&nbr_var_fix,&var_prc,&var_prc_out,&nbr_var_prc);
+  (void)nco_var_lst_dvd(var,var_out,xtr_nbr,cnv,True,nco_pck_plc_nil,nco_pck_map_nil,dmn_avg,dmn_avg_nbr,&var_fix,&var_fix_out,&nbr_var_fix,&var_prc,&var_prc_out,&nbr_var_prc);
   
   /* We now have final list of variables to extract. Phew. */
   if(nco_dbg_lvl >= nco_dbg_var){
@@ -779,7 +808,7 @@ main(int argc,char **argv)
     (void)nco_fl_fmt_vet(fl_out_fmt,cnk_nbr,dfl_lvl);
     
     /* Open output file */
-    fl_out_tmp=nco_fl_out_open(fl_out,FORCE_APPEND,FORCE_OVERWRITE,fl_out_fmt,&bfr_sz_hnt,RAM_CREATE,RAM_OPEN,WRT_TMP_FL,&out_id);
+    fl_out_tmp=nco_fl_out_open(fl_out,&FORCE_APPEND,FORCE_OVERWRITE,fl_out_fmt,&bfr_sz_hnt,RAM_CREATE,RAM_OPEN,SHARE_CREATE,SHARE_OPEN,WRT_TMP_FL,&out_id);
     if(nco_dbg_lvl >= nco_dbg_sbr) (void)fprintf(stderr,"Input, output file IDs = %d, %d\n",in_id,out_id);
     
     /* Copy all global attributes */
@@ -791,7 +820,7 @@ main(int argc,char **argv)
     if(gaa_nbr > 0) (void)nco_glb_att_add(out_id,gaa_arg,gaa_nbr);
     if(HISTORY_APPEND) (void)nco_vrs_att_cat(out_id);
     
-    if(thr_nbr > 0 && HISTORY_APPEND) (void)nco_thr_att_cat(out_id,thr_nbr);
+    if(thr_nbr > 1 && HISTORY_APPEND) (void)nco_thr_att_cat(out_id,thr_nbr);
     
 #ifdef ENABLE_MPI
     /* Initialize MPI task information */
@@ -830,7 +859,7 @@ main(int argc,char **argv)
     /* Set chunksize parameters */
     if(fl_out_fmt == NC_FORMAT_NETCDF4 || fl_out_fmt == NC_FORMAT_NETCDF4_CLASSIC) (void)nco_cnk_sz_set(out_id,lmt_all_lst,nbr_dmn_fl,&cnk_map,&cnk_plc,cnk_sz_scl,cnk_dmn,cnk_nbr);
     
-    /* Turn off default filling behavior to enhance efficiency */
+    /* Turn-off default filling behavior to enhance efficiency */
     nco_set_fill(out_id,NC_NOFILL,&fll_md_old);
     
     /* Take output file out of define mode */
@@ -874,7 +903,7 @@ main(int argc,char **argv)
     if(fl_idx != 0) fl_in=nco_fl_nm_prs(fl_in,fl_idx,&fl_nbr,fl_lst_in,abb_arg_nbr,fl_lst_abb,fl_pth);
     if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stderr,"\nInput file %d is %s; ",fl_idx,fl_in);
     /* Make sure file is on local system and is readable or die trying */
-    if(fl_idx != 0) fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,&FL_RTR_RMT_LCN);
+    if(fl_idx != 0) fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,HPSS_TRY,&FL_RTR_RMT_LCN);
     if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stderr,"local file %s:\n",fl_in);
     
     /* Open file once per thread to improve caching */
@@ -1064,7 +1093,7 @@ main(int argc,char **argv)
 	    /* Reduce variable over specified dimensions (tally array is set here)
 	       NB: var_prc_out[idx] is new, so corresponding var_out[idx] is dangling */
 	    var_prc_out[idx]=nco_var_avg(var_prc_out[idx],dmn_avg,dmn_avg_nbr,nco_op_typ,flg_rdd,&ddra_info);
-	    /* var_prc_out[idx]->val now holds numerator of averaging expression documented in NCO User's Guide
+	    /* var_prc_out[idx]->val now holds numerator of averaging expression documented in NCO Users Guide
 	       Denominator is also tricky due to sundry normalization options
 	       These logical switches are VERY tricky---be careful modifying them */
 	    if(NRM_BY_DNM && DO_CONFORM_WGT && (!var_prc[idx]->is_crd_var || WGT_MSK_CRD_VAR)){
@@ -1221,7 +1250,7 @@ main(int argc,char **argv)
 	      /* Set chunksize parameters */
 	      if(fl_out_fmt == NC_FORMAT_NETCDF4 || fl_out_fmt == NC_FORMAT_NETCDF4_CLASSIC) (void)nco_cnk_sz_set(out_id,lmt_all_lst,nbr_dmn_fl,&cnk_map,&cnk_plc,cnk_sz_scl,cnk_dmn,cnk_nbr);
 	      
-	      /* Turn off default filling behavior to enhance efficiency */
+	      /* Turn-off default filling behavior to enhance efficiency */
 	      nco_set_fill(out_id,NC_NOFILL,&fll_md_old);
 #endif /* !ENABLE_MPI */
 	      
@@ -1297,7 +1326,7 @@ main(int argc,char **argv)
   } /* end loop over fl_idx */
   
   /* Clean memory unless dirty memory allowed */
-  if(flg_cln){
+  if(flg_mmr_cln){
     /* ncwa-specific memory */
     if(dmn_avg_nbr > 0) dmn_avg=(dmn_sct **)nco_free(dmn_avg);
     if(msk) msk=nco_var_free(msk);
@@ -1324,6 +1353,7 @@ main(int argc,char **argv)
     if(fl_lst_in && fl_lst_abb == NULL) fl_lst_in=nco_sng_lst_free(fl_lst_in,fl_nbr); 
     if(fl_lst_in && fl_lst_abb) fl_lst_in=nco_sng_lst_free(fl_lst_in,1);
     if(fl_lst_abb) fl_lst_abb=nco_sng_lst_free(fl_lst_abb,abb_arg_nbr);
+    if(gaa_nbr > 0) gaa_arg=nco_sng_lst_free(gaa_arg,gaa_nbr);
     if(var_lst_in_nbr > 0) var_lst_in=nco_sng_lst_free(var_lst_in,var_lst_in_nbr);
     /* Free limits */
     for(idx=0;idx<lmt_nbr;idx++) lmt_arg[idx]=(char *)nco_free(lmt_arg[idx]);
@@ -1342,7 +1372,7 @@ main(int argc,char **argv)
     var_prc=(var_sct **)nco_free(var_prc);
     var_fix=(var_sct **)nco_free(var_fix);
     var_out=(var_sct **)nco_free(var_out);
-  } /* !flg_cln */
+  } /* !flg_mmr_cln */
   
 #ifdef ENABLE_MPI
   MPI_Finalize();

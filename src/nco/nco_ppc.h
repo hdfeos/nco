@@ -2,10 +2,10 @@
 
 /* Purpose: Description (definition) of Precision-Preserving Compression (PPC) functions */
 
-/* Copyright (C) 2015--2015 Charlie Zender
+/* Copyright (C) 2015--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_ppc.h" *//* Precision-Preserving Compression */
@@ -15,6 +15,7 @@
 
 /* Standard header files */
 #include <ctype.h> /* isalnum(), isdigit(), tolower() */
+#include <math.h> /* sin cos cos sin 3.14159 */
 #include <stdio.h> /* stderr, FILE, NULL, printf */
 #include <stdlib.h> /* atof, atoi, malloc, getopt */
 #include <string.h> /* strcmp() */
@@ -26,6 +27,7 @@
 /* Personal headers */
 #include "nco.h" /* netCDF Operator (NCO) definitions */
 #include "nco_mmr.h" /* Memory management */
+#include "nco_mta.h" /* Multi-argument parsing */
 #include "nco_sng_utl.h" /* String utilities */
 
 /* Minimum number of explicit significand bits to preserve when zeroing/bit-masking floating point values

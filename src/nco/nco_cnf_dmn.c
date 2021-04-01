@@ -2,10 +2,10 @@
 
 /* Purpose: Conform dimensions between variables */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_cnf_dmn.h" /* Conform dimensions */
 
@@ -191,14 +191,14 @@ nco_var_cnf_dmn /* [fnc] Stretch second variable to match dimensions of first va
     char * restrict wgt_cp;
     char * restrict wgt_out_cp;
 
-    int idx_wgt_var[NC_MAX_DIMS];
+    int idx_wgt_var[NC_MAX_VAR_DIMS];
     int wgt_nbr_dim;
     int var_nbr_dmn_m1;
 
     long * restrict var_cnt;
-    long dmn_ss[NC_MAX_DIMS];
-    long dmn_var_map[NC_MAX_DIMS];
-    long dmn_wgt_map[NC_MAX_DIMS];
+    long dmn_ss[NC_MAX_VAR_DIMS];
+    long dmn_var_map[NC_MAX_VAR_DIMS];
+    long dmn_wgt_map[NC_MAX_VAR_DIMS];
     long var_lmn;
     long wgt_lmn;
     long var_sz;
@@ -460,12 +460,12 @@ nco_var_dmn_rdr_mtd /* [fnc] Change dimension ordering of variable metadata */
   dmn_sct **dmn_in=NULL; /* [sct] List of dimension structures in input order */
   dmn_sct **dmn_out; /* [sct] List of dimension structures in output order */
   
-  int dmn_idx_in_shr[NC_MAX_DIMS]; /* [idx] Dimension correspondence, input->share Purely diagnostic */
-  int dmn_idx_in_out[NC_MAX_DIMS]; /* [idx] Dimension correspondence, input->output */
-  int dmn_idx_in_rdr[NC_MAX_DIMS]; /* [idx] Dimension correspondence, input->re-order NB: Purely diagnostic */
-  int dmn_idx_shr_rdr[NC_MAX_DIMS]; /* [idx] Dimension correspondence, share->re-order */	  
-  int dmn_idx_shr_in[NC_MAX_DIMS]; /* [idx] Dimension correspondence, share->input */	  
-  int dmn_idx_shr_out[NC_MAX_DIMS]; /* [idx] Dimension correspondence, share->output */	  
+  int dmn_idx_in_shr[NC_MAX_VAR_DIMS]; /* [idx] Dimension correspondence, input->share Purely diagnostic */
+  int dmn_idx_in_out[NC_MAX_VAR_DIMS]; /* [idx] Dimension correspondence, input->output */
+  int dmn_idx_in_rdr[NC_MAX_VAR_DIMS]; /* [idx] Dimension correspondence, input->re-order NB: Purely diagnostic */
+  int dmn_idx_shr_rdr[NC_MAX_VAR_DIMS]; /* [idx] Dimension correspondence, share->re-order */	  
+  int dmn_idx_shr_in[NC_MAX_VAR_DIMS]; /* [idx] Dimension correspondence, share->input */	  
+  int dmn_idx_shr_out[NC_MAX_VAR_DIMS]; /* [idx] Dimension correspondence, share->output */	  
   int dmn_idx_rec_out=NCO_REC_DMN_UNDEFINED; /* [idx] Record dimension index in output variable */
   int dmn_shr_nbr=0; /* [nbr] Number of dimensions dmn_in and dmn_rdr share */
   int dmn_in_idx; /* [idx] Counting index for dmn_in */
@@ -505,16 +505,14 @@ nco_var_dmn_rdr_mtd /* [fnc] Change dimension ordering of variable metadata */
   
   /* On entry to this section of code, we assume:
      1. var_out duplicates var_in */
-  
+ 
   /* Create complete 1-to-1 ordered list of dimensions in new output variable */
   /* For each dimension in re-ordered dimension list... */
   for(dmn_rdr_idx=0;dmn_rdr_idx<dmn_rdr_nbr;dmn_rdr_idx++){
     /* ...see if re-order dimension exists in dmn_in dimension list... */
     for(dmn_in_idx=0;dmn_in_idx<dmn_in_nbr;dmn_in_idx++){
-      
-      /* ...must compare by dimension IDs ...dimensions can have same names  */
-      if(var_in->dim[dmn_in_idx]->id == dmn_rdr[dmn_rdr_idx]->id){
-	
+      /* ...by comparing names, not dimension IDs... */
+      if(!strcmp(var_in->dim[dmn_in_idx]->nm,dmn_rdr[dmn_rdr_idx]->nm)){
         dmn_idx_in_rdr[dmn_in_idx]=dmn_rdr_idx;
         dmn_idx_shr_rdr[dmn_shr_nbr]=dmn_rdr_idx;
         dmn_idx_shr_in[dmn_shr_nbr]=dmn_in_idx;
@@ -526,9 +524,8 @@ nco_var_dmn_rdr_mtd /* [fnc] Change dimension ordering of variable metadata */
   } /* end loop over dmn_rdr */
   
   /* Map permanent list of reversed dimensions to input variable */
-  for(dmn_shr_idx=0;dmn_shr_idx<dmn_shr_nbr;dmn_shr_idx++){
+  for(dmn_shr_idx=0;dmn_shr_idx<dmn_shr_nbr;dmn_shr_idx++)
     dmn_rvr_in[dmn_idx_shr_in[dmn_shr_idx]]=dmn_rvr_rdr[dmn_idx_shr_rdr[dmn_shr_idx]];
-  }
   
   /* No dimension re-ordering is necessary if dmn_in and dmn_rdr share fewer than two dimensions
      Dimension reversal must be done with even one shared dimension
@@ -569,9 +566,8 @@ nco_var_dmn_rdr_mtd /* [fnc] Change dimension ordering of variable metadata */
      Remember: dmn_in has dimension IDs relative to input file 
      Copy dmn_in->xrf to get dimension IDs relative to output file (once they are defined) 
      Oh come on, it only seems like cheating! */
-  for(dmn_out_idx=0;dmn_out_idx<dmn_out_nbr;dmn_out_idx++){
+  for(dmn_out_idx=0;dmn_out_idx<dmn_out_nbr;dmn_out_idx++)
     dmn_out[dmn_out_idx]=dmn_in[dmn_idx_out_in[dmn_out_idx]]->xrf;
-  }
   
   /* Re-ordered output dimension list dmn_out now comprises correctly ordered but 
      otherwise verbatim copies of dmn_out structures in calling routine */
@@ -672,9 +668,9 @@ nco_var_dmn_rdr_val /* [fnc] Change dimension ordering of variable values */
   int rcd=0; /* [rcd] Return code */
   int typ_sz; /* [B] Size of data element in memory */
   
-  long dmn_in_map[NC_MAX_DIMS]; /* [idx] Map for each dimension of input variable */
-  long dmn_out_map[NC_MAX_DIMS]; /* [idx] Map for each dimension of output variable */
-  long dmn_in_sbs[NC_MAX_DIMS]; /* [idx] Dimension subscripts into N-D input array */
+  long dmn_in_map[NC_MAX_VAR_DIMS]; /* [idx] Map for each dimension of input variable */
+  long dmn_out_map[NC_MAX_VAR_DIMS]; /* [idx] Map for each dimension of output variable */
+  long dmn_in_sbs[NC_MAX_VAR_DIMS]; /* [idx] Dimension subscripts into N-D input array */
   long var_in_lmn; /* [idx] Offset into 1-D input array */
   long var_out_lmn; /* [idx] Offset into 1-D output array */
   long *var_in_cnt; /* [nbr] Number of valid elements in this dimension (including effects of stride and wrapping) */
@@ -718,7 +714,7 @@ nco_var_dmn_rdr_val /* [fnc] Change dimension ordering of variable values */
   
   /* Report full metadata re-order, if requested */
   if(nco_dbg_lvl_get() > 3){
-    int dmn_idx_in_out[NC_MAX_DIMS]; /* [idx] Dimension correspondence, input->output */
+    int dmn_idx_in_out[NC_MAX_VAR_DIMS]; /* [idx] Dimension correspondence, input->output */
     /* Create reverse correspondence */
     for(dmn_out_idx=0;dmn_out_idx<dmn_out_nbr;dmn_out_idx++)
       dmn_idx_in_out[dmn_idx_out_in[dmn_out_idx]]=dmn_out_idx;
@@ -792,7 +788,7 @@ nco_var_dmn_rdr_val /* [fnc] Change dimension ordering of variable values */
        Reversal maps element k to element N-1-k=N-k-1 
        Enhance speed by using that all elements along dimension share reversal */
     for(dmn_in_idx=0;dmn_in_idx<dmn_in_nbr;dmn_in_idx++)
-      if(dmn_rvr_in[dmn_in_idx]) dmn_in_sbs[dmn_in_idx]=var_in_cnt[dmn_in_idx]-dmn_in_sbs[dmn_in_idx]-1;
+      if(dmn_rvr_in[dmn_in_idx]) dmn_in_sbs[dmn_in_idx]=var_in_cnt[dmn_in_idx]-dmn_in_sbs[dmn_in_idx]-1L;
 
     /* Map variable's N-D array indices to get 1-D index into output data */
     var_out_lmn=0L;

@@ -6,6 +6,9 @@
 /* Compatibility pvmgetarch token for UNICOS on DEC Alpha */
 #undef CRAY
 
+/* Compile operators with CCR support */
+#undef ENABLE_CCR
+
 /* Compile operators with DAP support from libnetcdf */
 #undef ENABLE_DAP
 
@@ -15,8 +18,12 @@
 /* Debugging symbols: Produce symbols for debuggers (e.g., dbx, gdb) */
 #undef ENABLE_DEBUG_SYMBOLS
 
-/* Compile operators with ESMF support */
-#undef ENABLE_ESMF
+/* Build/install NCO TexInfo-based documentation (info hierarchy and PDF/HTML
+   Users Guide) */
+#undef ENABLE_DOC
+
+/* Enable GPU offloading support */
+#undef ENABLE_GPU
 
 /* Compile operators with GSL support */
 #undef ENABLE_GSL
@@ -75,6 +82,9 @@
 /* Define to 1 if you have the `canonicalize_file_name' function. */
 #undef HAVE_CANONICALIZE_FILE_NAME
 
+/* Define to 1 if <ccr.h> is present */
+#undef HAVE_CCR_H
+
 /* Define to 1 if compiler finds external `ceilf' function */
 #undef HAVE_CEILF
 
@@ -95,9 +105,6 @@
 
 /* Define to 1 if compiler finds external `erff' function */
 #undef HAVE_ERFF
-
-/* Define to 1 if <ESMC.h> is present */
-#undef HAVE_ESMF_H
 
 /* Define to 1 if compiler finds external `expf' function */
 #undef HAVE_EXPF
@@ -138,6 +145,12 @@
 /* Define to 1 if <gsl_sf_gamma.h> is present */
 #undef HAVE_GSL_H
 
+/* Define to 1 if compiler finds external `htonl' function */
+#undef HAVE_HTONL
+
+/* Define to 1 if compiler finds external `htons' function */
+#undef HAVE_HTONS
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -147,17 +160,11 @@
 /* Define to 1 if you have the `dl' library (-ldl). */
 #undef HAVE_LIBDL
 
-/* Define to 1 if you have the `esmf' library (-lesmf). */
-#undef HAVE_LIBESMF
-
 /* Define to 1 if you have the `expat' library (-lexpat). */
 #undef HAVE_LIBEXPAT
 
 /* Define to 1 if you have the `f95' library (-lf95). */
 #undef HAVE_LIBF95
-
-/* Define to 1 if you have the `gfortran' library (-lgfortran). */
-#undef HAVE_LIBGFORTRAN
 
 /* Define to 1 if you have the `gsl' library (-lgsl). */
 #undef HAVE_LIBGSL
@@ -174,20 +181,11 @@
 /* Define to 1 if you have the `netcdf' library (-lnetcdf). */
 #undef HAVE_LIBNETCDF
 
-/* Define to 1 if you have the `netcdff' library (-lnetcdff). */
-#undef HAVE_LIBNETCDFF
-
-/* Define to 1 if you have the `netcdf_c++' library (-lnetcdf_c++). */
-#undef HAVE_LIBNETCDF_C__
-
 /* Define to 1 if you have the `nsl' library (-lnsl). */
 #undef HAVE_LIBNSL
 
 /* Define to 1 if you have the `resolv' library (-lresolv). */
 #undef HAVE_LIBRESOLV
-
-/* Define to 1 if you have the `rt' library (-lrt). */
-#undef HAVE_LIBRT
 
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #undef HAVE_LIBSOCKET
@@ -219,20 +217,23 @@
 /* Define to 1 if you have the `memmove' function. */
 #undef HAVE_MEMMOVE
 
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
-
 /* Define to 1 if you have the `memset' function. */
 #undef HAVE_MEMSET
 
 /* Define to 1 if you have the `mkstemp' function. */
 #undef HAVE_MKSTEMP
 
-/* Define if C++ compiler implements namespaces */
-#undef HAVE_NAMESPACES
-
 /* Define to 1 if compiler finds external `nc_inq_format' function */
 #undef HAVE_NC_INQ_FORMAT
+
+/* Define to 1 if compiler finds external `nc_inq_path' function */
+#undef HAVE_NC_INQ_PATH
+
+/* Define to 1 if compiler finds external `nc_rename_grp' function */
+#undef HAVE_NC_RENAME_GRP
+
+/* Define to 1 if compiler finds external `nc_set_log_level' function */
+#undef HAVE_NC_SET_LOG_LEVEL
 
 /* Define to 1 if compiler finds external `nearbyint' function */
 #undef HAVE_NEARBYINT
@@ -246,8 +247,17 @@
 /* Define to 1 if you have the <netcdf.h> header file. */
 #undef HAVE_NETCDF_H
 
+/* Define to 1 if <netcdf_mem.h> is present */
+#undef HAVE_NETCDF_MEM_H
+
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
+
+/* Define to 1 if compiler finds external `ntohl' function */
+#undef HAVE_NTOHL
+
+/* Define to 1 if compiler finds external `ntohs' function */
+#undef HAVE_NTOHS
 
 /* Define to 1 if you have the `pow' function. */
 #undef HAVE_POW
@@ -310,6 +320,9 @@
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
+
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
 
@@ -339,6 +352,9 @@
 
 /* Define to 1 if you have the `strrchr' function. */
 #undef HAVE_STRRCHR
+
+/* Define to 1 if compiler finds external `strsep' function */
+#undef HAVE_STRSEP
 
 /* Define to 1 if you have the `strstr' function. */
 #undef HAVE_STRSTR
@@ -370,8 +386,14 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define if C++ compiler has working valarray<T> */
-#undef HAVE_VALARRAY
+/* Define to 1 if compiler finds external `__builtin_bswap16' function */
+#undef HAVE___BUILTIN_BSWAP16
+
+/* Define to 1 if compiler finds external `__builtin_bswap32' function */
+#undef HAVE___BUILTIN_BSWAP32
+
+/* Define to 1 if compiler finds external `__builtin_bswap64' function */
+#undef HAVE___BUILTIN_BSWAP64
 
 /* Hostname */
 #undef HOST
@@ -411,8 +433,20 @@
 /* Compatibility pvmgetarch token for Apple Mac OSX */
 #undef MACOSX
 
+/* Building TeXInfo documentation requires version greater than 4.8 */
+#undef MAKEINFO_VERSION
+
+/* System used to build/install NCO */
+#undef NCO_BUILDENGINE
+
+/* GSL major version number */
+#undef NCO_GSL_MAJOR_VERSION
+
 /* GSL minor version number */
 #undef NCO_GSL_MINOR_VERSION
+
+/* GSL version number */
+#undef NCO_GSL_VERSION
 
 /* POSIX extended regular expressions available */
 #undef NCO_HAVE_REGEX_FUNCTIONALITY
@@ -480,6 +514,12 @@
 /* Define to 1 if compiler needs external `getopt_long' function */
 #undef NEED_GETOPT_LONG
 
+/* Define to 1 if compiler needs external `htonl' function */
+#undef NEED_HTONL
+
+/* Define to 1 if compiler needs external `htons' function */
+#undef NEED_HTONS
+
 /* Define to 1 if compiler needs external `log10f' function */
 #undef NEED_LOG10F
 
@@ -489,11 +529,26 @@
 /* Define to 1 if compiler needs external `nc_inq_format' function */
 #undef NEED_NC_INQ_FORMAT
 
+/* Define to 1 if compiler needs external `nc_inq_path' function */
+#undef NEED_NC_INQ_PATH
+
+/* Define to 1 if compiler needs external `nc_rename_grp' function */
+#undef NEED_NC_RENAME_GRP
+
+/* Define to 1 if compiler needs external `nc_set_log_level' function */
+#undef NEED_NC_SET_LOG_LEVEL
+
 /* Define to 1 if compiler needs external `nearbyint' function */
 #undef NEED_NEARBYINT
 
 /* Define to 1 if compiler needs external `nearbyintf' function */
 #undef NEED_NEARBYINTF
+
+/* Define to 1 if compiler needs external `ntohl' function */
+#undef NEED_NTOHL
+
+/* Define to 1 if compiler needs external `ntohs' function */
+#undef NEED_NTOHS
 
 /* Define to 1 if compiler needs external `powf' function */
 #undef NEED_POWF
@@ -528,6 +583,9 @@
 /* Define to 1 if compiler needs external `strdup' function */
 #undef NEED_STRDUP
 
+/* Define to 1 if compiler needs external `strsep' function */
+#undef NEED_STRSEP
+
 /* Define to 1 if compiler needs external `tanf' function */
 #undef NEED_TANF
 
@@ -539,6 +597,15 @@
 
 /* Define to 1 if compiler needs external `truncf' function */
 #undef NEED_TRUNCF
+
+/* Define to 1 if compiler needs external `__builtin_bswap16' function */
+#undef NEED___BUILTIN_BSWAP16
+
+/* Define to 1 if compiler needs external `__builtin_bswap32' function */
+#undef NEED___BUILTIN_BSWAP32
+
+/* Define to 1 if compiler needs external `__builtin_bswap64' function */
+#undef NEED___BUILTIN_BSWAP64
 
 /* No netCDF version 2.x API */
 #undef NO_NETCDF_2
@@ -570,7 +637,9 @@
 /* The size of `int*', as computed by sizeof. */
 #undef SIZEOF_INTP
 
-/* Define to 1 if you have the ANSI C header files. */
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
 
 /* Compatibility pvmgetarch token for Solaris 2.x on Sun Sparc */
@@ -598,11 +667,6 @@
    `char[]'. */
 #undef YYTEXT_POINTER
 
-/* Enable large inode numbers on Mac OS X 10.5.  */
-#ifndef _DARWIN_USE_64_BIT_INODE
-# define _DARWIN_USE_64_BIT_INODE 1
-#endif
-
 /* Number of bits in a file offset, on hosts where this is settable. */
 #undef _FILE_OFFSET_BITS
 
@@ -621,7 +685,7 @@
 #undef inline
 #endif
 
-/* Define to `int' if <sys/types.h> does not define. */
+/* Define as a signed integer type capable of holding a process identifier. */
 #undef pid_t
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */

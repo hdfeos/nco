@@ -1,18 +1,18 @@
-v# Fedora RPMs are up-to-date!
+# Fedora RPMs are up-to-date!
 # http://cvs.fedoraproject.org/viewvc/devel/nco/nco.spec?view=co
 
 Name:           nco
-Version:        4.5.2
+Version:        4.9.8
 Release:        1%{?dist}
 Summary:        Programs that manipulate netCDF files
 Group:          Applications/Engineering
-License:        GPL3
+License:        BSD
 URL:            http://nco.sf.net/
 
-# Obtain NCO version 4.5.2-1 tar.gz from Sourceforge using CVS:
+# Obtain NCO version 4.9.8-1 tar.gz from Sourceforge using CVS:
 # cvs -d:pserver:anonymous@nco.cvs.sf.net:/cvsroot/nco login
-# cvs -z3 -d:pserver:anonymous@nco.cvs.sf.net:/cvsroot/nco co -r nco-4.5.2-1 -d nco-%{version} nco
-# tar czf nco-%{version}.tar.gz --exclude='nco-4.5.2/debian*' --exclude='.cvsignore' --exclude=ncap_lex.c --exclude='ncap_yacc.[ch]' ./nco-%{version}
+# cvs -z3 -d:pserver:anonymous@nco.cvs.sf.net:/cvsroot/nco co -r nco-4.9.8-1 -d nco-%{version} nco
+# tar czf nco-%{version}.tar.gz --exclude='nco-4.9.8/debian*' --exclude='.cvsignore' --exclude=ncap_lex.c --exclude='ncap_yacc.[ch]' ./nco-%{version}
 Source0:        nco-%{version}.tar.gz
 #Patch0:		nco_install_C_headers.patch
 #Patch1:         nco_find_udunits-dat.patch
@@ -21,8 +21,8 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  automake, autoconf, libtool
 BuildRequires:  netcdf, netcdf-devel
 BuildRequires:  udunits, udunits-devel
-# Required for ncap:
-BuildRequires:  bison, flex
+# Required for ncap, ncwa:
+BuildRequires:  flex
 # Required for ncap2:
 BuildRequires:  gsl, gsl-devel
 #BuildRequires:  antlr antlr-c++-devel
@@ -108,7 +108,112 @@ fi
 # %{_libdir}/libnco++.so
 
 %changelog
-* Fri Jul 24 2015 Charlie Zender <zender@uci.edu> - 4.5.-1
+* Sun Jun 21 2021 Charlie Zender <zender@uci.edu> - 4.9.9-1
+- new upstream 4.9.9
+
+* Sun Mar 21 2021 Charlie Zender <zender@uci.edu> - 4.9.8-1
+- new upstream 4.9.8
+
+* Sun Dec 27 2020 Charlie Zender <zender@uci.edu> - 4.9.7-1
+- new upstream 4.9.7
+
+* Mon Nov 30 2020 Charlie Zender <zender@uci.edu> - 4.9.6-1
+- new upstream 4.9.6
+
+* Wed Sep 23 2020 Charlie Zender <zender@uci.edu> - 4.9.5-1
+- new upstream 4.9.5
+
+* Fri Sep 04 2020 Charlie Zender <zender@uci.edu> - 4.9.4-1
+- new upstream 4.9.4
+
+* Sun May 31 2020 Charlie Zender <zender@uci.edu> - 4.9.3-1
+- new upstream 4.9.3
+
+* Fri Feb 14 2020 Charlie Zender <zender@uci.edu> - 4.9.2-1
+- new upstream 4.9.2
+
+* Thu Dec 19 2019 Charlie Zender <zender@uci.edu> - 4.9.1-1
+- new upstream 4.9.1
+
+* Wed Dec 04 2019 Charlie Zender <zender@uci.edu> - 4.9.0-1
+- new upstream 4.9.0
+
+* Mon Jul 01 2019 Charlie Zender <zender@uci.edu> - 4.8.1-1
+- new upstream 4.8.1
+
+* Wed May 15 2019 Charlie Zender <zender@uci.edu> - 4.8.0-1
+- new upstream 4.8.0
+
+* Thu Feb 20 2019 Charlie Zender <zender@uci.edu> - 4.7.9-1
+- new upstream 4.7.9
+
+* Fri Nov 16 2018 Charlie Zender <zender@uci.edu> - 4.7.8-1
+- new upstream 4.7.8
+
+* Fri Sep 21 2018 Charlie Zender <zender@uci.edu> - 4.7.7-1
+- new upstream 4.7.7
+
+* Sat Aug 11 2018 Charlie Zender <zender@uci.edu> - 4.7.6-1
+- new upstream 4.7.6
+
+* Sun Jun 10 2018 Charlie Zender <zender@uci.edu> - 4.7.5-1
+- new upstream 4.7.5
+
+* Fri Apr 06 2018 Charlie Zender <zender@uci.edu> - 4.7.4-1
+- new upstream 4.7.4
+
+* Fri Mar 03 2018 Charlie Zender <zender@uci.edu> - 4.7.3-1
+- new upstream 4.7.3
+
+* Thu Jan 25 2018 Charlie Zender <zender@uci.edu> - 4.7.2-1
+- new upstream 4.7.2
+
+* Thu Dec 21 2017 Charlie Zender <zender@uci.edu> - 4.7.1-1
+- new upstream 4.7.1
+
+* Wed Nov 08 2017 Charlie Zender <zender@uci.edu> - 4.7.0-1
+- new upstream 4.7.0
+
+* Mon Sep 18 2017 Charlie Zender <zender@uci.edu> - 4.6.9-1
+- new upstream 4.6.9
+
+* Wed Aug 16 2017 Charlie Zender <zender@uci.edu> - 4.6.8-1
+- new upstream 4.6.8
+
+* Fri May 26 2017 Charlie Zender <zender@uci.edu> - 4.6.7-1
+- new upstream 4.6.7
+
+* Fri Apr 21 2017 Charlie Zender <zender@uci.edu> - 4.6.6-1
+- new upstream 4.6.6
+
+* Wed Mar 15 2017 Charlie Zender <zender@uci.edu> - 4.6.5-1
+- new upstream 4.6.5
+
+* Tue Feb 07 2017 Charlie Zender <zender@uci.edu> - 4.6.4-1
+- new upstream 4.6.4
+
+* Fri Dec 23 2016 Charlie Zender <zender@uci.edu> - 4.6.3-1
+- new upstream 4.6.3
+
+* Thu Nov 16 2016 Charlie Zender <zender@uci.edu> - 4.6.2-1
+- new upstream 4.6.2
+
+* Sat Aug 06 2016 Charlie Zender <zender@uci.edu> - 4.6.1-1
+- new upstream 4.6.1
+
+* Thu May 12 2016 Charlie Zender <zender@uci.edu> - 4.6.0-1
+- new upstream 4.6.0
+
+* Thu Feb 07 2016 Charlie Zender <zender@uci.edu> - 4.5.5-1
+- new upstream 4.5.5
+
+* Thu Jan 07 2016 Charlie Zender <zender@uci.edu> - 4.5.4-1
+- new upstream 4.5.4
+
+* Sun Oct 18 2015 Charlie Zender <zender@uci.edu> - 4.5.3-1
+- new upstream 4.5.3
+
+* Sun Sep 06 2015 Charlie Zender <zender@uci.edu> - 4.5.2-1
 - new upstream 4.5.2
 
 * Fri Jul 10 2015 Charlie Zender <zender@uci.edu> - 4.5.1-1

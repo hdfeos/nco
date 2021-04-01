@@ -2,10 +2,10 @@
 
 /* Purpose: Conform variable types */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_cnf_typ.h" *//* Conform variable types */
@@ -99,6 +99,10 @@ ncap_var_scv_cnf_typ_hgh_prc /* [fnc] Promote arguments to higher precision if n
 (var_sct ** const var, /* I/O [sct] Variable */
  scv_sct * const scv); /* I/O [sct] Scalar value */
 
+nco_bool /* O [flg] Input is integer type */
+nco_typ_ntg /* [fnc] Identify integer types */
+(const nc_type typ_in); /* I [enm] Type to check for integer-ness */
+
 nco_bool /* O [flg] Input is signed type */
 nco_typ_sgn /* [fnc] Identify signed types */
 (const nc_type typ_in); /* I [enm] Type to check for signedness */
@@ -107,8 +111,16 @@ nco_bool /* O [flg] Input is netCDF3 atomic type */
 nco_typ_nc3 /* [fnc] Identify netCDF3 atomic types */
 (const nc_type typ_in); /* I [enm] Type to check netCDF3 compliance */
 
+nco_bool /* O [flg] Input is CDF5 atomic type */
+nco_typ_nc5 /* [fnc] Identify CDF5 atomic types */
+(nc_type typ_in); /* I [enm] Type to check for CDF5 compliance */
+
 nc_type /* O [enm] netCDF3 type */
 nco_typ_nc4_nc3 /* [fnc] Convert netCDF4 to netCDF3 atomic type */
+(const nc_type typ_nc4); /* I [enm] netCDF4 type */
+
+nc_type /* O [enm] CDF5 atomic type */
+nco_typ_nc4_nc5 /* [fnc] Convert netCDF4 to CDF5 atomic type */
 (const nc_type typ_nc4); /* I [enm] netCDF4 type */
 
 #ifdef __cplusplus

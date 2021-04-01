@@ -3,22 +3,25 @@
 /* ncks -- netCDF Kitchen Sink */
 
 /* Purpose: Extract (subsets of) variables from a netCDF file 
-   Print them to screen, or copy them to a new file, or both */
+   Print them to screen, copy them to another file, or regrid them
+   Since 2015 ncks has also been the back-end to the ncremap regridder,
+   meaning that ncks implements the regridder API and functionality, 
+   though all of that is a segregable component of ncks.
+   The regridder is really just an API and that ncks implements */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3.
-   As a special exception to the terms of the GPL, you are permitted 
-   to link the NCO source code with the HDF, netCDF, OPeNDAP, and UDUnits
+   3-Clause BSD License.
+   You are permitted to link NCO with the HDF, netCDF, OPeNDAP, and UDUnits
    libraries and to distribute the resulting executables under the terms 
-   of the GPL, but in addition obeying the extra stipulations of the 
+   of the BSD, but in addition obeying the extra stipulations of the 
    HDF, netCDF, OPeNDAP, and UDUnits licenses.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-   See the GNU General Public License for more details.
+   See the 3-Clause BSD License for more details.
    
    The original author of this software, Charlie Zender, seeks to improve
    it with your suggestions, contributions, bug-reports, and patches.
@@ -28,7 +31,7 @@
    University of California, Irvine
    Irvine, CA 92697-3100 */
 
-/* URL: https://github.com/czender/nco/tree/master/src/nco/ncks.c
+/* URL: https://github.com/nco/nco/tree/master/src/nco/ncks.c
 
    Usage:
    ncks ~/nco/data/in.nc 
@@ -102,10 +105,15 @@
 # include "nco_mpi.h" /* MPI utilities */
 #endif /* !ENABLE_MPI */
 
+#ifdef ENABLE_GSL
+  #include <gsl/gsl_errno.h>
+#endif
+
 /* Personal headers */
 /* #define MAIN_PROGRAM_FILE MUST precede #include libnco.h */
 #define MAIN_PROGRAM_FILE
 #include "libnco.h" /* netCDF Operator (NCO) library */
+#include "nco.h"
 
 int 
 main(int argc,char **argv)
@@ -115,7 +123,9 @@ main(int argc,char **argv)
   char **gaa_arg=NULL; /* [sng] Global attribute arguments */
   char **grp_lst_in=NULL;
   char **rgr_arg=NULL; /* [sng] Regridding arguments */
+  char **trr_arg=NULL; /* [sng] Terraref arguments */
   char **var_lst_in=NULL;
+  char **xtn_lst_in=NULL; /* [sng] Extensive variables */
   char *aux_arg[NC_MAX_DIMS];
   char *cmd_ln;
   char *cnk_arg[NC_MAX_DIMS];
@@ -126,9 +136,11 @@ main(int argc,char **argv)
   char *fl_in=NULL;
   char *fl_out=NULL; /* Option o */
   char *fl_out_tmp=NULL_CEWI;
+  char *fl_prn=NULL; /* [sng] Formatted text output file */
   char *fl_pth=NULL; /* Option p */
   char *fl_pth_lcl=NULL; /* Option l */
-  char *fl_scrip=NULL; /* [sng] SCRIP file name */
+  char *flt_sng=NULL; /* [sng] Filter string */
+  char *fmt_val=NULL; /* [sng] Format string for variable values */
   char *lmt_arg[NC_MAX_DIMS];
   char *opt_crr=NULL; /* [sng] String representation of current long-option name */
   char *optarg_lcl=NULL; /* [sng] Local copy of system optarg */
@@ -136,16 +148,21 @@ main(int argc,char **argv)
   char *rec_dmn_nm=NULL; /* [sng] Record dimension name */
   char *rec_dmn_nm_fix=NULL; /* [sng] Record dimension name (Original input name without _fix prefix) */
   char *rgr_in=NULL; /* [sng] File containing fields to be regridded */
-  char *rgr_out=NULL; /* [sng] File containing regridded fields */
   char *rgr_grd_src=NULL; /* [sng] File containing input grid */
   char *rgr_grd_dst=NULL; /* [sng] File containing destination grid */
+  char *rgr_hrz=NULL; /* [sng] File containing horizontal coordinate grid */
   char *rgr_map=NULL; /* [sng] File containing mapping weights from source to destination grid */
+  char *rgr_out=NULL; /* [sng] File containing regridded fields */
   char *rgr_var=NULL; /* [sng] Variable for special regridding treatment */
+  char *rgr_vrt=NULL; /* [sng] File containing vertical coordinate grid */
+  char *smr_fl_sz_sng=NULL; /* [sng] String describing estimated file size */
   char *smr_sng=NULL; /* [sng] File summary string */
   char *smr_xtn_sng=NULL; /* [sng] File extended summary string */
   char *sng_cnv_rcd=NULL_CEWI; /* [sng] strtol()/strtoul() return code */
   char *spr_chr=NULL; /* [sng] Separator for XML character types */
   char *spr_nmr=NULL; /* [sng] Separator for XML numeric types */
+  char *trr_in=NULL; /* [sng] File containing raw Terraref imagery */
+  char *trr_wxy=NULL; /* [sng] Terraref dimension sizes */
 
   char trv_pth[]="/"; /* [sng] Root path of traversal tree */
 
@@ -168,10 +185,15 @@ main(int argc,char **argv)
   extern int optind;
 
   FILE *fp_bnr=NULL; /* [fl] Unformatted binary output file handle */
+  FILE *fp_prn=NULL; /* [fl] Formatted text output file handle */
 
   gpe_sct *gpe=NULL; /* [sng] Group Path Editing (GPE) structure */
 
   int *in_id_arr; /* [id] netCDF file IDs used by OpenMP code */
+
+  int JSN_ATT_FMT=0; /* [enm] JSON format for netCDF attributes: 0 (no object, only data), 1 (data only for string, char, int, and floating-point types, otherwise object), 2 (always object) */
+  int JSN_VAR_FMT=2; /* [flg] JSON format for netCDF variables: 0 (no type except for user-defined types), 1 (type for non-default types), 2 (always type) */
+  nco_bool JSN_DATA_BRK=True; /* [flg] JSON format for netCDF variables: 0 (no brackets), 1 (bracket inner dimensions of multi-dimensional data) */
 
   int abb_arg_nbr=0;
   int att_glb_nbr;
@@ -184,6 +206,7 @@ main(int argc,char **argv)
   int dfl_lvl=NCO_DFL_LVL_UNDEFINED; /* [enm] Deflate level */
   int dmn_nbr_fl;
   int dmn_rec_fl;
+  int dt_fmt=fmt_dt_nil;
   int fl_in_fmt=NCO_FORMAT_UNDEFINED; /* [enm] Input file format */
   int fl_nbr=0;
   int fl_out_fmt=NCO_FORMAT_UNDEFINED; /* [enm] Output file format */
@@ -195,45 +218,53 @@ main(int argc,char **argv)
   int idx;
   int in_id;  
   int lmt_nbr=0; /* Option d. NB: lmt_nbr gets incremented */
+  int log_lvl=0; /* [enm] netCDF library debugging verbosity [0..5] */
   int md_open; /* [enm] Mode flag for nc_open() call */
   int opt;
   int ppc_nbr=0; /* [nbr] Number of PPC arguments */
   int rgr_nbr=0; /* [nbr] Number of regridding arguments */
+  int trr_nbr=0; /* [nbr] Number of TERRAREF arguments */
   int rcd=NC_NOERR; /* [rcd] Return code */
+  int srt_mth=0; /* [enm] Sort method [0=ascending, 1=descending] */
   int thr_idx; /* [idx] Index of current thread */
   int thr_nbr=int_CEWI; /* [nbr] Thread number Option t */
   int var_lst_in_nbr=0;
   int var_nbr_fl;
-  int var_ntm_fl;
-  int xtr_nbr=0; /* xtr_nbr will not otherwise be set for -c with no -v */
-
-  kvm_sct *sld_nfo=NULL; /* [sct] Container for SLD/SCRIP information */
+  int var_udt_fl;
+  int xtn_nbr=0; /* [nbr] Number of extensive variables */
+  int xtr_nbr=0; /* [nbr] xtr_nbr will not otherwise be set for -c with no -v */
 
   md5_sct *md5=NULL; /* [sct] MD5 configuration */
-
+ 
   nco_bool ALPHABETIZE_OUTPUT=True; /* Option a */
+  nco_bool CHK_MAP=False; /* [flg] Check map-file quality */
+  nco_bool CHK_NAN=False; /* [flg] Check for NaNs */
   nco_bool CPY_GRP_METADATA; /* [flg] Copy group metadata (attributes) */
   nco_bool EXCLUDE_INPUT_LIST=False; /* Option x */
   nco_bool EXTRACT_ALL_COORDINATES=False; /* Option c */
   nco_bool EXTRACT_ASSOCIATED_COORDINATES=True; /* Option C */
+  nco_bool EXTRACT_CLL_MSR=True; /* [flg] Extract cell_measures variables */
+  nco_bool EXTRACT_FRM_TRM=True; /* [flg] Extract formula_terms variables */
   nco_bool FL_RTR_RMT_LCN;
   nco_bool FL_LST_IN_FROM_STDIN=False; /* [flg] fl_lst_in comes from stdin */
   nco_bool FORCE_APPEND=False; /* Option A */
   nco_bool FORCE_NOCLOBBER=False; /* Option no-clobber */
   nco_bool FORCE_OVERWRITE=False; /* Option O */
   nco_bool FORTRAN_IDX_CNV=False; /* Option F */
-  nco_bool GET_GRP_INFO=False; /* [flg] Iterate file, get group extended information */
-  nco_bool GET_FILE_INFO=False; /* [flg] Get file information (#groups, #dimensions, #attributes, #variables) */
-  nco_bool GET_LIST=False; /* [flg] Iterate file, print variables and exit */
   nco_bool GRP_VAR_UNN=False; /* [flg] Select union of specified groups and variables */
   nco_bool GRP_XTR_VAR_XCL=False; /* [flg] Extract matching groups, exclude matching variables */
-  nco_bool HISTORY_APPEND=True; /* Option h */
   nco_bool HAVE_LIMITS=False; /* [flg] Are there user limits? (-d) */
+  nco_bool HISTORY_APPEND=True; /* Option h */
+  nco_bool HPSS_TRY=False; /* [flg] Search HPSS for unfound files */
+  nco_bool LST_RNK_GE2=False; /* [flg] Print extraction list of rank >= 2 variables */
+  nco_bool LST_XTR=False; /* [flg] Print extraction list */
   nco_bool MSA_USR_RDR=False; /* [flg] Multi-Slab Algorithm returns hyperslabs in user-specified order */
   nco_bool PRN_CDL=False; /* [flg] Print CDL */
   nco_bool PRN_HDN=False; /* [flg] Print hidden attributes */
+  nco_bool PRN_UDT=False; /* [flg] Print non-atomic variables */
   nco_bool PRN_SRM=False; /* [flg] Print ncStream */
   nco_bool PRN_JSN=False; /* [flg] Print JSON */
+  nco_bool PRN_TRD=False; /* [flg] Print traditional */
   nco_bool PRN_XML=False; /* [flg] Print XML (NcML) */
   nco_bool PRN_XML_LOCATION=True; /* [flg] Print XML location tag */
   nco_bool PRN_DMN_IDX_CRD_VAL=True; /* [flg] Print leading dimension/coordinate indices/values Option Q */
@@ -248,25 +279,33 @@ main(int argc,char **argv)
   nco_bool PRN_VAR_DATA_TGL=False; /* [flg] Toggle print variable data Option H */
   nco_bool PRN_VAR_METADATA=False; /* [flg] Print variable metadata */
   nco_bool PRN_VAR_METADATA_TGL=False; /* [flg] Toggle print variable metadata Option m */
+  nco_bool PRN_CLN_LGB=False; /* [flg] Print UDUnits-formatted calendar dates/times human-legibly */
   nco_bool PRN_VRB=False; /* [flg] Print data and metadata by default */
-  nco_bool PRN_NEW_FMT=False; /* [flg] Print using new print format */
   nco_bool RETAIN_ALL_DIMS=False; /* [flg] Retain all dimensions */
   nco_bool RAM_CREATE=False; /* [flg] Create file in RAM */
   nco_bool RAM_OPEN=False; /* [flg] Open (netCDF3-only) file(s) in RAM */
+  nco_bool SHARE_CREATE=False; /* [flg] Create (netCDF3-only) file(s) with unbuffered I/O */
+  nco_bool SHARE_OPEN=False; /* [flg] Open (netCDF3-only) file(s) with unbuffered I/O */
   nco_bool RM_RMT_FL_PST_PRC=True; /* Option R */
   nco_bool WRT_TMP_FL=True; /* [flg] Write output to temporary file */
-  nco_bool flg_cln=True; /* [flg] Clean memory prior to exit */
+  nco_bool flg_area_wgt=False; /* [flg] Area-weight map-file statistics */
+  nco_bool flg_dmm_in=False; /* [flg] Make dummy input file */
+  nco_bool flg_frac_b_nrm=False; /* [flg] Normalize map-file weights when frac_b >> 1 */
+  nco_bool flg_mmr_cln=True; /* [flg] Clean memory prior to exit */
   nco_bool flg_rgr=False; /* [flg] Regrid */
+  nco_bool flg_s1d=False; /* [flg] Unpack sparse-1D CLM/ELM variables */
+  nco_bool flg_trr=False; /* [flg] Terraref */
+
+  nco_dmn_dne_t *flg_dne=NULL; /* [lst] Flag to check if input dimension -d "does not exist" */
 
   size_t bfr_sz_hnt=NC_SIZEHINT_DEFAULT; /* [B] Buffer size hint */
+  size_t cnk_csh_byt=NCO_CNK_CSH_BYT_DFL; /* [B] Chunk cache size */
   size_t cnk_min_byt=NCO_CNK_SZ_MIN_BYT_DFL; /* [B] Minimize size of variable to chunk */
   size_t cnk_sz_byt=0UL; /* [B] Chunk size in bytes */
   size_t cnk_sz_scl=0UL; /* [nbr] Chunk size scalar */
   size_t hdr_pad=0UL; /* [B] Pad at end of header section */
 
   trv_tbl_sct *trv_tbl=NULL; /* [lst] Traversal table */
-
-  nco_dmn_dne_t *flg_dne=NULL; /* [lst] Flag to check if input dimension -d "does not exist" */
 
 #ifdef ENABLE_MPI
   /* Declare all MPI-specific variables here */
@@ -277,8 +316,29 @@ main(int argc,char **argv)
   
   static struct option opt_lng[]={ /* Structure ordered by short option key if possible */
     /* Long options with no argument, no short option counterpart */
+    {"area_wgt",no_argument,0,0}, /* [flg] Area-weight map-file statistics */
+    {"bld",no_argument,0,0}, /* [sng] Build-engine */
+    {"build_engine",no_argument,0,0}, /* [sng] Build-engine */
+    {"calendar",no_argument,0,0}, /* [flg] Print UDUnits-formatted calendar dates/times human-legibly */
+    {"cln_lgb",no_argument,0,0}, /* [flg] Print UDUnits-formatted calendar dates/times human-legibly */
+    {"prn_cln_lgb",no_argument,0,0}, /* [flg] Print UDUnits-formatted calendar dates/times human-legibly */
+    {"prn_lgb",no_argument,0,0}, /* [flg] Print UDUnits-formatted calendar dates/times human-legibly */
+    {"timestamp",no_argument,0,0}, /* [flg] Print UDUnits-formatted calendar dates/times human-legibly */
     {"cdl",no_argument,0,0}, /* [flg] Print CDL */
-    {"cln",no_argument,0,0}, /* [flg] Clean memory prior to exit */
+    {"cll_msr",no_argument,0,0}, /* [flg] Extract cell_measures variables */
+    {"cell_measures",no_argument,0,0}, /* [flg] Extract cell_measures variables */
+    {"no_cll_msr",no_argument,0,0}, /* [flg] Do not extract cell_measures variables */
+    {"no_cell_measures",no_argument,0,0}, /* [flg] Do not extract cell_measures variables */
+    {"frm_trm",no_argument,0,0}, /* [flg] Extract formula_terms variables */
+    {"formula_terms",no_argument,0,0}, /* [flg] Extract formula_terms variables */
+    {"no_frm_trm",no_argument,0,0}, /* [flg] Do not extract formula_terms variables */
+    {"no_formula_terms",no_argument,0,0}, /* [flg] Do not extract formula_terms variables */
+    {"chk_map",no_argument,0,0}, /* [flg] Check map-file quality */
+    {"check_map",no_argument,0,0}, /* [flg] Check map-file quality */
+    {"chk_nan",no_argument,0,0}, /* [flg] Check file for NaNs */
+    {"check_nan",no_argument,0,0}, /* [flg] Check file for NaNs */
+    {"nan",no_argument,0,0}, /* [flg] Check file for NaNs */
+    {"NaN",no_argument,0,0}, /* [flg] Check file for NaNs */
     {"clean",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"mmr_cln",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"drt",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
@@ -288,13 +348,21 @@ main(int argc,char **argv)
     {"compiler",no_argument,0,0},
     {"copyright",no_argument,0,0},
     {"cpy",no_argument,0,0},
+    {"dmm_in_mk",no_argument,0,0}, /* [flg] Make dummy input file */
+    {"fl_dmm",no_argument,0,0}, /* [flg] Make dummy input file */
     {"license",no_argument,0,0},
     {"hdf4",no_argument,0,0}, /* [flg] Treat file as HDF4 */
     {"hdn",no_argument,0,0}, /* [flg] Print hidden attributes */
     {"hidden",no_argument,0,0}, /* [flg] Print hidden attributes */
+    {"help",no_argument,0,0},
+    {"hlp",no_argument,0,0},
+    {"hpss_try",no_argument,0,0}, /* [flg] Search HPSS for unfound files */
     {"id",no_argument,0,0}, /* [flg] Print normally hidden information, like file, group, and variable IDs */
     {"lbr",no_argument,0,0},
     {"library",no_argument,0,0},
+    {"lst_rnk_ge2",no_argument,0,0}, /* [flg] Print extraction list of rank >= 2 variables */
+    {"lst_xtr",no_argument,0,0}, /* [flg] Print extraction list */
+    {"frac_b_nrm",no_argument,0,0}, /* [flg] Normalize map-file weights when frac_b >> 1 */
     {"md5_dgs",no_argument,0,0}, /* [flg] Perform MD5 digests */
     {"md5_digest",no_argument,0,0}, /* [flg] Perform MD5 digests */
     {"md5_wrt_att",no_argument,0,0}, /* [flg] Write MD5 digests as attributes */
@@ -302,6 +370,10 @@ main(int argc,char **argv)
     {"mpi_implementation",no_argument,0,0},
     {"msa_usr_rdr",no_argument,0,0}, /* [flg] Multi-Slab Algorithm returns hyperslabs in user-specified order */
     {"msa_user_order",no_argument,0,0}, /* [flg] Multi-Slab Algorithm returns hyperslabs in user-specified order */
+    {"no_abc",no_argument,0,0},
+    {"no-abc",no_argument,0,0},
+    {"no_alphabetize",no_argument,0,0},
+    {"no-alphabetize",no_argument,0,0},
     {"no_blank",no_argument,0,0}, /* [flg] Print numeric missing values */
     {"no-blank",no_argument,0,0}, /* [flg] Print numeric missing values */
     {"noblank",no_argument,0,0}, /* [flg] Print numeric missing values */
@@ -311,17 +383,29 @@ main(int argc,char **argv)
     {"no_clobber",no_argument,0,0},
     {"no_dmn_var_nm",no_argument,0,0}, /* [flg] Omit variable and dimension names and indices but print all values */
     {"no_nm_prn",no_argument,0,0}, /* [flg] Omit variable and dimension names and indices but print all values */
+    {"ntm",no_argument,0,0}, /* [flg] Print non-atomic variables */
+    {"nonatomic",no_argument,0,0}, /* [flg] Print non-atomic variables */
+    {"udt",no_argument,0,0}, /* [flg] Print non-atomic variables */
+    {"user_defined_types",no_argument,0,0}, /* [flg] Print non-atomic variables */
     {"rad",no_argument,0,0}, /* [flg] Retain all dimensions */
     {"retain_all_dimensions",no_argument,0,0}, /* [flg] Retain all dimensions */
     {"orphan_dimensions",no_argument,0,0}, /* [flg] Retain all dimensions */
     {"rph_dmn",no_argument,0,0}, /* [flg] Retain all dimensions */
-    {"ram_all",no_argument,0,0}, /* [flg] Open (netCDF3) and create file(s) in RAM */
+    {"ram_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) in RAM */
     {"create_ram",no_argument,0,0}, /* [flg] Create file in RAM */
     {"open_ram",no_argument,0,0}, /* [flg] Open (netCDF3) file(s) in RAM */
-    {"diskless_all",no_argument,0,0}, /* [flg] Open (netCDF3) and create file(s) in RAM */
+    {"diskless_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) in RAM */
+    {"share_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
+    {"create_share",no_argument,0,0}, /* [flg] Create (netCDF3) file(s) with unbuffered I/O */
+    {"open_share",no_argument,0,0}, /* [flg] Open (netCDF3) file(s) with unbuffered I/O */
+    {"unbuffered_io",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
+    {"uio",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
     {"secret",no_argument,0,0},
     {"shh",no_argument,0,0},
     {"srm",no_argument,0,0}, /* [flg] Print ncStream */
+    {"s1d",no_argument,0,0}, /* [flg] Unpack sparse-1D CLM/ELM variables */
+    {"sparse",no_argument,0,0}, /* [flg] Unpack sparse-1D CLM/ELM variables */
+    {"unpack_sparse",no_argument,0,0}, /* [flg] Unpack sparse-1D CLM/ELM variables */
     {"sysconf",no_argument,0,0}, /* [flg] Perform sysconf() test */
     {"wrt_tmp_fl",no_argument,0,0}, /* [flg] Write output to temporary file */
     {"write_tmp_fl",no_argument,0,0}, /* [flg] Write output to temporary file */
@@ -335,6 +419,8 @@ main(int argc,char **argv)
     {"vrs",no_argument,0,0},
     {"jsn",no_argument,0,0}, /* [flg] Print JSON */
     {"json",no_argument,0,0}, /* [flg] Print JSON */
+    {"trd",no_argument,0,0}, /* [flg] Print traditional */
+    {"traditional",no_argument,0,0}, /* [flg] Print traditional */
     {"w10",no_argument,0,0}, /* [flg] Print JSON */
     {"w10n",no_argument,0,0}, /* [flg] Print JSON */
     {"xml",no_argument,0,0}, /* [flg] Print XML (NcML) */
@@ -342,10 +428,16 @@ main(int argc,char **argv)
     {"xml_no_location",no_argument,0,0}, /* [flg] Omit XML location tag */
     {"ncml_no_location",no_argument,0,0}, /* [flg] Omit XML location tag */
     /* Long options with argument, no short option counterpart */
+    {"baa",required_argument,0,0}, /* [enm] Bit-Adjustment Algorithm */
+    {"bit_alg",required_argument,0,0}, /* [enm] Bit-Adjustment Algorithm */
     {"bfr_sz_hnt",required_argument,0,0}, /* [B] Buffer size hint */
     {"buffer_size_hint",required_argument,0,0}, /* [B] Buffer size hint */
+    {"bsa",required_argument,0,0}, /* [enm] Binary byte-swap algorithm */
+    {"byte_swap",required_argument,0,0}, /* [enm] Binary byte-swap algorithm */
     {"cnk_byt",required_argument,0,0}, /* [B] Chunk size in bytes */
     {"chunk_byte",required_argument,0,0}, /* [B] Chunk size in bytes */
+    {"cnk_csh",required_argument,0,0}, /* [B] Chunk cache size in bytes */
+    {"chunk_cache",required_argument,0,0}, /* [B] Chunk cache size in bytes */
     {"cnk_dmn",required_argument,0,0}, /* [nbr] Chunk size */
     {"chunk_dimension",required_argument,0,0}, /* [nbr] Chunk size */
     {"cnk_map",required_argument,0,0}, /* [nbr] Chunking map */
@@ -356,16 +448,38 @@ main(int argc,char **argv)
     {"chunk_policy",required_argument,0,0}, /* [nbr] Chunking policy */
     {"cnk_scl",required_argument,0,0}, /* [nbr] Chunk size scalar */
     {"chunk_scalar",required_argument,0,0}, /* [nbr] Chunk size scalar */
+    {"dt_fmt",required_argument,0,0}, /* [enm] Date format for CDL output with --cal */
+    {"date_format",required_argument,0,0}, /* [enm] Date format for CDL output with --cal */
     {"fl_fmt",required_argument,0,0},
     {"file_format",required_argument,0,0},
     {"fix_rec_dmn",required_argument,0,0}, /* [sng] Fix record dimension */
     {"no_rec_dmn",required_argument,0,0}, /* [sng] Fix record dimension */
+    {"fl_prn",required_argument,0,0}, /* [sng] Formatted text output file */
+    {"file_print",required_argument,0,0}, /* [sng] Formatted text output file */
+    {"prn_fl",required_argument,0,0}, /* [sng] Formatted text output file */
+    {"print_file",required_argument,0,0}, /* [sng] Formatted text output file */
+    {"ccr",required_argument,0,0}, /* [sng] CCR codec name */
+    {"cdc",required_argument,0,0}, /* [sng] CCR codec name */
+    {"codec",required_argument,0,0}, /* [sng] CCR codec name */
+    {"flt",required_argument,0,0}, /* [sng] Filter string */
+    {"filter",required_argument,0,0}, /* [sng] Filter string */
+    {"fmt_val",required_argument,0,0}, /* [sng] Format string for variable values */
+    {"val_fmt",required_argument,0,0}, /* [sng] Format string for variable values */
+    {"value_format",required_argument,0,0}, /* [sng] Format string for variable values */
     {"gaa",required_argument,0,0}, /* [sng] Global attribute add */
     {"glb_att_add",required_argument,0,0}, /* [sng] Global attribute add */
     {"hdr_pad",required_argument,0,0},
     {"header_pad",required_argument,0,0},
+    {"jsn_fmt",required_argument,0,0}, /* [enm] JSON format */
+    {"jsn_format",required_argument,0,0}, /* [enm] JSON format */
+    {"json_fmt",required_argument,0,0}, /* [enm] JSON format */
+    {"json_format",required_argument,0,0}, /* [enm] JSON format */
+    {"log_lvl",required_argument,0,0}, /* [enm] netCDF library debugging verbosity [0..5] */
+    {"log_level",required_argument,0,0}, /* [enm] netCDF library debugging verbosity [0..5] */
     {"mk_rec_dmn",required_argument,0,0}, /* [sng] Name of record dimension in output */
     {"mk_rec_dim",required_argument,0,0}, /* [sng] Name of record dimension in output */
+    {"mta_dlm",required_argument,0,0}, /* [sng] Multi-argument delimiter */
+    {"dlm_mta",required_argument,0,0}, /* [sng] Multi-argument delimiter */
     {"ppc",required_argument,0,0}, /* [nbr] Precision-preserving compression, i.e., number of total or decimal significant digits */
     {"precision_preserving_compression",required_argument,0,0}, /* [nbr] Precision-preserving compression, i.e., number of total or decimal significant digits */
     {"quantize",required_argument,0,0}, /* [nbr] Precision-preserving compression, i.e., number of total or decimal significant digits */
@@ -373,24 +487,43 @@ main(int argc,char **argv)
     {"regridding",required_argument,0,0}, /* [sng] Regridding */
     {"rgr_in",required_argument,0,0}, /* [sng] File containing fields to be regridded */
     {"rgr_grd_src",required_argument,0,0}, /* [sng] File containing input grid */
+    {"grd_src",required_argument,0,0}, /* [sng] File containing input grid */
+    {"src_grd",required_argument,0,0}, /* [sng] File containing input grid */
     {"rgr_grd_dst",required_argument,0,0}, /* [sng] File containing destination grid */
+    {"dst_grd",required_argument,0,0}, /* [sng] File containing destination grid */
+    {"grd_dst",required_argument,0,0}, /* [sng] File containing destination grid */
     {"rgr_map",required_argument,0,0}, /* [sng] File containing mapping weights from source to destination grid */
     {"map_file",required_argument,0,0}, /* [sng] File containing mapping weights from source to destination grid */
-    {"rgr_var",required_argument,0,0}, /* I [sng] Variable for special regridding treatment */
+    {"map_fl",required_argument,0,0}, /* [sng] File containing mapping weights from source to destination grid */
+    {"rgr_hrz",required_argument,0,0}, /* [sng] File containing horizontal coordinate grid */
+    {"hrz_fl",required_argument,0,0}, /* [sng] File containing horizontal coordinate grid */
+    {"hrz_crd",required_argument,0,0}, /* [sng] File containing horizontal coordinate grid */
     {"rgr_rnr",required_argument,0,0}, /* [flg] Renormalize destination values by valid area */
-    {"rnr",required_argument,0,0}, /* [flg] Renormalize destination values by valid area */
+    {"rgr_var",required_argument,0,0}, /* I [sng] Variable for special regridding treatment */
+    {"rgr_vrt",required_argument,0,0}, /* [sng] File containing vertical coordinate grid */
+    {"vrt_fl",required_argument,0,0}, /* [sng] File containing vertical coordinate grid */
+    {"vrt_crd",required_argument,0,0}, /* [sng] File containing vertical coordinate grid */
+    {"rnr_thr",required_argument,0,0}, /* [flg] Renormalize destination values by valid area */
     {"renormalize",required_argument,0,0}, /* [flg] Renormalize destination values by valid area */
-    {"scrip",required_argument,0,0}, /* SCRIP file */
+    {"renormalization_threshold",required_argument,0,0}, /* [flg] Renormalize destination values by valid area */
+    {"trr",required_argument,0,0}, /* [sng] Terraref */
+    {"terraref",required_argument,0,0}, /* [sng] Terraref */
+    {"trr_in",required_argument,0,0}, /* [sng] File containing raw Terraref imagery */
+    {"trr_wxy",required_argument,0,0}, /* [sng] Terraref dimension sizes */
     {"tst_udunits",required_argument,0,0},
     {"xml_spr_chr",required_argument,0,0}, /* [flg] Separator for XML character types */
     {"xml_spr_nmr",required_argument,0,0}, /* [flg] Separator for XML numeric types */
+    {"xtn_var_lst",required_argument,0,0}, /* [sng] Extensive variables */
+    {"extensive",required_argument,0,0}, /* [sng] Extensive variables */
     /* Long options with short counterparts */
     {"3",no_argument,0,'3'},
     {"4",no_argument,0,'4'},
-    {"64bit",no_argument,0,'4'},
     {"netcdf4",no_argument,0,'4'},
-    {"pnetcdf",no_argument,0,'5'},
     {"5",no_argument,0,'5'},
+    {"64bit_data",no_argument,0,'5'},
+    {"cdf5",no_argument,0,'5'},
+    {"pnetcdf",no_argument,0,'5'},
+    {"64bit_offset",no_argument,0,'6'},
     {"7",no_argument,0,'7'},
     {"abc",no_argument,0,'a'},
     {"alphabetize",no_argument,0,'a'},
@@ -402,11 +535,13 @@ main(int argc,char **argv)
     {"fl_bnr",required_argument,0,'b'},
     {"coords",no_argument,0,'c'},
     {"crd",no_argument,0,'c'},
-    {"no-coords",no_argument,0,'C'},
-    {"no-crd",no_argument,0,'C'},
+    {"xtr_ass_var",no_argument,0,'c'},
+    {"xcl_ass_var",no_argument,0,'C'},
+    {"no_coords",no_argument,0,'C'},
+    {"no_crd",no_argument,0,'C'},
     {"data",required_argument,0,'H'},
-    {"debug",required_argument,0,'D'},
     {"dbg_lvl",required_argument,0,'D'},
+    {"debug",required_argument,0,'D'},
     {"nco_dbg_lvl",required_argument,0,'D'},
     {"dimension",required_argument,0,'d'},
     {"dmn",required_argument,0,'d'},
@@ -445,15 +580,11 @@ main(int argc,char **argv)
     {"threads",required_argument,0,'t'},
     {"omp_num_threads",required_argument,0,'t'},
     {"units",no_argument,0,'u'},
-    {"var_val",no_argument,0,'V'}, /* [flg] Print variable values only */
+    {"val_var",no_argument,0,'V'}, /* [flg] Print variable values only */
     {"variable",required_argument,0,'v'},
     {"auxiliary",required_argument,0,'X'},
     {"exclude",no_argument,0,'x'},
     {"xcl",no_argument,0,'x'},
-    {"help",no_argument,0,'?'},
-    {"hlp",no_argument,0,'?'},
-    {"get_grp_info",no_argument,0,0},
-    {"get_file_info",no_argument,0,0},
     {"lbr_rcd",no_argument,0,0},
     {0,0,0,0}
   }; /* end opt_lng */
@@ -476,13 +607,13 @@ main(int argc,char **argv)
   nco_prg_nm=nco_prg_prs(argv[0],&nco_prg_id);
   
   /* MPI I/O: Either Parallel netCDF (PnetCDF) or HDF5-based
-   export NETCDF_ROOT=/usr/local/parallel;export NETCDF_INC=/usr/local/parallel/include;export NETCDF_LIB=/usr/local/parallel/lib;export NETCDF4_ROOT=/usr/local/parallel;
-   cd ~/nco/bld;make MPI=Y;cd -
-   LD_LIBRARY_PATH=/usr/local/parallel/lib\:${LD_LIBRARY_PATH}
-   ldd `which ncks`
-   ncks -O -5 ~/nco/data/in.nc ~/foo.nc # PnetCDF 
-   mpiexec -n 1 ncks -O -4 ~/nco/data/in.nc ~/foo.nc # HDF5
-   od -An -c -N4 ~/foo.nc */
+     export NETCDF_ROOT=/usr/local/parallel;export NETCDF_INC=/usr/local/parallel/include;export NETCDF_LIB=/usr/local/parallel/lib;export NETCDF4_ROOT=/usr/local/parallel;
+     cd ~/nco/bld;make MPI=Y;cd -
+     LD_LIBRARY_PATH=/usr/local/parallel/lib\:${LD_LIBRARY_PATH}
+     ldd `which ncks`
+     ncks -O -5 ~/nco/data/in.nc ~/foo.nc # PnetCDF 
+     mpiexec -n 1 ncks -O -4 ~/nco/data/in.nc ~/foo.nc # HDF5
+     od -An -c -N4 ~/foo.nc */
 #ifdef ENABLE_MPI
   /* MPI Initialization */
   if(False) (void)fprintf(stdout,gettext("%s: WARNING Compiled with MPI\n"),nco_prg_nm);
@@ -501,14 +632,37 @@ main(int argc,char **argv)
 
     /* Process long options without short option counterparts */
     if(opt == 0){
+      if(!strcmp(opt_crr,"baa") || !strcmp(opt_crr,"bit_alg")){
+	nco_baa_cnv=(unsigned short int)strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+	if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
+      } /* endif baa */
       if(!strcmp(opt_crr,"bfr_sz_hnt") || !strcmp(opt_crr,"buffer_size_hint")){
         bfr_sz_hnt=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
       } /* endif bfr_sz */
+      if(!strcmp(opt_crr,"bsa") || !strcmp(opt_crr,"byte_swap")){
+	nco_bnr_cnv=(unsigned short int)strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+	if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
+      } /* endif bnr */
+      if(!strcmp(opt_crr,"bld") || !strcmp(opt_crr,"build_engine")){
+	const char bld_ngn[]=TKN2SNG(NCO_BUILDENGINE); // [sng] Build-engine
+        (void)fprintf(stdout,"%s\n",bld_ngn);
+        nco_exit(EXIT_SUCCESS);
+      } /* endif "bld" */
+      if(!strcmp(opt_crr,"dt_fmt") || !strcmp(opt_crr,"date_format")){
+        dt_fmt=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+      } /* !dt_fmt */
+      if(!strcmp(opt_crr,"calendar") || !strcmp(opt_crr,"cln_lgb") || !strcmp(opt_crr,"prn_cln_lgb") || !strcmp(opt_crr,"prn_lgb") || !strcmp(opt_crr,"timestamp")) PRN_CLN_LGB=True; /* [flg] Print UDUnits-formatted calendar dates/times human-legibly */
+      if(!strcmp(opt_crr,"chk_map") || !strcmp(opt_crr,"check_map")) CHK_MAP=True; /* [flg] Check map-file quality */
+      if(!strcmp(opt_crr,"chk_nan") || !strcmp(opt_crr,"check_nan") || !strcmp(opt_crr,"nan") || !strcmp(opt_crr,"NaN")) CHK_NAN=True; /* [flg] Check for NaNs */
       if(!strcmp(opt_crr,"cnk_byt") || !strcmp(opt_crr,"chunk_byte")){
         cnk_sz_byt=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
       } /* endif cnk_byt */
+      if(!strcmp(opt_crr,"cnk_csh") || !strcmp(opt_crr,"chunk_cache")){
+        cnk_csh_byt=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+        if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
+      } /* endif cnk_csh */
       if(!strcmp(opt_crr,"cnk_min") || !strcmp(opt_crr,"chunk_min")){
         cnk_min_byt=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
@@ -532,6 +686,10 @@ main(int argc,char **argv)
         cnk_plc_sng=(char *)strdup(optarg);
         cnk_plc=nco_cnk_plc_get(cnk_plc_sng);
       } /* endif cnk_plc */
+      if(!strcmp(opt_crr,"cll_msr") || !strcmp(opt_crr,"cell_measures")) EXTRACT_CLL_MSR=True; /* [flg] Extract cell_measures variables */
+      if(!strcmp(opt_crr,"no_cll_msr") || !strcmp(opt_crr,"no_cell_measures")) EXTRACT_CLL_MSR=False; /* [flg] Do not extract cell_measures variables */
+      if(!strcmp(opt_crr,"frm_trm") || !strcmp(opt_crr,"formula_terms")) EXTRACT_FRM_TRM=True; /* [flg] Extract formula_terms variables */
+      if(!strcmp(opt_crr,"no_frm_trm") || !strcmp(opt_crr,"no_formula_terms")) EXTRACT_FRM_TRM=False; /* [flg] Do not extract formula_terms variables */
       if(!strcmp(opt_crr,"cmp") || !strcmp(opt_crr,"compiler")){
         (void)fprintf(stdout,"%s\n",nco_cmp_get());
         nco_exit(EXIT_SUCCESS);
@@ -541,39 +699,65 @@ main(int argc,char **argv)
         nco_exit(EXIT_SUCCESS);
       } /* endif "copyright" */
       if(!strcmp(opt_crr,"cdl")) PRN_CDL=True; /* [flg] Print CDL */
-      if(!strcmp(opt_crr,"cln") || !strcmp(opt_crr,"mmr_cln") || !strcmp(opt_crr,"clean")) flg_cln=True; /* [flg] Clean memory prior to exit */
-      if(!strcmp(opt_crr,"drt") || !strcmp(opt_crr,"mmr_drt") || !strcmp(opt_crr,"dirty")) flg_cln=False; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"trd") || !strcmp(opt_crr,"traditional")) PRN_TRD=True; /* [flg] Print traditional */
+      if(!strcmp(opt_crr,"mmr_cln") || !strcmp(opt_crr,"clean")) flg_mmr_cln=True; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"drt") || !strcmp(opt_crr,"mmr_drt") || !strcmp(opt_crr,"dirty")) flg_mmr_cln=False; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"dmm_in_mk") || !strcmp(opt_crr,"fl_dmm")) flg_dmm_in=True; /* [flg] Make dummy input file */
       if(!strcmp(opt_crr,"fix_rec_dmn") || !strcmp(opt_crr,"no_rec_dmn")){
         const char fix_pfx[]="fix_"; /* [sng] Prefix string to fix dimension */
         rec_dmn_nm=(char *)nco_malloc((strlen(fix_pfx)+strlen(optarg)+1L)*sizeof(char));
         rec_dmn_nm=strcpy(rec_dmn_nm,fix_pfx);
         rec_dmn_nm=strcat(rec_dmn_nm,optarg);
         rec_dmn_nm_fix=strdup(optarg);
-      } /* endif fix_rec_dmn */
+      } /* !fix_rec_dmn */
       if(!strcmp(opt_crr,"fl_fmt") || !strcmp(opt_crr,"file_format")) rcd=nco_create_mode_prs(optarg,&fl_out_fmt);
+      if(!strcmp(opt_crr,"fl_prn") || !strcmp(opt_crr,"file_print") || !strcmp(opt_crr,"prn_fl") || !strcmp(opt_crr,"print_file")) fl_prn=(char *)strdup(optarg);
+      if(!strcmp(opt_crr,"flt") || !strcmp(opt_crr,"filter")){
+	flt_sng=(char *)strdup(optarg);
+	/* [fnc] Parse filter string and exit */
+	if(flt_sng) nco_flt_prs(flt_sng);
+      } /* !flt */
+      if(!strcmp(opt_crr,"ccr") || !strcmp(opt_crr,"cdc") || !strcmp(opt_crr,"codec")){
+	nco_flt_glb=nco_flt_sng2enm(optarg);
+	(void)fprintf(stdout,"%s: INFO %s reports user-specified filter string translates to CCR string \"%s\"<.\n",nco_prg_nm,nco_prg_nm,nco_flt_enm2sng((nco_flt_typ_enm)nco_flt_glb_get()));
+	nco_exit(EXIT_SUCCESS);
+      } /* !ccr */
+      if(!strcmp(opt_crr,"fmt_val") || !strcmp(opt_crr,"val_fmt") || !strcmp(opt_crr,"value_format")) fmt_val=(char *)strdup(optarg);
       if(!strcmp(opt_crr,"gaa") || !strcmp(opt_crr,"glb_att_add")){
         gaa_arg=(char **)nco_realloc(gaa_arg,(gaa_nbr+1)*sizeof(char *));
         gaa_arg[gaa_nbr++]=(char *)strdup(optarg);
-      } /* endif gaa */
-      if(!strcmp(opt_crr,"get_grp_info") || !strcmp(opt_crr,"grp_info_get")) GET_GRP_INFO=True;
-      if(!strcmp(opt_crr,"get_file_info")) GET_FILE_INFO=True;
+      } /* !gaa */
       if(!strcmp(opt_crr,"hdf4")) nco_fmt_xtn=nco_fmt_xtn_hdf4; /* [enm] Treat file as HDF4 */
       if(!strcmp(opt_crr,"hdn") || !strcmp(opt_crr,"hidden")) PRN_HDN=True; /* [flg] Print hidden attributes */
       if(!strcmp(opt_crr,"hdr_pad") || !strcmp(opt_crr,"header_pad")){
         hdr_pad=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
       } /* endif "hdr_pad" */
+      if(!strcmp(opt_crr,"help") || !strcmp(opt_crr,"hlp")){
+	(void)nco_usg_prn();
+	nco_exit(EXIT_SUCCESS);
+      } /* endif "help" */
+      if(!strcmp(opt_crr,"hpss_try")) HPSS_TRY=True; /* [flg] Search HPSS for unfound files */
       if(!strcmp(opt_crr,"lbr") || !strcmp(opt_crr,"library")){
         (void)nco_lbr_vrs_prn();
         nco_exit(EXIT_SUCCESS);
       } /* endif "lbr" */
       if(!strcmp(opt_crr,"lbr_rcd")) nco_exit_lbr_rcd();
-      if(!strcmp(opt_crr,"scrip")){
-        fl_scrip=strdup(optarg);
-	sld_nfo=(kvm_sct *)nco_malloc(BUFSIZ*sizeof(kvm_sct));
-        nco_scrip_read(fl_scrip,sld_nfo);
-      } /* endif "scrip" */
-      if(!strcmp(opt_crr,"mk_rec_dmn") || !strcmp(opt_crr,"mk_rec_dim")) rec_dmn_nm=strdup(optarg);
+      if(!strcmp(opt_crr,"log_lvl") || !strcmp(opt_crr,"log_level")){
+	log_lvl=(int)strtol(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+	if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtol",sng_cnv_rcd);
+	nc_set_log_level(log_lvl);
+      } /* !log_lvl */
+      if(!strcmp(opt_crr,"lst_rnk_ge2") || !strcmp(opt_crr,"rank_ge2"))	LST_RNK_GE2=True; /* [flg] Print extraction list of rank >= 2 variables */
+      if(!strcmp(opt_crr,"lst_xtr") || !strcmp(opt_crr,"xtr_lst")) LST_XTR=True; /* [flg] Print extraction list */
+      if(!strcmp(opt_crr,"mk_rec_dmn") || !strcmp(opt_crr,"mk_rec_dim")){
+	if(strchr(optarg,',')){
+	  (void)fprintf(stdout,"%s: ERROR record dimension name %s contains a comma and appears to be a list\n",nco_prg_nm_get(),optarg);
+	  (void)fprintf(stdout,"%s: HINT --mk_rec_dmn currently accepts only one dimension name as an argument (relaxing this limit is TODO nco1129, let us know if this is important to you). To change multiple dimensions into record dimensions, run ncks multiple times and change one dimension each time. Be sure the output file format is netCDF4.\n",nco_prg_nm_get());
+	  nco_exit(EXIT_FAILURE);
+	} /* endif */
+	rec_dmn_nm=strdup(optarg);
+      } /* !mk_rec_dmn */
       if(!strcmp(opt_crr,"mpi_implementation")){
         (void)fprintf(stdout,"%s\n",nco_mpi_get());
         nco_exit(EXIT_SUCCESS);
@@ -586,29 +770,50 @@ main(int argc,char **argv)
       if(!strcmp(opt_crr,"md5_wrt_att") || !strcmp(opt_crr,"md5_write_attribute")){
         if(!md5) md5=nco_md5_ini();
 	md5->wrt=md5->dgs=True;
-        if(nco_dbg_lvl >= nco_dbg_std) (void)fprintf(stderr,"%s: INFO Will write MD5 digests as attributes\n",nco_prg_nm_get());
+        if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stderr,"%s: INFO Will write MD5 digests as attributes\n",nco_prg_nm_get());
       } /* endif "md5_wrt_att" */
       if(!strcmp(opt_crr,"msa_usr_rdr") || !strcmp(opt_crr,"msa_user_order")) MSA_USR_RDR=True; /* [flg] Multi-Slab Algorithm returns hyperslabs in user-specified order */
+      if(!strcmp(opt_crr,"mta_dlm") || !strcmp(opt_crr,"dlm_mta")) nco_mta_dlm_set(optarg);
+      if(!strcmp(opt_crr,"no_abc") || !strcmp(opt_crr,"no-abc") || !strcmp(opt_crr,"no_alphabetize") || !strcmp(opt_crr,"no-alphabetize")) ALPHABETIZE_OUTPUT=False;
       if(!strcmp(opt_crr,"no_blank") || !strcmp(opt_crr,"no-blank") || !strcmp(opt_crr,"noblank")) PRN_MSS_VAL_BLANK=!PRN_MSS_VAL_BLANK;
       if(!strcmp(opt_crr,"no_clb") || !strcmp(opt_crr,"no-clobber") || !strcmp(opt_crr,"no_clobber") || !strcmp(opt_crr,"noclobber")) FORCE_NOCLOBBER=!FORCE_NOCLOBBER;
       if(!strcmp(opt_crr,"no_nm_prn") || !strcmp(opt_crr,"no_dmn_var_nm")) PRN_DMN_VAR_NM=False; /* endif "no_nm_prn" */
+      if(!strcmp(opt_crr,"ntm") || !strcmp(opt_crr,"nonatomic") || !strcmp(opt_crr,"udt") || !strcmp(opt_crr,"user_defined_types")) PRN_UDT=True; /* [flg] Print non-atomic variables */
       if(!strcmp(opt_crr,"ppc") || !strcmp(opt_crr,"precision_preserving_compression") || !strcmp(opt_crr,"quantize")) ppc_arg[ppc_nbr++]=(char *)strdup(optarg);
       if(!strcmp(opt_crr,"rad") || !strcmp(opt_crr,"retain_all_dimensions") || !strcmp(opt_crr,"orphan_dimensions") || !strcmp(opt_crr,"rph_dmn")) RETAIN_ALL_DIMS=True;
-      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"create_ram") || !strcmp(opt_crr,"diskless_all")) RAM_CREATE=True; /* [flg] Open (netCDF3) file(s) in RAM */
-      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"open_ram") || !strcmp(opt_crr,"diskless_all")) RAM_OPEN=True; /* [flg] Create file in RAM */
+      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"create_ram") || !strcmp(opt_crr,"diskless_all")) RAM_CREATE=True; /* [flg] Create (netCDF3) file(s) in RAM */
+      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"open_ram") || !strcmp(opt_crr,"diskless_all")) RAM_OPEN=True; /* [flg] Open (netCDF3) file(s) in RAM */
+      if(!strcmp(opt_crr,"share_all") || !strcmp(opt_crr,"unbuffered_io") || !strcmp(opt_crr,"uio") || !strcmp(opt_crr,"create_share")) SHARE_CREATE=True; /* [flg] Create (netCDF3) file(s) with unbuffered I/O */
+      if(!strcmp(opt_crr,"share_all") || !strcmp(opt_crr,"unbuffered_io") || !strcmp(opt_crr,"uio") || !strcmp(opt_crr,"open_share")) SHARE_OPEN=True; /* [flg] Open (netCDF3) file(s) with unbuffered I/O */
+      if(!strcmp(opt_crr,"area_wgt") || !strcmp(opt_crr,"area_weight")){
+	flg_area_wgt=True;
+	CHK_MAP=True;
+      } /* !area_wgt */
+      if(!strcmp(opt_crr,"frac_b_nrm")){
+	flg_frac_b_nrm=True;
+	CHK_MAP=True;
+      } /* !frac_b_nrm */
       if(!strcmp(opt_crr,"rgr") || !strcmp(opt_crr,"regridding")){
         flg_rgr=True;
         rgr_arg=(char **)nco_realloc(rgr_arg,(rgr_nbr+1)*sizeof(char *));
         rgr_arg[rgr_nbr++]=(char *)strdup(optarg);
       } /* endif "rgr" */
       if(!strcmp(opt_crr,"rgr_in")) rgr_in=(char *)strdup(optarg);
-      if(!strcmp(opt_crr,"rgr_grd_src")) rgr_grd_src=(char *)strdup(optarg);
-      if(!strcmp(opt_crr,"rgr_grd_dst")) rgr_grd_dst=(char *)strdup(optarg);
-      if(!strcmp(opt_crr,"rgr_map") || !strcmp(opt_crr,"map_file")){
+      if(!strcmp(opt_crr,"rgr_grd_src") || !strcmp(opt_crr,"grd_src") || !strcmp(opt_crr,"src_grd")) rgr_grd_src=(char *)strdup(optarg);
+      if(!strcmp(opt_crr,"rgr_grd_dst") || !strcmp(opt_crr,"grd_dst") || !strcmp(opt_crr,"dst_grd")) rgr_grd_dst=(char *)strdup(optarg);
+      if(!strcmp(opt_crr,"rgr_map") || !strcmp(opt_crr,"map_file") || !strcmp(opt_crr,"map_fl")){
         flg_rgr=True;
 	rgr_map=(char *)strdup(optarg);
       } /* endif rgr_map */
-      if(!strcmp(opt_crr,"rnr") || !strcmp(opt_crr,"rgr_rnr") || !strcmp(opt_crr,"renormalize")){
+      if(!strcmp(opt_crr,"hrz_fl") || !strcmp(opt_crr,"hrz_crd") || !strcmp(opt_crr,"rgr_hrz")){
+	flg_s1d=flg_rgr=True;
+	rgr_hrz=(char *)strdup(optarg);
+      } /* !vrt_fl */
+      if(!strcmp(opt_crr,"vrt_fl") || !strcmp(opt_crr,"vrt_crd") || !strcmp(opt_crr,"rgr_vrt")){
+        flg_rgr=True;
+	rgr_vrt=(char *)strdup(optarg);
+      } /* !vrt_fl */
+      if(!strcmp(opt_crr,"rnr_thr") || !strcmp(opt_crr,"rgr_rnr") || !strcmp(opt_crr,"renormalize") || !strcmp(opt_crr,"renormalization_threshold")){
         wgt_vld_thr=strtod(optarg,&sng_cnv_rcd);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtod",sng_cnv_rcd);
       } /* endif rgr_rnr */
@@ -617,23 +822,31 @@ main(int argc,char **argv)
 	rgr_var=(char *)strdup(optarg);
       } /* !rgr_var */
       if(!strcmp(opt_crr,"secret") || !strcmp(opt_crr,"scr") || !strcmp(opt_crr,"shh")){
-        (void)fprintf(stdout,"Hidden/unsupported NCO options:\nCompiler used\t\t--cmp, --compiler\nCopyright\t\t--cpy, --copyright, --license\nHidden functions\t--scr, --ssh, --secret\nLibrary used\t\t--lbr, --library\nMemory clean\t\t--mmr_cln, --cln, --clean\nMemory dirty\t\t--mmr_drt, --drt, --dirty\nMPI implementation\t--mpi_implementation\nNo-clobber files\t--no_clb, --no-clobber\nPseudonym\t\t--pseudonym, -Y (ncra only)\nSpinlock\t\t--spinlock\nStreams\t\t\t--srm\nSysconf\t\t\t--sysconf\nTest UDUnits\t\t--tst_udunits,'units_in','units_out','cln_sng'? \nVersion\t\t\t--vrs, --version\n\n");
+        (void)fprintf(stdout,"Hidden/unsupported NCO options:\nBit-Adjustment Alg.\t--baa, --bit_alg\nBuild-engine\t\t--bld, --build_engine\nByte-swap algorithm\t--bsa, --byte_swap\nCompiler used\t\t--cmp, --compiler\nCopyright\t\t--cpy, --copyright, --license\nHidden functions\t--scr, --shh, --secret\nLibrary used\t\t--lbr, --library\nLog level\t\t--log_lvl, --log_level\nList rank >= 2 vars\t--lst_rnk_ge2\nList extracted vars\t--lst_xtr\nMemory clean\t\t--mmr_cln, --cln, --clean\nMemory dirty\t\t--mmr_drt, --drt, --dirty\nMPI implementation\t--mpi_implementation\nNo-clobber files\t--no_clb, --no-clobber\nPseudonym\t\t--pseudonym, -Y (ncra only)\nSpinlock\t\t--spinlock\nStreams\t\t\t--srm\nSysconf\t\t\t--sysconf\nTest UDUnits\t\t--tst_udunits,'units_in','units_out','cln_sng'? \nVersion\t\t\t--vrs, --version\n\n");
         nco_exit(EXIT_SUCCESS);
       } /* endif "shh" */
       if(!strcmp(opt_crr,"srm")) PRN_SRM=True; /* [flg] Print ncStream */
+      if(!strcmp(opt_crr,"s1d") || !strcmp(opt_crr,"sparse") || !strcmp(opt_crr,"unpack_sparse")) flg_s1d=flg_rgr=True; /* [flg] Unpack sparse-1D CLM/ELM variables */
       if(!strcmp(opt_crr,"sysconf")){
 	long maxrss; /* [B] Maximum resident set size */
 	maxrss=nco_mmr_usg_prn((int)0);
 	maxrss+=0; /* CEWI */
         nco_exit(EXIT_SUCCESS);
       } /* endif "sysconf" */
+      if(!strcmp(opt_crr,"trr") || !strcmp(opt_crr,"terraref")){
+        flg_trr=True;
+        trr_arg=(char **)nco_realloc(trr_arg,(trr_nbr+1)*sizeof(char *));
+        trr_arg[trr_nbr++]=(char *)strdup(optarg);
+      } /* endif "trr" */
+      if(!strcmp(opt_crr,"trr_in")){trr_in=(char *)strdup(optarg);flg_trr=True;}
+      if(!strcmp(opt_crr,"trr_wxy")){trr_wxy=(char *)strdup(optarg);flg_trr=True;}
       if(!strcmp(opt_crr,"tst_udunits")){ 
 	/* Use this feature with, e.g.,
 	   ncks --tst_udunits='5 meters',centimeters ~/nco/data/in.nc
-	   ncks --tst_udunits='days since 1918-11-11','days since 1939-09-09',standard ~/nco/data/in.nc
-	   ncks --tst_udunits='days since 1918-11-11','days since 1939-09-09',360_day ~/nco/data/in.nc
-	   ncks --tst_udunits='days since 1918-11-11','days since 1939-09-09',365_day ~/nco/data/in.nc
-	   ncks --tst_udunits='days since 1918-11-11','days since 1939-09-09',366_day ~/nco/data/in.nc */
+	   ncks --tst_udunits='0 days since 1918-11-11','days since 1939-09-09',standard ~/nco/data/in.nc
+	   ncks --tst_udunits='0 days since 1918-11-11','days since 1939-09-09',360_day ~/nco/data/in.nc
+	   ncks --tst_udunits='0 days since 1918-11-11','days since 1939-09-09',365_day ~/nco/data/in.nc
+	   ncks --tst_udunits='0 days since 1918-11-11','days since 1939-09-09',366_day ~/nco/data/in.nc */
         char *cp;
         char **args;
         double crr_val;
@@ -643,8 +856,8 @@ main(int argc,char **argv)
 #endif /* !ENABLE_UDUNITS */
         cp=strdup(optarg); 
         args=nco_lst_prs_1D(cp,",",&lmt_nbr);         
-        nco_cln_clc_org(args[0],args[1],(lmt_nbr > 2 ? nco_cln_get_cln_typ(args[2]) : cln_nil),&crr_val);        
-        (void)fprintf(stdout,"Units in=%s, units out=%s, difference (date) or conversion (non-date) = %f\n",args[0],args[1],crr_val);
+        nco_cln_clc_dbl_org(args[0],args[1],(lmt_nbr > 2 ? nco_cln_get_cln_typ(args[2]) : cln_nil),&crr_val);        
+        (void)fprintf(stdout,"Value+Units in=%s, units out=%s, time-difference (for dates) or value-conversion (for non-dates) = %f\n",args[0],args[1],crr_val);
         if(cp) cp=(char *)nco_free(cp);
         nco_exit(EXIT_SUCCESS);
       } /* endif "tst_udunits" */
@@ -658,13 +871,29 @@ main(int argc,char **argv)
         (void)nco_vrs_prn(CVS_Id,CVS_Revision);
         nco_exit(EXIT_SUCCESS);
       } /* endif "vrs" */
+      if(!strcmp(opt_crr,"jsn_fmt") || !strcmp(opt_crr,"json_format") || !strcmp(opt_crr,"json_fmt") || !strcmp(opt_crr,"jsn_format")){
+	PRN_JSN=True;
+	JSN_ATT_FMT=(int)strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+	if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
+	if(JSN_ATT_FMT >= 4) JSN_DATA_BRK=False; /* [flg] Print JSON with bracket data */
+	JSN_ATT_FMT%=4; /* 20161221: Valid values are 0,1,2 */
+	if(JSN_ATT_FMT == 3) JSN_ATT_FMT=2;
+	JSN_VAR_FMT=JSN_ATT_FMT;
+      } /* !jsn_att_fmt */
+      if(!strcmp(opt_crr,"jsn") || !strcmp(opt_crr,"json") || !strcmp(opt_crr,"w10") || !strcmp(opt_crr,"w10n")) PRN_JSN=True; /* [flg] Print JSON */
       if(!strcmp(opt_crr,"wrt_tmp_fl") || !strcmp(opt_crr,"write_tmp_fl")) WRT_TMP_FL=True;
       if(!strcmp(opt_crr,"no_tmp_fl")) WRT_TMP_FL=False;
-      if(!strcmp(opt_crr,"jsn") || !strcmp(opt_crr,"json") || !strcmp(opt_crr,"w10") || !strcmp(opt_crr,"w10n")) PRN_JSN=True; /* [flg] Print JSON */
       if(!strcmp(opt_crr,"xml") || !strcmp(opt_crr,"ncml")) PRN_XML=True; /* [flg] Print XML (NcML) */
       if(!strcmp(opt_crr,"xml_no_location") || !strcmp(opt_crr,"ncml_no_location")){PRN_XML_LOCATION=False;PRN_XML=True;} /* [flg] Print XML location tag */
       if(!strcmp(opt_crr,"xml_spr_chr")){spr_chr=(char *)strdup(optarg);PRN_XML=True;} /* [flg] Separator for XML character types */
       if(!strcmp(opt_crr,"xml_spr_nmr")){spr_nmr=(char *)strdup(optarg);PRN_XML=True;} /* [flg] Separator for XML numeric types */
+      if(!strcmp(opt_crr,"xtn_var_lst") || !strcmp(opt_crr,"extensive")){
+	/* Extensive variables */
+	optarg_lcl=(char *)strdup(optarg);
+	(void)nco_rx_comma2hash(optarg_lcl);
+	xtn_lst_in=nco_lst_prs_2D(optarg_lcl,",",&xtn_nbr);
+	optarg_lcl=(char *)nco_free(optarg_lcl);
+      } /* !xtn */
     } /* opt != 0 */
     /* Process short options */
     switch(opt){
@@ -673,15 +902,14 @@ main(int argc,char **argv)
     case '3': /* Request netCDF3 output storage format */
       fl_out_fmt=NC_FORMAT_CLASSIC;
       break;
-    case '4': /* Catch-all to prescribe output storage format */
-      if(!strcmp(opt_crr,"64bit")) fl_out_fmt=NC_FORMAT_64BIT; else fl_out_fmt=NC_FORMAT_NETCDF4; 
+    case '4': /* Request netCDF4 output storage format */
+      fl_out_fmt=NC_FORMAT_NETCDF4; 
       break;
-    case '5': /* Print using new print format */
+    case '5': /* Request netCDF3 64-bit offset+data storage (i.e., pnetCDF) format */
       fl_out_fmt=NC_FORMAT_CDF5;
-      PRN_NEW_FMT=!PRN_NEW_FMT;
       break;
     case '6': /* Request netCDF3 64-bit offset output storage format */
-      fl_out_fmt=NC_FORMAT_64BIT;
+      fl_out_fmt=NC_FORMAT_64BIT_OFFSET;
       break;
     case '7': /* Request netCDF4-classic output storage format */
       fl_out_fmt=NC_FORMAT_NETCDF4_CLASSIC;
@@ -689,8 +917,9 @@ main(int argc,char **argv)
     case 'A': /* Toggle FORCE_APPEND */
       FORCE_APPEND=!FORCE_APPEND;
       break;
-    case 'a': /* Toggle ALPHABETIZE_OUTPUT */
-      ALPHABETIZE_OUTPUT=!ALPHABETIZE_OUTPUT;
+    case 'a': /* Do not alphabetize output */
+      ALPHABETIZE_OUTPUT=False;
+      (void)fprintf(stderr,"%s: WARNING the ncks '-a', '--abc', and '--alphabetize' switches are misleadingly named because they turn-off the default alphabetization. These switches are deprecated as of NCO 4.7.1 and will soon be deleted. Instead, please use the new long options --no_abc, --no-abc, --no_alphabetize, or --no-alphabetize, all of which turn-off the default alphabetization.\n",nco_prg_nm_get());
       break;
     case 'b': /* Set file for binary output */
       fl_bnr=(char *)strdup(optarg);
@@ -704,7 +933,6 @@ main(int argc,char **argv)
     case 'D': /* Debugging level. Default is 0. */
       nco_dbg_lvl=(unsigned short int)strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
       if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
-      nc_set_log_level(nco_dbg_lvl);
       break;
     case 'd': /* Copy limit argument for later processing */
       lmt_arg[lmt_nbr]=(char *)strdup(optarg);
@@ -779,7 +1007,8 @@ main(int argc,char **argv)
       while(!nco_spn_lck_brk) usleep(nco_spn_lck_us); /* Spinlock. fxm: should probably insert a sched_yield */
       break;
 #endif /* !ENABLE_MPI */
-    case 's': /* User specified delimiter string for printed output */
+    case 's': /* User-specified delimiter string for traditional printed output */
+      PRN_TRD=True; /* [flg] Print traditional */
       dlm_sng=(char *)strdup(optarg);
       break;
     case 't': /* Thread number */
@@ -811,11 +1040,13 @@ main(int argc,char **argv)
       EXCLUDE_INPUT_LIST=True;
       break;
     case 'z': /* Print absolute path of all input variables then exit */
-      GET_LIST=True;
+      trv_tbl_prn(trv_tbl);
+      goto close_and_free; 
       break;
-    case '?': /* Print proper usage */
+     case '?': /* Question mark means unrecognized option, print proper usage then EXIT_FAILURE */
+      (void)fprintf(stdout,"%s: ERROR in command-line syntax/options. Missing or unrecognized option. Please reformulate command accordingly.\n",nco_prg_nm_get());
       (void)nco_usg_prn();
-      nco_exit(EXIT_SUCCESS);
+      nco_exit(EXIT_FAILURE);
       break;
     case '-': /* Long options are not allowed */
       (void)fprintf(stderr,"%s: ERROR Long options are not available in this build. Use single letter options instead.\n",nco_prg_nm_get());
@@ -829,6 +1060,10 @@ main(int argc,char **argv)
     } /* end switch */
     if(opt_crr) opt_crr=(char *)nco_free(opt_crr);
   } /* end while loop */
+
+  /* 20170107: Unlike all other operators, ncks may benefit from setting chunk cache when input file (not output file) is netCDF4 because there is anecdotal evidence that ncdump netCDF4 print speed may be improved by cache adjustments. We cannot verify whether input, output, or both file formats are netCDF4 because nco_set_chunk_cache() must be called before opening file(s). Setting this for netCDF3 library is harmless and calls a no-op stub function */
+  /* Set/report global chunk cache */
+  rcd+=nco_cnk_csh_ini(cnk_csh_byt);
 
 #ifdef _LANGINFO_H
 /* Internationalization i18n
@@ -851,39 +1086,54 @@ main(int argc,char **argv)
   if(nco_dbg_lvl >= nco_dbg_std) (void)fprintf(stdout,gettext("%s: I18N This text may appear in a foreign language\n"),nco_prg_nm);
 #endif /* !_LANGINFO_H */
 
+  #if defined(ENABLE_GSL)
+    gsl_set_error_handler_off();
+  #endif /* !ENABLE_GSL */
+
   /* Initialize traversal table */
   (void)trv_tbl_init(&trv_tbl);
  
-  /* Process positional arguments and fill in filenames */
-  fl_lst_in=nco_fl_lst_mk(argv,argc,optind,&fl_nbr,&fl_out,&FL_LST_IN_FROM_STDIN);
+  /* Process positional arguments and fill-in filenames */
+  fl_lst_in=nco_fl_lst_mk(argv,argc,optind,&fl_nbr,&fl_out,&FL_LST_IN_FROM_STDIN,FORCE_OVERWRITE);
   
   /* Initialize thread information */
-  thr_nbr=nco_openmp_ini(thr_nbr);
+  if(flg_rgr) thr_nbr=nco_openmp_ini(thr_nbr); else thr_nbr=nco_openmp_ini((int)1);
   in_id_arr=(int *)nco_malloc(thr_nbr*sizeof(int));
   trv_tbl->thr_nbr=thr_nbr;
   trv_tbl->in_id_arr=in_id_arr;
 
   /* Parse filename */
   fl_in=nco_fl_nm_prs(fl_in,0,&fl_nbr,fl_lst_in,abb_arg_nbr,fl_lst_abb,fl_pth);
+  /* Make dummy input file (this step must precede nco_fl_mk_lcl()) */
+  if(flg_dmm_in) nco_fl_dmm_mk(fl_in);
   /* Make sure file is on local system and is readable or die trying */
-  fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,&FL_RTR_RMT_LCN);
+  fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,HPSS_TRY,&FL_RTR_RMT_LCN);
   /* Open file using appropriate buffer size hints and verbosity */
   if(RAM_OPEN) md_open=NC_NOWRITE|NC_DISKLESS; else md_open=NC_NOWRITE;
+  if(SHARE_OPEN) md_open=md_open|NC_SHARE;
   for(thr_idx=0;thr_idx<thr_nbr;thr_idx++) rcd+=nco_fl_open(fl_in,md_open,&bfr_sz_hnt,in_id_arr+thr_idx);
   in_id=in_id_arr[0];
   
   /* Construct GTT (Group Traversal Table), check -v and -g input names and create extraction list */
-  (void)nco_bld_trv_tbl(in_id,trv_pth,lmt_nbr,lmt_arg,aux_nbr,aux_arg,MSA_USR_RDR,FORTRAN_IDX_CNV,grp_lst_in,grp_lst_in_nbr,var_lst_in,xtr_nbr,EXTRACT_ALL_COORDINATES,GRP_VAR_UNN,GRP_XTR_VAR_XCL,EXCLUDE_INPUT_LIST,EXTRACT_ASSOCIATED_COORDINATES,nco_pck_plc_nil,&flg_dne,trv_tbl);
+  (void)nco_bld_trv_tbl(in_id,trv_pth,lmt_nbr,lmt_arg,aux_nbr,aux_arg,MSA_USR_RDR,FORTRAN_IDX_CNV,grp_lst_in,grp_lst_in_nbr,var_lst_in,xtr_nbr,EXTRACT_ALL_COORDINATES,GRP_VAR_UNN,GRP_XTR_VAR_XCL,EXCLUDE_INPUT_LIST,EXTRACT_ASSOCIATED_COORDINATES,EXTRACT_CLL_MSR,EXTRACT_FRM_TRM,nco_pck_plc_nil,&flg_dne,trv_tbl);
+
+  if(ALPHABETIZE_OUTPUT) trv_tbl_srt(srt_mth,trv_tbl);
+
+  /* [fnc] Print extraction list and exit */
+  if(LST_XTR) nco_xtr_lst(trv_tbl);
+
+  /* [fnc] Print extraction list of N>=D variables and exit */
+  if(LST_RNK_GE2) nco_xtr_ND_lst(trv_tbl);
 
   /* Were all user-specified dimensions found? */ 
   (void)nco_chk_dmn(lmt_nbr,flg_dne);    
 
   /* Get number of variables, dimensions, and global attributes in file */
-  (void)trv_tbl_inq(&att_glb_nbr,&att_grp_nbr,&att_var_nbr,&dmn_nbr_fl,&dmn_rec_fl,&grp_dpt_fl,&grp_nbr_fl,&var_ntm_fl,&var_nbr_fl,trv_tbl);
+  (void)trv_tbl_inq(&att_glb_nbr,&att_grp_nbr,&att_var_nbr,&dmn_nbr_fl,&dmn_rec_fl,&grp_dpt_fl,&grp_nbr_fl,&var_udt_fl,&var_nbr_fl,trv_tbl);
 
   /* Make output and input files consanguinous */
   (void)nco_inq_format(in_id,&fl_in_fmt);
-  if(fl_out && fl_out_fmt == NCO_FORMAT_UNDEFINED) fl_out_fmt=fl_in_fmt;
+  if(fl_out_fmt == NCO_FORMAT_UNDEFINED) fl_out_fmt=fl_in_fmt;
   if(fl_out_fmt == NC_FORMAT_NETCDF4 || fl_out_fmt == NC_FORMAT_NETCDF4_CLASSIC) (void)omp_set_num_threads((int)0);
 
 #ifdef ENABLE_MPI
@@ -891,24 +1141,6 @@ main(int argc,char **argv)
   /* Roll call */
   (void)fprintf(stdout,"%s: MPI process rank %d reports %d process%s\n",nco_prg_nm,prc_rnk,prc_nbr,(prc_nbr == 1) ? "" : "es");
 #endif /* !ENABLE_MPI */
-
-  /* Pedro's options, essentially for debugging (deprecated, likely to be eliminated in future) */ 
-  if(GET_LIST){ 
-    if(ALPHABETIZE_OUTPUT) trv_tbl_srt(trv_tbl);
-    trv_tbl_prn(trv_tbl);
-    goto close_and_free; 
-  } /* !GET_LIST */ 
-  if(GET_GRP_INFO){ 
-    nco_prn_trv_tbl(in_id,trv_tbl);
-    goto close_and_free; 
-  } /* !GET_GRP_INFO */
-  if(GET_FILE_INFO){ 
-    (void)fprintf(stderr,"%s: INFO reports file information\n",nco_prg_nm_get());
-    (void)fprintf(stdout,"%d subgroups, %d fixed dimensions, %d record dimensions, %d group + global attributes, %d atomic-type variables, %d non-atomic variables\n",grp_nbr_fl,trv_tbl->nbr_dmn-dmn_rec_fl,dmn_rec_fl,att_glb_nbr+att_glb_nbr,var_nbr_fl,var_ntm_fl);
-    goto close_and_free; 
-  } /* !GET_FILE_INFO */
-
-  if(ALPHABETIZE_OUTPUT) trv_tbl_srt(trv_tbl);
 
   /* We now have final list of variables to extract. Phew. */
 
@@ -923,7 +1155,7 @@ main(int argc,char **argv)
       if(PRN_GLB_METADATA_TGL) PRN_GLB_METADATA=!PRN_GLB_METADATA;
     } /* !FORCE_APPEND */
   }else{ /* !fl_out */
-    /* Only input file is specified, so some printing should occur */
+    /* Only input file is specified, so print it */
     if(PRN_VRB || (!PRN_VAR_DATA_TGL && !PRN_VAR_METADATA_TGL && !PRN_GLB_METADATA_TGL)){
       /* Verbose printing simply means assume user wants deluxe frills by default */
       if(PRN_DMN_UNITS_TGL) PRN_DMN_UNITS=False; else PRN_DMN_UNITS=True;
@@ -945,15 +1177,34 @@ main(int argc,char **argv)
 
   if(fl_bnr && !fl_out){
     /* Native binary files depend on writing netCDF file to enter generic I/O logic */
-    (void)fprintf(stdout,"%s: ERROR Native binary files cannot be written unless netCDF output filename also specified. HINT: Repeat command with dummy netCDF file specified for output file (e.g., -o foo.nc)\n",nco_prg_nm_get());
+    (void)fprintf(stdout,"%s: ERROR Native binary files cannot be written unless netCDF output filename also specified.\nHINT: Repeat command with dummy netCDF file specified for output file (e.g., -o foo.nc)\n",nco_prg_nm_get());
     nco_exit(EXIT_FAILURE);
   } /* endif fl_bnr */
+    
+  if(flg_rgr && !fl_out){
+    (void)fprintf(stdout,"%s: ERROR Regridding requested but no output file specified\nHINT: Specify output file with \"-o fl_out\" or as last argument\n",nco_prg_nm_get());
+    nco_exit(EXIT_FAILURE);
+  } /* !flg_rgr */
     
   if(gpe){
     if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stderr,"%s: INFO Group Path Edit (GPE) feature enabled\n",nco_prg_nm_get());
     if(fl_out && fl_out_fmt != NC_FORMAT_NETCDF4 && nco_dbg_lvl >= nco_dbg_std) (void)fprintf(stderr,"%s: WARNING Group Path Edit (GPE) requires netCDF4 output format in most cases (except flattening) but user explicitly requested output format = %s. This command will fail if the output file requires netCDF4 features like groups, non-atomic types, or multiple record dimensions. However, it _will_ autoconvert netCDF4 atomic types (e.g., NC_STRING, NC_UBYTE...) to netCDF3 atomic types (e.g., NC_CHAR, NC_SHORT...).\n",nco_prg_nm_get(),nco_fmt_sng(fl_out_fmt));
   } /* !gpe */
 
+  /* Terraref */
+  if(flg_trr){
+    char *trr_out;
+    trr_sct *trr_nfo;
+    trr_out=(char *)strdup(fl_out);
+    trr_nfo=nco_trr_ini(cmd_ln,dfl_lvl,trr_arg,trr_nbr,trr_in,trr_out,trr_wxy);
+    (void)nco_trr_read(trr_nfo);
+    /* Free Terraref structure */
+    trr_nfo=nco_trr_free(trr_nfo);
+    if(trr_wxy) trr_wxy=(char *)nco_free(trr_wxy);
+    nco_exit_gracefully();
+    return EXIT_SUCCESS;
+  } /* !Terraref */
+  
   if(fl_out){
     /* Output file was specified so PRN_ tokens refer to (meta)data copying */
     int out_id;
@@ -967,20 +1218,27 @@ main(int argc,char **argv)
       /* Initialize regridding structure */
       rgr_in=(char *)strdup(fl_in);
       rgr_out=(char *)strdup(fl_out);
-      rgr_nfo=nco_rgr_ini(cmd_ln,in_id,rgr_arg,rgr_nbr,rgr_in,rgr_out,rgr_grd_src,rgr_grd_dst,rgr_map,rgr_var,wgt_vld_thr);
-      rgr_nfo->fl_out_tmp=nco_fl_out_open(rgr_nfo->fl_out,FORCE_APPEND,FORCE_OVERWRITE,fl_out_fmt,&bfr_sz_hnt,RAM_CREATE,RAM_OPEN,WRT_TMP_FL,&out_id);
+      rgr_nfo=nco_rgr_ini(cmd_ln,in_id,rgr_arg,rgr_nbr,rgr_in,rgr_out,rgr_grd_src,rgr_grd_dst,rgr_hrz,rgr_map,rgr_var,rgr_vrt,wgt_vld_thr,xtn_lst_in,xtn_nbr);
+      rgr_nfo->fl_out_fmt=fl_out_fmt;
+      rgr_nfo->dfl_lvl=dfl_lvl;
+      rgr_nfo->hdr_pad=hdr_pad;
+      rgr_nfo->flg_area_out=EXTRACT_CLL_MSR; /* [flg] Add area to output */
+      rgr_nfo->flg_s1d=flg_s1d; /* [flg] Unpack sparse-1D CLM/ELM variables */
+      rgr_nfo->flg_uio=SHARE_CREATE;
+      rgr_nfo->fl_out_tmp=nco_fl_out_open(rgr_nfo->fl_out,&FORCE_APPEND,FORCE_OVERWRITE,fl_out_fmt,&bfr_sz_hnt,RAM_CREATE,RAM_OPEN,SHARE_CREATE,SHARE_OPEN,WRT_TMP_FL,&out_id);
 
       /* Copy Global Metadata */
       rgr_nfo->out_id=out_id;
+      rgr_nfo->thr_nbr=thr_nbr;
       nco_bool PCK_ATT_CPY=True; /* [flg] Copy attributes "scale_factor", "add_offset" */
       (void)nco_att_cpy(in_id,out_id,NC_GLOBAL,NC_GLOBAL,PCK_ATT_CPY);
       /* Catenate time-stamped command line to "history" global attribute */
       if(HISTORY_APPEND) (void)nco_hst_att_cat(out_id,cmd_ln);
       if(gaa_nbr > 0) (void)nco_glb_att_add(out_id,gaa_arg,gaa_nbr);
       if(HISTORY_APPEND) (void)nco_vrs_att_cat(out_id);
-      if(thr_nbr > 0 && HISTORY_APPEND) (void)nco_thr_att_cat(out_id,thr_nbr);
+      if(thr_nbr > 1 && HISTORY_APPEND) (void)nco_thr_att_cat(out_id,thr_nbr);
 
-      /* Regrid fields */
+      /* Generate grids/maps or regrid horizontally/vertically */
       rcd=nco_rgr_ctl(rgr_nfo,trv_tbl);
       /* Change from NCO_NOERR to NC_NOERR */
       rcd=NC_NOERR;
@@ -1001,13 +1259,13 @@ main(int argc,char **argv)
       (void)nco_fl_fmt_vet(fl_out_fmt,cnk_nbr,dfl_lvl);
       
       /* Open output file */
-      fl_out_tmp=nco_fl_out_open(fl_out,FORCE_APPEND,FORCE_OVERWRITE,fl_out_fmt,&bfr_sz_hnt,RAM_CREATE,RAM_OPEN,WRT_TMP_FL,&out_id);
+      fl_out_tmp=nco_fl_out_open(fl_out,&FORCE_APPEND,FORCE_OVERWRITE,fl_out_fmt,&bfr_sz_hnt,RAM_CREATE,RAM_OPEN,SHARE_CREATE,SHARE_OPEN,WRT_TMP_FL,&out_id);
     
       /* Initialize chunking from user-specified inputs */
-      if(fl_out_fmt == NC_FORMAT_NETCDF4 || fl_out_fmt == NC_FORMAT_NETCDF4_CLASSIC) rcd+=nco_cnk_ini(in_id,fl_out,cnk_arg,cnk_nbr,cnk_map,cnk_plc,cnk_min_byt,cnk_sz_byt,cnk_sz_scl,&cnk);
+      if(fl_out_fmt == NC_FORMAT_NETCDF4 || fl_out_fmt == NC_FORMAT_NETCDF4_CLASSIC) rcd+=nco_cnk_ini(in_id,fl_out,cnk_arg,cnk_nbr,cnk_map,cnk_plc,cnk_csh_byt,cnk_min_byt,cnk_sz_byt,cnk_sz_scl,&cnk);
 
       /* Define extracted groups, variables, and attributes in output file */
-      CPY_GRP_METADATA = FORCE_APPEND ? False : PRN_GLB_METADATA;
+      CPY_GRP_METADATA=PRN_GLB_METADATA;
       (void)nco_xtr_dfn(in_id,out_id,&cnk,dfl_lvl,gpe,md5,CPY_GRP_METADATA,PRN_VAR_METADATA,RETAIN_ALL_DIMS,nco_pck_plc_nil,rec_dmn_nm,trv_tbl);
 
       /* Catenate time-stamped command line to "history" global attribute */
@@ -1020,7 +1278,7 @@ main(int argc,char **argv)
 	if(prc_nbr > 0 && HISTORY_APPEND) (void)nco_mpi_att_cat(out_id,prc_nbr);
 #endif /* !ENABLE_MPI */
       
-      /* Turn off default filling behavior to enhance efficiency */
+      /* Turn-off default filling behavior to enhance efficiency */
       nco_set_fill(out_id,NC_NOFILL,&fll_md_old);
       
       /* Take output file out of define mode */
@@ -1032,7 +1290,7 @@ main(int argc,char **argv)
       } /* hdr_pad */
 
       /* [fnc] Open unformatted binary data file for writing */
-      if(fl_bnr) fp_bnr=nco_bnr_open(fl_bnr);
+      if(fl_bnr) fp_bnr=nco_bnr_open(fl_bnr,"w");
       
       /* Timestamp end of metadata setup and disk layout */
       rcd+=nco_ddra((char *)NULL,(char *)NULL,&ddra_info);
@@ -1066,14 +1324,18 @@ main(int argc,char **argv)
 
     /* No output file was specified so PRN_ tokens refer to screen printing */
     prn_fmt_sct prn_flg;
+    /* Printing defaults to stdout */
+    prn_flg.fp_out=stdout;
+    PRN_CDL=PRN_CDL || !(PRN_TRD || PRN_XML || PRN_JSN); // 20170817
     prn_flg.cdl=PRN_CDL;
+    prn_flg.trd=PRN_TRD;
     prn_flg.jsn=PRN_JSN;
     prn_flg.srm=PRN_SRM;
     prn_flg.xml=PRN_XML;
-    prn_flg.trd=!(PRN_CDL || PRN_XML || PRN_JSN);
     if((prn_flg.cdl || prn_flg.xml) && nco_dbg_lvl >= nco_dbg_std) prn_flg.nfo_xtr=True; else prn_flg.nfo_xtr=False;
-    prn_flg.new_fmt=(PRN_CDL || PRN_JSN || PRN_SRM || PRN_XML || PRN_NEW_FMT);
+    prn_flg.new_fmt=(PRN_CDL || PRN_JSN || PRN_SRM || PRN_XML);
     prn_flg.hdn=PRN_HDN;
+    prn_flg.udt=PRN_UDT;
     prn_flg.rad=RETAIN_ALL_DIMS;
     /* CDL must print filename stub */
     if(prn_flg.cdl || prn_flg.xml){
@@ -1091,15 +1353,19 @@ main(int argc,char **argv)
     prn_flg.xml_lcn=PRN_XML_LOCATION;
     prn_flg.gpe=gpe;
     prn_flg.md5=md5;
-    prn_flg.nbr_zro=0;
     prn_flg.ndn=0; /* Initialize for prn_flg->trd */
     prn_flg.spc_per_lvl=2;
     prn_flg.sxn_fst=2;
     prn_flg.var_fst=2;
     prn_flg.tab=4;
+    prn_flg.nbr_zro=0;  
     if(nco_dbg_lvl >= nco_dbg_scl) prn_flg.fll_pth=True; else prn_flg.fll_pth=False;
     if(prn_flg.xml) prn_flg.nwl_pst_val=False; else prn_flg.nwl_pst_val=True;
     prn_flg.dlm_sng=dlm_sng;
+    if(PRN_CLN_LGB && dt_fmt == fmt_dt_nil) dt_fmt=fmt_dt_sht;
+    prn_flg.cdl_fmt_dt=dt_fmt;
+    prn_flg.fl_out_fmt=fl_out_fmt;
+    prn_flg.fmt_val=fmt_val;
     prn_flg.ALPHA_BY_FULL_GROUP=ALPHA_BY_FULL_GROUP;
     prn_flg.ALPHA_BY_STUB_GROUP=ALPHA_BY_STUB_GROUP;
     prn_flg.FORTRAN_IDX_CNV=FORTRAN_IDX_CNV;
@@ -1110,20 +1376,28 @@ main(int argc,char **argv)
     prn_flg.PRN_MSS_VAL_BLANK=PRN_MSS_VAL_BLANK;
     prn_flg.PRN_VAR_DATA=PRN_VAR_DATA;
     prn_flg.PRN_VAR_METADATA=PRN_VAR_METADATA;
+    prn_flg.PRN_CLN_LGB=PRN_CLN_LGB;
+
     /* Derived formats */
     if(prn_flg.cdl){
-      prn_flg.PRN_DMN_UNITS=False;
+      prn_flg.PRN_DMN_UNITS=True;
       prn_flg.PRN_DMN_VAR_NM=True;
       prn_flg.PRN_MSS_VAL_BLANK=True;
     } /* endif */
+
     if(prn_flg.jsn){
-      /* JSON either prints metadata or data, not both */
-      if(prn_flg.PRN_VAR_DATA){
-	prn_flg.PRN_VAR_METADATA=False;
-	prn_flg.PRN_GLB_METADATA=False;
-      } /* !PRN_VAR_DATA */
-      if(prn_flg.PRN_GLB_METADATA) prn_flg.PRN_VAR_METADATA=False;
-    } /* endif JSON */
+      /* In JSON numeric notation, a terminal decimal place, like 0. and 20., is invalid---correct is 0.0, 20.0 */
+      prn_flg.nbr_zro=1;
+      /* JSON numerical arrays have no notion of missing values */
+      prn_flg.PRN_MSS_VAL_BLANK=False;
+      prn_flg.jsn_data_brk=JSN_DATA_BRK;
+      prn_flg.jsn_var_fmt=JSN_VAR_FMT;
+    }else { /* endif JSON */
+      prn_flg.jsn_att_fmt=0;
+      prn_flg.jsn_data_brk=False;
+      prn_flg.jsn_var_fmt=2;
+    } /* !JSON */
+      
     if(prn_flg.xml) prn_flg.PRN_MSS_VAL_BLANK=False;
 
     /* File summary */
@@ -1131,12 +1405,23 @@ main(int argc,char **argv)
       prn_flg.smr_sng=smr_sng=(char *)nco_malloc((strlen(fl_in)+300L*sizeof(char))); /* [sng] File summary string */
       smr_xtn_sng=(char *)nco_malloc(300L*sizeof(char)); /* [sng] File extended summary string */
       if(nco_dbg_lvl > nco_dbg_std) (void)sprintf(smr_xtn_sng," (representation of extended/underlying filetype %s)",nco_fmt_xtn_sng(nco_fmt_xtn_get())); else smr_xtn_sng[0]='\0';
-      (void)sprintf(smr_sng,"Summary of %s: filetype = %s%s, %i groups (max. depth = %i), %i dimensions (%i fixed, %i record), %i variables (%i atomic-type, %i non-atomic), %i attributes (%i global, %i group, %i variable)",fl_in,nco_fmt_sng(fl_in_fmt),smr_xtn_sng,grp_nbr_fl,grp_dpt_fl,trv_tbl->nbr_dmn,trv_tbl->nbr_dmn-dmn_rec_fl,dmn_rec_fl,var_nbr_fl+var_ntm_fl,var_nbr_fl,var_ntm_fl,att_glb_nbr+att_grp_nbr+att_var_nbr,att_glb_nbr,att_grp_nbr,att_var_nbr);
-      if(!prn_flg.cdl && !prn_flg.xml && !prn_flg.srm) (void)fprintf(stdout,"%s\n\n",smr_sng);
+      (void)sprintf(smr_sng,"Summary of %s: filetype = %s%s, %i groups (max. depth = %i), %i dimensions (%i fixed, %i record), %i variables (%i atomic, %i user-defined types), %i attributes (%i global, %i group, %i variable)",fl_in,nco_fmt_sng(fl_in_fmt),smr_xtn_sng,grp_nbr_fl,grp_dpt_fl,trv_tbl->nbr_dmn,trv_tbl->nbr_dmn-dmn_rec_fl,dmn_rec_fl,var_nbr_fl,var_nbr_fl-var_udt_fl,var_udt_fl,att_glb_nbr+att_grp_nbr+att_var_nbr,att_glb_nbr,att_grp_nbr,att_var_nbr);
+
+      if(nco_dbg_lvl > nco_dbg_std){
+	prn_flg.smr_fl_sz_sng=smr_fl_sz_sng=(char *)nco_malloc(300L*sizeof(char)); /* [sng] String describing estimated file size */
+ 	(void)nco_fl_sz_est(smr_fl_sz_sng,trv_tbl);
+      } /* !dbg */
     } /* endif summary */
 
-    if(!prn_flg.new_fmt){
+    if(fl_prn){
+      if((fp_prn=fopen(fl_prn,"w")) == NULL){
+	(void)fprintf(stderr,"%s: ERROR unable to open formatted output file %s\n",nco_prg_nm_get(),fl_prn);
+	nco_exit(EXIT_FAILURE);
+      } /* !fp_prn */
+      prn_flg.fp_out=fp_prn;
+    } /* !fl_prn */
 
+    if(!prn_flg.new_fmt){
       /* Traditional printing order/format always used prior to 201307 */
       if(PRN_GLB_METADATA){
         int dmn_ids_rec[NC_MAX_DIMS]; /* [ID] Record dimension IDs array */
@@ -1148,7 +1433,7 @@ main(int argc,char **argv)
           long rec_dmn_sz;
           for(int rec_idx=0;rec_idx<nbr_rec_lcl;rec_idx++){
             (void)nco_inq_dim(in_id,dmn_ids_rec[rec_idx],dmn_nm,&rec_dmn_sz);
-            (void)fprintf(stdout,"Root record dimension %d: name = %s, size = %li\n",rec_idx,dmn_nm,rec_dmn_sz);
+            (void)fprintf(prn_flg.fp_out,"Root record dimension %d: name = %s, size = %li\n",rec_idx,dmn_nm,rec_dmn_sz);
           } /* end loop over rec_idx */
           (void)fprintf(stdout,"\n");
         } /* NCO_REC_DMN_UNDEFINED */
@@ -1161,6 +1446,18 @@ main(int argc,char **argv)
       
     }else{ 
 
+      if(CHK_MAP){
+	/* Check map-file quality */
+	nco_map_chk(fl_in,flg_area_wgt,flg_frac_b_nrm);
+        goto close_and_free;
+      } /* !CHK_MAP */
+
+      if(CHK_NAN){
+	/* Check floating-point fields for NaNs */
+        nco_chk_nan(in_id,trv_tbl);
+        goto close_and_free;
+      } /* !CHK_NAN */
+
       /* New file dump format(s) developed 201307 for CDL, JSN, SRM, TRD, XML */
       if(PRN_SRM){
 	/* Stream printing is pre-alpha. Great project for volunteers! */
@@ -1169,8 +1466,10 @@ main(int argc,char **argv)
       } /* !PRN_SRM */
 
       if(ALPHA_BY_FULL_GROUP || ALPHA_BY_STUB_GROUP){
-	/* Ineptly named nco_grp_prn() emits full CDL and XML formats, and partial JSN */
-        rcd+=nco_grp_prn(in_id,trv_pth,&prn_flg,trv_tbl);
+	/* Print CDL, JSN, TRD, and XML formats */
+        if(prn_flg.jsn) rcd+=nco_prn_jsn(in_id,trv_pth,&prn_flg,trv_tbl);
+        else if(prn_flg.xml) rcd+=nco_prn_xml(in_id,trv_pth,&prn_flg,trv_tbl);
+        else if(prn_flg.cdl || prn_flg.trd) rcd+=nco_prn_cdl_trd(in_id,trv_pth,&prn_flg,trv_tbl); 
       }else{
 	/* Place-holder for other options for organization/alphabetization */
 	if(PRN_VAR_METADATA) (void)nco_prn_xtr_mtd(in_id,&prn_flg,trv_tbl);
@@ -1178,7 +1477,15 @@ main(int argc,char **argv)
       } /* end if */
     } /* endif new format */
 
+    if(fl_prn){
+      rcd=fclose(fp_prn);
+      if(rcd != 0){
+	(void)fprintf(stderr,"%s: ERROR unable to close formatted output file %s\n",nco_prg_nm_get(),fl_prn);
+	nco_exit(EXIT_FAILURE);
+      } /* !fp_prn */
+    } /* !fl_prn */
     if(fl_in_dpl) fl_in_dpl=(char *)nco_free(fl_in_dpl);
+
   } /* !fl_out */
 
   /* goto close_and_free */
@@ -1191,16 +1498,12 @@ close_and_free:
   if(FL_RTR_RMT_LCN && RM_RMT_FL_PST_PRC) (void)nco_fl_rm(fl_in);
   
   /* Clean memory unless dirty memory allowed */
-  if(flg_cln){
+  if(flg_mmr_cln){
     /* ncks-specific memory */
     if(fl_bnr) fl_bnr=(char *)nco_free(fl_bnr);
+    if(fl_prn) fl_prn=(char *)nco_free(fl_prn);
+    if(flt_sng) flt_sng=(char *)nco_free(flt_sng);
     if(rec_dmn_nm) rec_dmn_nm=(char *)nco_free(rec_dmn_nm); 
-    if(fl_scrip){
-      fl_scrip=(char *)nco_free(fl_scrip);
-      idx=0;
-      if(nco_dbg_lvl > nco_dbg_fl) while(sld_nfo[idx].key) nco_kvm_prn(sld_nfo[idx++]);
-      if(sld_nfo) sld_nfo=nco_kvm_lst_free(sld_nfo,idx);
-    } /* endif fl_scrip */
     /* NCO-generic clean-up */
     /* Free individual strings/arrays */
     if(cmd_ln) cmd_ln=(char *)nco_free(cmd_ln);
@@ -1218,6 +1521,7 @@ close_and_free:
     if(fl_lst_in && fl_lst_abb == NULL) fl_lst_in=nco_sng_lst_free(fl_lst_in,fl_nbr); 
     if(fl_lst_in && fl_lst_abb) fl_lst_in=nco_sng_lst_free(fl_lst_in,1);
     if(fl_lst_abb) fl_lst_abb=nco_sng_lst_free(fl_lst_abb,abb_arg_nbr);
+    if(gaa_nbr > 0) gaa_arg=nco_sng_lst_free(gaa_arg,gaa_nbr);
     if(grp_lst_in_nbr > 0) grp_lst_in=nco_sng_lst_free(grp_lst_in,grp_lst_in_nbr);
     if(var_lst_in_nbr > 0) var_lst_in=nco_sng_lst_free(var_lst_in,var_lst_in_nbr);
     /* Free limits */
@@ -1226,16 +1530,17 @@ close_and_free:
     for(idx=0;idx<ppc_nbr;idx++) ppc_arg[idx]=(char *)nco_free(ppc_arg[idx]);
     /* Free chunking information */
     for(idx=0;idx<cnk_nbr;idx++) cnk_arg[idx]=(char *)nco_free(cnk_arg[idx]);
-    if(cnk_nbr > 0) cnk.cnk_dmn=(cnk_dmn_sct **)nco_cnk_lst_free(cnk.cnk_dmn,cnk_nbr);
+    if(cnk_nbr > 0 && (fl_out_fmt == NC_FORMAT_NETCDF4 || fl_out_fmt == NC_FORMAT_NETCDF4_CLASSIC)) cnk.cnk_dmn=(cnk_dmn_sct **)nco_cnk_lst_free(cnk.cnk_dmn,cnk_nbr);
     trv_tbl_free(trv_tbl);
     for(idx=0;idx<lmt_nbr;idx++) flg_dne[idx].dim_nm=(char *)nco_free(flg_dne[idx].dim_nm);
     if(flg_dne) flg_dne=(nco_dmn_dne_t *)nco_free(flg_dne);
     if(gpe) gpe=(gpe_sct *)nco_gpe_free(gpe);
     if(md5) md5=(md5_sct *)nco_md5_free(md5);
+    if(rec_dmn_nm_fix) rec_dmn_nm_fix=(char *)nco_free(rec_dmn_nm_fix);
     if(smr_sng) smr_sng=(char *)nco_free(smr_sng);
+    if(smr_fl_sz_sng) smr_fl_sz_sng=(char *)nco_free(smr_fl_sz_sng);
     if(smr_xtn_sng) smr_xtn_sng=(char *)nco_free(smr_xtn_sng);
-    rec_dmn_nm_fix=(char *)nco_free(rec_dmn_nm_fix);
-  } /* !flg_cln */
+  } /* !flg_mmr_cln */
   
 #ifdef ENABLE_MPI
   MPI_Finalize();

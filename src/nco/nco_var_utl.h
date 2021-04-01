@@ -2,10 +2,10 @@
 
 /* Purpose: Variable utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_var_utl.h" *//* Variable utilities */
@@ -31,7 +31,7 @@
 /* Personal headers */
 #include "nco.h" /* netCDF Operator (NCO) definitions */
 #include "nco_att_utl.h" /* Attribute utilities */
-#include "nco_bnr.h" /* Binary write utilities */
+#include "nco_bnr.h" /* Binary file utilities */
 #include "nco_ctl.h" /* Program flow control functions */
 #include "nco_dmn_utl.h" /* Dimension utilities */
 #include "nco_grp_trv.h" /* Group traversal */
@@ -40,6 +40,12 @@
 #include "nco_mss_val.h" /* Missing value utilities */
 #include "nco_pck.h" /* Packing and unpacking variables */
 #include "nco_ppc.h" /* Precision-Preserving Compression */
+
+#if ENABLE_CCR
+# include <ccr.h> /* Community Codec Repository prototypes */
+# include <ccr_meta.h> /* Community Codec Repository configuration */
+# include "nco_flt.h" /* Compression filters */
+#endif /* !ENABLE_CCR */
 
 #ifdef __cplusplus
 extern "C" {
@@ -118,7 +124,20 @@ extern "C" {
   nco_var_lst_free /* [fnc] Free memory associated with variable structure list */
   (var_sct **var_lst, /* I/O [sct] Variable structure list to free */
    const int var_nbr); /* I [nbr] Number of variable structures in list */
-  
+
+  nco_bool /* [flg] Variable is listed in this CF attribute, thereby associated */
+  nco_is_spc_in_cf_att /* [fnc] Variable is listed in this CF attribute, thereby associated */
+  (const int nc_id,    /* I [id] netCDF file ID */
+   const char *const cf_nm,  /* I [sng] cf att name */
+   const int var_trg_id, /* I [id] Variable ID */
+   int *cf_var_id); /* I [id] Variable ID */
+
+  char ***  /* [0] [ptr]  list of lists - each ragged array terminated with empty string    */
+  nco_lst_cf_att /* [fnc] look in all vars for att cf_nm  */
+  (const int nc_id,    /* I [id] netCDF file ID */
+  const char *const cf_nm,  /* I [sng] cf att name */
+  int *nbr_lst); /* 0 [nbr] number of ragged arrays returned */
+
   nco_bool /* [flg] Variable is listed in a "bounds" attribute */
   nco_is_spc_in_bnd_att /* [fnc] Variable is listed in a "bounds" attribute */
   (const int nc_id, /* I [id] netCDF file ID */
@@ -134,6 +153,11 @@ extern "C" {
   (const int nc_id, /* I [id] netCDF file ID */
    const int var_trg_id); /* I [id] Variable ID */
   
+  nco_bool /* [flg] Variable is listed in a "grid_mapping" attribute */
+  nco_is_spc_in_grd_att /* [fnc] Variable is listed in a "grid_mapping" attribute */
+  (const int nc_id, /* I [id] netCDF file ID */
+   const int var_trg_id); /* I [id] Variable ID */
+
   void
   nco_var_mtd_refresh /* [fnc] Update variable metadata (dmn_nbr, ID, mss_val, type) */
   (const int nc_id, /* I [id] netCDF input-file ID */

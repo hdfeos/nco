@@ -2,10 +2,10 @@
 
 /* Purpose: Arithmetic controls and utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_rth_utl.h" /* Arithmetic controls and utilities */
 
@@ -55,7 +55,7 @@ nco_opr_nrm /* [fnc] Normalization of arithmetic operations for ncra/nces */
   nbr_var_prc_cpy=nbr_var_prc;
 
 #ifdef _OPENMP
-#pragma omp parallel for default(none) private(idx) shared(nbr_var_prc_cpy,nco_op_typ_cpy,var_prc,var_prc_out)
+# pragma omp parallel for private(idx) shared(nbr_var_prc_cpy,nco_op_typ_cpy,var_prc,var_prc_out)
 #endif /* !_OPENMP */
   for(idx=0;idx<nbr_var_prc_cpy;idx++){
 
@@ -72,6 +72,7 @@ nco_opr_nrm /* [fnc] Normalization of arithmetic operations for ncra/nces */
     }else{ /* !var_prc[idx]->is_crd_var */
       switch(nco_op_typ_cpy){
       case nco_op_avg: /* Normalize sum by tally to create mean */
+      case nco_op_mebs: /* Normalize sum by tally to create mean */
       case nco_op_sqrt: /* Normalize sum by tally to create mean */
       case nco_op_sqravg: /* Normalize sum by tally to create mean */
       case nco_op_rms: /* Normalize sum of squares by tally to create mean square */
@@ -83,15 +84,18 @@ nco_opr_nrm /* [fnc] Normalization of arithmetic operations for ncra/nces */
         break;
       case nco_op_min: /* Minimum is already in buffer, do nothing */
       case nco_op_max: /* Maximum is already in buffer, do nothing */
+      case nco_op_mibs: /* Minimum absolute value is already in buffer, do nothing */
       case nco_op_mabs: /* Maximum absolute value is already in buffer, do nothing */
         break;
+      case nco_op_tabs: /* Total absolute value is already in buffer, stuff missing values into elements with zero tally */
       case nco_op_ttl: /* Total is already in buffer, stuff missing values into elements with zero tally */
         (void)nco_var_tll_zro_mss_val(var_prc_out[idx]->type,var_prc_out[idx]->sz,var_prc[idx]->has_mss_val,var_prc_out[idx]->mss_val,var_prc[idx]->tally,var_prc_out[idx]->val);
         break;
       default:
+	nco_dfl_case_generic_err();
         break;
       } /* end switch */
-      /* Some operations require additional processing */
+      /* A few operations require additional processing */
       switch(nco_op_typ_cpy) {
       case nco_op_rms: /* Take root of mean of sum of squares to create root mean square */
       case nco_op_rmssdn: /* Take root of sdn mean of sum of squares to create root mean square for sdn */
@@ -101,7 +105,18 @@ nco_opr_nrm /* [fnc] Normalization of arithmetic operations for ncra/nces */
       case nco_op_sqravg: /* Square mean to create square of the mean (for sdn) */
         (void)nco_var_mlt(var_prc_out[idx]->type,var_prc_out[idx]->sz,var_prc_out[idx]->has_mss_val,var_prc_out[idx]->mss_val,var_prc_out[idx]->val,var_prc_out[idx]->val);
         break;
+      case nco_op_avg:
+      case nco_op_ttl:
+      case nco_op_min:
+      case nco_op_max:
+      case nco_op_mibs:
+      case nco_op_mabs:
+      case nco_op_mebs:
+      case nco_op_tabs:
+      case nco_op_avgsqr:
+        break;
       default:
+	nco_dfl_case_generic_err();
         break;
       } /* end switch */
     } /* !var_prc[idx]->is_crd_var */
@@ -158,10 +173,8 @@ nco_opr_drv /* [fnc] Intermediate control of arithmetic operations for ncra/nces
     break;	
   case nco_op_mebs: /* Mean absolute value */
     /* Always take the absolute value of the fresh input
-       Then, on first loop, copy variable from var_prc to var_prc_out like min and max
-       Following loops, do comparative maximum after taking absolute value */
+       Every loop add and increment tally like avg, sqrt, sqravg */
     (void)nco_var_abs(var_prc->type,var_prc->sz,var_prc->has_mss_val,var_prc->mss_val,var_prc->val);
-    if(idx_rec == 0) (void)nco_var_copy(var_prc->type,var_prc->sz,var_prc->val,var_prc_out->val); 
     (void)nco_var_add_tll_ncra(var_prc->type,var_prc->sz,var_prc->has_mss_val,var_prc->mss_val,var_prc->tally,var_prc->wgt_crr,var_prc->wgt_sum,var_prc->val,var_prc_out->val);
     break;	
   case nco_op_mibs: /* Mean absolute value */
@@ -171,6 +184,11 @@ nco_opr_drv /* [fnc] Intermediate control of arithmetic operations for ncra/nces
     (void)nco_var_abs(var_prc->type,var_prc->sz,var_prc->has_mss_val,var_prc->mss_val,var_prc->val);
     if(idx_rec == 0) (void)nco_var_copy(var_prc->type,var_prc->sz,var_prc->val,var_prc_out->val); else (void)nco_var_min_bnr(var_prc_out->type,var_prc_out->sz,var_prc->has_mss_val,var_prc->mss_val,var_prc->val,var_prc_out->val);
     break;	
+  case nco_op_tabs: /* Total absolute value */
+    /* Same as ttl but take absolute first */
+    (void)nco_var_abs(var_prc->type,var_prc->sz,var_prc->has_mss_val,var_prc->mss_val,var_prc->val);
+    if(idx_rec == 0) (void)nco_var_copy_tll(var_prc->type,var_prc->sz,var_prc->has_mss_val,var_prc->mss_val,var_prc->tally,var_prc->val,var_prc_out->val); else (void)nco_var_add_tll_ncra(var_prc->type,var_prc->sz,var_prc->has_mss_val,var_prc->mss_val,var_prc->tally,var_prc->wgt_crr,var_prc->wgt_sum,var_prc->val,var_prc_out->val);
+    break;
   case nco_op_ttl: /* Total */
     /* NB: Copying input to output on first loop for nco_op_ttl, in similar manner to nco_op_[max/min], can work
        However, copying with nco_var_copy() would not change the tally variable, leaving it equal to zero
@@ -199,6 +217,9 @@ nco_opr_drv /* [fnc] Intermediate control of arithmetic operations for ncra/nces
     /* Sum the squares */
     (void)nco_var_add_tll_ncra(var_prc_out->type,var_prc_out->sz,var_prc->has_mss_val,var_prc->mss_val,var_prc->tally,var_prc->wgt_crr,var_prc->wgt_sum,var_prc->val,var_prc_out->val);
     break;
+  default:
+    nco_dfl_case_generic_err();
+    break; /* [enm] Nil or undefined operation type */
   } /* end switch */
 } /* end nco_opr_drv() */
 
@@ -213,6 +234,7 @@ nco_op_typ_cf_sng /* [fnc] Convert arithmetic operation type enum to string */
   case nco_op_min: return "minimum"; break; /* [enm] Minimum value */
   case nco_op_max: return "maximum"; break; /* [enm] Maximum value */
   case nco_op_ttl: return "sum"; break; /* [enm] Linear sum */
+  case nco_op_tabs: return "sum_absolute_value"; break; /* [enm] Total absolute value */
   case nco_op_mabs: return "maximum_absolute_value"; break; /* [enm] Maximum absolute value */
   case nco_op_mebs: return "mean_absolute_value"; break; /* [enm] Mean absolute value */
   case nco_op_mibs: return "minimum_absolute_value"; break; /* [enm] Minimum absolute value */
@@ -227,7 +249,8 @@ nco_op_typ_cf_sng /* [fnc] Convert arithmetic operation type enum to string */
   case nco_op_dvd:
   case nco_op_nil:
   default:
-    return "BROKEN";
+    nco_dfl_case_generic_err();
+    return "BROKEN"; /* CEWI */
     break; /* [enm] Nil or undefined operation type */
   } /* end switch */
 } /* end nco_op_typ_cf_sng() */
@@ -274,6 +297,7 @@ nco_op_typ_get /* [fnc] Convert user-specified operation into operation key */
   if(!strcmp(nco_op_sng,"sqravg")) return nco_op_sqravg;
   if(!strcmp(nco_op_sng,"sqrt") || !strcmp(nco_op_sng,"square-root")) return nco_op_sqrt;
   if(!strcmp(nco_op_sng,"total") || !strcmp(nco_op_sng,"ttl") || !strcmp(nco_op_sng,"sum")) return nco_op_ttl;
+  if(!strcmp(nco_op_sng,"tabs") || !strcmp(nco_op_sng,"ttlabs") || !strcmp(nco_op_sng,"sumabs")) return nco_op_tabs;
 
   if(!strcmp(nco_op_sng,"add") || !strcmp(nco_op_sng,"+") || !strcmp(nco_op_sng,"addition")) return nco_op_add;
   if(!strcmp(nco_op_sng,"sbt") || !strcmp(nco_op_sng,"-") || !strcmp(nco_op_sng,"dff") || !strcmp(nco_op_sng,"diff") || !strcmp(nco_op_sng,"sub") || !strcmp(nco_op_sng,"subtract") || !strcmp(nco_op_sng,"subtraction")) return nco_op_sbt;
@@ -282,7 +306,7 @@ nco_op_typ_get /* [fnc] Convert user-specified operation into operation key */
 
   (void)fprintf(stderr,"%s: ERROR %s reports unknown user-specified operation type \"%s\"\n",nco_prg_nm,fnc_nm,nco_op_sng);
   (void)fprintf(stderr,"%s: HINT Valid operation type (op_typ) choices:\n",nco_prg_nm);
-  if(nco_prg_id == ncbo) (void)fprintf(stderr,"addition: add,+,addition\nsubtraction: sbt,-,dff,diff,sub,subtract,subtraction\nmultiplication: mlt,*,mult,multiply,multiplication\ndivision: dvd,/,divide,division\n"); else (void)fprintf(stderr,"min or minimum, max or maximum, mabs or maximum_absolute_value, mebs or mean_absolute_value, mibs or maximum_absolute_value, ttl or total or sum, avg or average or mean, sqrt or square-root, sqravg, avgsqr, rms or root-mean-square, rmssdn\n");
+  if(nco_prg_id == ncbo) (void)fprintf(stderr,"addition: add,+,addition\nsubtraction: sbt,-,dff,diff,sub,subtract,subtraction\nmultiplication: mlt,*,mult,multiply,multiplication\ndivision: dvd,/,divide,division\n"); else (void)fprintf(stderr,"min or minimum, max or maximum, mabs or maximum_absolute_value, mebs or mean_absolute_value, mibs or maximum_absolute_value, tabs or ttlabs or sumabs, ttl or total or sum, avg or average or mean, sqrt or square-root, sqravg, avgsqr, rms or root-mean-square, rmssdn\n");
   nco_exit(EXIT_FAILURE);
   return False; /* Statement should not be reached */
 } /* end nco_op_typ_get() */
@@ -367,6 +391,26 @@ vec_set /* [fnc] Fill every value of first operand with value of second operand 
      because we have only operated on local copies of them. */
 
 } /* end vec_set() */
+
+void
+nco_zero_double /* [fnc] Zero all values of double array */
+(const long sz, /* I [nbr] Size (in elements) of operand */
+ double * restrict const op1) /* I/O [nbr] Array to be zeroed */
+{
+  /* Purpose: Zero all values of long array */
+
+  /* Presumably this old method used until 20050321, and then again after 20120330,
+     is slower than memset() because of pointer de-referencing. 
+     However, it does have the virtue of being correct. */
+  if(op1 == NULL){
+    (void)fprintf(stdout,"%s: ERROR nco_zero_double() asked to zero NULL pointer\n",nco_prg_nm_get());
+    nco_exit(EXIT_FAILURE);
+  } /* endif */
+  size_t sz_byt; /* [B] Number of bytes in variable buffer */
+  sz_byt=(size_t)sz*sizeof(long);
+  (void)memset((void *)op1,0,sz_byt);
+
+} /* end nco_zero_double() */
 
 void
 nco_zero_long /* [fnc] Zero all values of long array */

@@ -1,0 +1,158 @@
+// Count number of errors
+nbr_err=0;
+nbr_err_ttl=0;
+
+// time units first
+{
+  // rebase coordinate both with "days"
+  a1=time;
+  a1@units="days since 1970-1-1";
+  a1@calendar="gregorian";
+
+  a2=udunits(a1, "days since 1970-1-2");  
+  a2@units="days since 1970-1-2";
+
+
+  if( fabs( (a1-a2).avg() -1.0 ) > 0.01d )
+  {
+   print("ERROR: a1: problem rebasing time coordinate a2\n");   
+   nbr_err++;
+  }
+
+  // rebase coordinate both with "days" - 30 days a month calendar
+  a3=time.float();
+  a3@units="days since 1970-1-29";
+  a3@calendar="360_day";
+
+  a4=udunits(a3, "days since 1970-2-1");  
+  a4@units="days since 1970-2-1";
+
+
+  if( fabs( (a3-a4).avg() -2.0f ) > 0.01f )
+  {
+   print("ERROR: a3: problem rebasing time coord cal(360_day) a4\n");   
+   nbr_err++;
+  }
+
+  // rebase coordinate both with "days" - 365 days calendar
+  // nb in "normal" calendar the difference would be 3 days with leap day - but here is 2 days
+
+  a5=time;
+
+  a5@units="days since 2012-2-27";
+  a5@calendar="365_day";
+
+
+  @units="days since 2012-03-01";
+  a6=udunits(a5, @units);  
+  a6@units=@units;
+
+  if( fabs( (a5-a6).avg() -2.0 ) > 0.01d )
+  {
+   print("ERROR: a5: problem re-basing time coord cal(365_day) a6\n");   
+   nbr_err++;
+  }
+
+  //rebase corodinate hours and minutes
+  a7=time;
+  a7@units="hours since 2012-01-01";
+  a7@calendar="gregorian";
+
+  a8@units="minutes since 2012-01-01";
+
+  a8=udunits(a7, a8@units);
+  a8@units="minutes since 2012-01-01";
+
+
+  if( fabs(a8.sum()-3300.0) >0.1 )  
+  {
+   print("ERROR: a7: change time coord units from hours to days a7\n");   
+   nbr_err++;
+  }
+
+
+  //rebase corodinate days to hours - 360 calendar
+  a9=time;
+  a9@units="days since 2012-01-30";
+  a9@calendar="360_day";
+
+  @units="hours since 2012-02-01 01:00";
+
+  a10=udunits(a9, @units);
+  a10@units=@units;
+  a10@calendar="360_day";
+
+
+  if( fabs(a10.sum()-1070.0) >0.1 )  
+  {
+   print("ERROR: a9: change time coord units from days to hours (360_calendar)\n");   
+   nbr_err++;
+  }
+
+
+  //rebase corodinate mins to seconds - 365 calendar
+  a11=time;
+  // nb in this calendar NO a Leap year
+  a11@units="minutes since 2012-02-28 23:58:00.00";
+  a11@calendar="365_day";
+  
+
+  @units="seconds since 2012-03-01 00:00";
+  a12=udunits(a11, @units);
+  a12@units=@units;
+  a12@calendar="365_day";
+
+
+  if( fabs(a12.sum()-2100.0) >0.1 )  
+  {
+   print("ERROR: a11: change time coord units from mins to seconds (365_calendar)\n");   
+   nbr_err++;
+  }
+
+}
+
+// check strftime
+{
+  
+  // rebase coordinate both with "days" - 30 days a month calendar
+  b1=time;
+  b1@units="days since 1990-01-01";
+  b1@calendar="gregorian";
+ 
+  // use default strftime output this is "%Y-%m-%d %H:%M:%S"
+  b1@str=strftime(b1);
+  // use y/m/d
+  b1@str2=strftime(b1,"%Y/%m/%d");
+
+  b2=time;
+  b2@units="hours since 1970-01-01";
+  b2@calendar="gregorian";
+  b2@str=strftime(b2,"%Y/%m/%d %H:%M");
+
+
+}
+
+// other units
+{
+
+  T[lon]={0.0, 100.0, 150.0, 200.0};
+  T@units="Celsius";
+
+  @units="kelvin";
+  // over-write var
+  T=udunits(T, @units); 
+  T@units=@units;
+
+  
+  if( fabs(T.sum()-1542.6) >0.1 )  
+  {
+   print("ERROR: T: change Temperature units from Celsius to Kelvin)\n");   
+   nbr_err++;
+  }
+
+
+
+ }
+
+
+

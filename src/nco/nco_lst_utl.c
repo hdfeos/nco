@@ -2,10 +2,10 @@
 
 /* Purpose: List utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_lst_utl.h" /* List utilities */
 
@@ -92,7 +92,7 @@ nco_fmt_sng_printf_subst /* [fnc] Replace printf() format statements */
 
   /* Replace match with desired format */
   fmt_sng_new=(char *)strdup(fmt_sng);
-  if(mch_nbr){
+  if(mch_nbr && fmt_sng && strlen(fmt_sng)){
     mch_psn_srt=result->rm_so; /* [B] Byte offset from start of string to start of substring */
     mch_psn_end=result->rm_eo-1L; /* [B] Byte offset from start of string to end of substring */
     (void)nco_realloc(fmt_sng_new,(mch_psn_srt+strlen(fmt_sng)-mch_psn_end+2L)*sizeof(char));
@@ -692,10 +692,10 @@ nco_rx_comma2hash /* [fnc] Replace commas with hashes when within braces */
   /* Loop over each character in string until first NUL encountered */
   while(*cp){
     /* Find open brace */
-    if(*cp=='{') openbrace=True;
-    if(openbrace && *cp==',') cp_cnv=cp;
+    if(*cp == '{') openbrace=True;
+    if(openbrace && *cp == ',') cp_cnv=cp;
     /* Find close brace */
-    if(*cp=='}'){ 
+    if(*cp == '}'){
       /* Change comma following open brace, if any, to hash */
       if(cp_cnv) *cp_cnv='#';
       /* Reset comma location following open brace */
@@ -796,6 +796,52 @@ sng_lst_cat /* [fnc] Join string list together into one string, delete originals
   return sng;
 } /* end sng_lst_cat() */
 
+nco_bool /* O [flg] Both var_nm and bnds_nm are in rgd_arr_lst */
+nco_rgd_arr_lst_chk /* [fnc] Check list of ragged arrays for presence of var_nm and bnds_nm */
+(char ***rgd_arr_lst, /* I [sct] List of ragged arrays */
+ int nbr_lst, /* I [nbr] Number of ragged arrays in list */
+ char *var_nm, /* I [sng] Variable name to search for */
+ char *bnds_nm) /* I [sng] Bounds name to search for */
+{
+  /* Purpose:
+     Check the list of ragged arrays for presence of variable name var_nm and bounds name bnds_nm
+     rgd_arr_lst is a list of ragged arrays and each ragged array has this structure:
+     First element is var_nm
+     Second element is cf_nm
+     Remaining elements are variable names mentioned in attribute var_nm@cf_nm */
+  int idx;
+  int jdx=0;
+
+  for(idx=0;idx<nbr_lst;idx++)
+    if(!strcmp(var_nm,rgd_arr_lst[idx][0]))
+      break;
+
+  if(idx == nbr_lst)
+    return False;
+
+  jdx=2;
+  while(strlen(rgd_arr_lst[idx][jdx]) > 0)
+    if(!strcmp(rgd_arr_lst[idx][jdx++],bnds_nm))
+      return True;
+
+  return False;
+} /* !nco_rgd_arr_lst_chk() */
+
+void
+nco_rgd_arr_lst_free /* [fnc] Free memory associated with rgd_arr_lst, a list of ragged arrays */
+(char ***rgd_arr_lst, /* I/O [sct] List of ragged arrays */
+ int nbr_lst) /* I [nbr] Number of ragged arrays in list */
+{
+  /* Purpose: Free memory associated with rgd_arr_lst, a list of ragged arrays
+     NB: End of ragged array is indicated by a zero-length (not null) string */
+  int idx;
+  int sz=1;
+  for(idx=0;idx<nbr_lst;idx++){
+    while(strlen(rgd_arr_lst[idx][sz]) > 0) sz++;
+    rgd_arr_lst[idx]=nco_sng_lst_free(rgd_arr_lst[idx],sz);
+  } /* !idx */
+} /* !nco_rgd_arr_lst_free() */
+
 char ** /* O [sng] Pointer to free'd string list */
 nco_sng_lst_free /* [fnc] Free memory associated with string list */
 (char **sng_lst, /* I/O [sng] String list to free */
@@ -803,11 +849,10 @@ nco_sng_lst_free /* [fnc] Free memory associated with string list */
 {
   /* Threads: Routine is thread safe and calls no unsafe routines */
   /* Purpose: Free all memory associated with dynamically allocated string list */
-  int idx;
+  int sng_idx;
 
-  for(idx=0;idx<sng_nbr;idx++){
-    sng_lst[idx]=(char *)nco_free(sng_lst[idx]);
-  } /* end loop over idx */
+  for(sng_idx=0;sng_idx<sng_nbr;sng_idx++)
+    sng_lst[sng_idx]=(char *)nco_free(sng_lst[sng_idx]);
 
   /* Free structure pointer last */
   sng_lst=(char **)nco_free(sng_lst);

@@ -9,7 +9,7 @@ file:///home/zender/nco/doc/build_hints.shtml
 
 Usage:
 /usr/bin/scp ~/nco/doc/build_hints.shtml zender,nco@web.sf.net:/home/project-web/nco/htdocs
-scp -p ~/nco/doc/build_hints.shtml dust.ess.uci.edu:/var/www/html/nco
+scp -p ~/nco/doc/build_hints.shtml dust.ess.uci.edu:Sites/nco
 -->
 
 <!doctype html public "-//W3C//DTD HTML 3.2//EN">
@@ -302,10 +302,7 @@ See the <a href="http://nco.sf.net/nco.html#wnd">User's Guide</a>
 for more details.
 </li>
 
-<!--Qt/MSVC -->
-<li><i>Windows build with Qt/MSVC:</i>
-As of NCO 4.2.0, you may build NCO from source using MSVC and Qt, please see the <a href="nco_qt_msvc.shtml">NCO Qt/MSVC build</a> page.
-</li>
+
 </ul>
 <hr></p>
 

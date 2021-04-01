@@ -3,9 +3,9 @@
 # Purpose: Makefile for libnco_c++ module nco_c++
 # Requires GNU Make---AT&T Make chokes on GNU syntax
 
-# Copyright (C) 1994--2015 Charlie Zender
-# License: GNU General Public License (GPL) Version 3
-# See http://www.gnu.org/copyleft/gpl.html for full license text
+# Copyright (C) 1994--present Charlie Zender
+# License: 3-Clause BSD License
+# See https://opensource.org/licenses/BSD-3-Clause for full license text
 
 # Quickie test copies:
 # scp ~/nco/src/nco_c++/Makefile.old esmf.ess.uci.edu:nco/src/nco_c++
@@ -66,7 +66,7 @@ ifndef MY_BLD_DIR
  MY_BLD_DIR := .
 endif
 ifndef MY_DOC_DIR
- MY_DOC_DIR := .
+ MY_DOC_DIR := ../../doc
 endif
 ifndef MY_DPN_DIR
  MY_DPN_DIR := ${MY_OBJ_DIR}
@@ -184,7 +184,10 @@ ifndef USR_TKN
  USR_TKN := -DABORT_ON_ERROR
 endif # endif USR_TKN
 ifndef VRS_SNG
- VRS_SNG := $(shell date +%Y%m%d)
+# VRS_SNG := $(shell date +%Y%m%d)
+# 20150622
+# VRS_SNG := $(shell git describe --abbrev=7 --dirty --always --tags)
+ VRS_SNG := $(shell cat ${MY_DOC_DIR}/VERSION)
 endif # endif VRS_SNG
 
 # Derived-tokens based on primary tokens
@@ -240,7 +243,7 @@ else
 endif # endif PRC
 
 # NB: CPP_TKN is recursively expanded variable, define only when components are ready
-CPP_TKN = ${USR_TKN} -D${PVM_ARCH} -DNO_NETCDF_2 -DVERSION='${VRS_SNG}' -DHOSTNAME='${HOST}' -DUSER='${USER}' -DNCO_ABORT_ON_ERROR
+CPP_TKN = ${USR_TKN} -D${PVM_ARCH} -DNO_NETCDF_2 -DNCO_VERSION='${VRS_SNG}' -DHOSTNAME='${HOST}' -DUSER='${USER}' -DNCO_ABORT_ON_ERROR
 
 ifeq (${SZ},Y)
 # 20150515: -lsz needed (at least by icc) on rhea

@@ -2,7 +2,7 @@
 #define INC_ncoParser_hpp_
 
 #include <antlr/config.hpp>
-/* $ANTLR 2.7.7 (2006-11-01): "ncoGrammer.g" -> "ncoParser.hpp"$ */
+/* $ANTLR 2.7.7 (20200513): "ncoGrammer.g" -> "ncoParser.hpp"$ */
 #include <antlr/TokenStream.hpp>
 #include <antlr/TokenBuffer.hpp>
 #include "ncoParserTokenTypes.hpp"
@@ -14,10 +14,10 @@
 
 /* Purpose: ANTLR Grammar and support files for ncap2 */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
     // C Standard Headers
     #include <assert.h>
@@ -35,9 +35,12 @@
     #include <fstream>
     #include <string>
   
+    // custom exception -used for "exit" function
+    #include "ExitException.hpp" 
     // Custom Headers
     #include "prs_cls.hh"
     #include "ncap2_utl.hh"
+    #include "ncap2_att.hh"
     #include "fmc_cls.hh"
     #include "NcapVar.hh"
     #include "NcapVarVector.hh"
@@ -50,15 +53,15 @@
     ANTLR_USING_NAMESPACE(std);
     ANTLR_USING_NAMESPACE(antlr);
 
-#line 54 "ncoParser.hpp"
+#line 57 "ncoParser.hpp"
 class CUSTOM_API ncoParser : public ANTLR_USE_NAMESPACE(antlr)LLkParser, public ncoParserTokenTypes
 {
-#line 83 "ncoGrammer.g"
+#line 87 "ncoGrammer.g"
 
 
 public:
    std::vector<std::string> inc_vtr;
-#line 58 "ncoParser.hpp"
+#line 61 "ncoParser.hpp"
 public:
 	void initializeASTFactory( ANTLR_USE_NAMESPACE(antlr)ASTFactory& factory );
 protected:
@@ -90,6 +93,7 @@ public:
 	public: void block();
 	public: void lmt();
 	public: void lmt_list();
+	public: void dmn_list_p();
 	public: void dmn_list();
 	public: void dmn_arg_list();
 	public: void value_list();
@@ -97,8 +101,9 @@ public:
 	public: void call_ref();
 	public: void func_arg();
 	public: void hyper_slb();
-	public: void meth_exp();
+	public: void top_exp();
 	public: void primary_exp();
+	public: void meth_exp();
 	public: void unaryleft_exp();
 	public: void unary_exp();
 	public: void pow_exp();
@@ -123,10 +128,10 @@ protected:
 private:
 	static const char* tokenNames[];
 #ifndef NO_STATIC_CONSTS
-	static const int NUM_TOKENS = 116;
+	static const int NUM_TOKENS = 118;
 #else
 	enum {
-		NUM_TOKENS = 116
+		NUM_TOKENS = 118
 	};
 #endif
 	
@@ -138,6 +143,8 @@ private:
 	static const ANTLR_USE_NAMESPACE(antlr)BitSet _tokenSet_2;
 	static const unsigned long _tokenSet_3_data_[];
 	static const ANTLR_USE_NAMESPACE(antlr)BitSet _tokenSet_3;
+	static const unsigned long _tokenSet_4_data_[];
+	static const ANTLR_USE_NAMESPACE(antlr)BitSet _tokenSet_4;
 };
 
 #endif /*INC_ncoParser_hpp_*/

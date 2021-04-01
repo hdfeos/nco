@@ -4,20 +4,19 @@
 
 /* Purpose: Add, create, delete, or overwrite attributes in a netCDF file */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3.
-   As a special exception to the terms of the GPL, you are permitted 
-   to link the NCO source code with the HDF, netCDF, OPeNDAP, and UDUnits
+   3-Clause BSD License.
+   You are permitted to link NCO with the HDF, netCDF, OPeNDAP, and UDUnits
    libraries and to distribute the resulting executables under the terms 
-   of the GPL, but in addition obeying the extra stipulations of the 
+   of the BSD, but in addition obeying the extra stipulations of the 
    HDF, netCDF, OPeNDAP, and UDUnits licenses.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-   See the GNU General Public License for more details.
+   See the 3-Clause BSD License for more details.
    
    The original author of this software, Charlie Zender, seeks to improve
    it with your suggestions, contributions, bug-reports, and patches.
@@ -167,7 +166,7 @@ main(int argc,char **argv)
 
   const char * const CVS_Id="$Id$"; 
   const char * const CVS_Revision="$Revision$";
-  const char * const opt_sht_lst="Aa:D:hl:Oo:p:Rr-:";
+  const char * const opt_sht_lst="Aa:D:hl:Oo:p:Rrt-:";
 
 #if defined(__cplusplus) || defined(PGI_CC)
   ddra_info_sct ddra_info;
@@ -185,6 +184,7 @@ main(int argc,char **argv)
   int nbr_aed=0; /* Option a. NB: nbr_var_aed gets incremented */
   int nbr_var_fl;
   int nc_id;  
+  int log_lvl=0; /* [enm] netCDF library debugging verbosity [0..5] */
   int md_open; /* [enm] Mode flag for nc_open() call */
   int opt;
   int rcd=NC_NOERR; /* [rcd] Return code */
@@ -194,10 +194,13 @@ main(int argc,char **argv)
   nco_bool FORCE_APPEND=False; /* Option A */
   nco_bool FORCE_OVERWRITE=False; /* Option O */
   nco_bool HISTORY_APPEND=True; /* Option h */
+  nco_bool HPSS_TRY=False; /* [flg] Search HPSS for unfound files */
   nco_bool FL_OUT_NEW=False;
   nco_bool RAM_OPEN=False; /* [flg] Open (netCDF3-only) file(s) in RAM */
+  nco_bool SHARE_OPEN=False; /* [flg] Open (netCDF3-only) file(s) with unbuffered I/O */
   nco_bool RM_RMT_FL_PST_PRC=True; /* Option R */
-  nco_bool flg_cln=False; /* [flg] Clean memory prior to exit */
+  nco_bool flg_mmr_cln=False; /* [flg] Clean memory prior to exit */
+  nco_bool flg_typ_mch=False; /* [flg] Type-match attribute edits */
 
   size_t bfr_sz_hnt=NC_SIZEHINT_DEFAULT; /* [B] Buffer size hint */
   size_t hdr_pad=0UL; /* [B] Pad at end of header section */
@@ -215,17 +218,21 @@ main(int argc,char **argv)
   
   static struct option opt_lng[]={ /* Structure ordered by short option key if possible */
     /* Long options with no argument, no short option counterpart */
-    {"cln",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"clean",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"mmr_cln",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"drt",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
     {"dirty",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
     {"mmr_drt",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
     {"hdf4",no_argument,0,0}, /* [flg] Treat file as HDF4 */
-    {"ram_all",no_argument,0,0}, /* [flg] Open (netCDF3) and create file(s) in RAM */
+    {"ram_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) in RAM */
     {"create_ram",no_argument,0,0}, /* [flg] Create file in RAM */
     {"open_ram",no_argument,0,0}, /* [flg] Open (netCDF3) file(s) in RAM */
-    {"diskless_all",no_argument,0,0}, /* [flg] Open (netCDF3) and create file(s) in RAM */
+    {"diskless_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) in RAM */
+    {"share_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
+    {"create_share",no_argument,0,0}, /* [flg] Create (netCDF3) file(s) with unbuffered I/O */
+    {"open_share",no_argument,0,0}, /* [flg] Open (netCDF3) file(s) with unbuffered I/O */
+    {"unbuffered_io",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
+    {"uio",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
     {"version",no_argument,0,0},
     {"vrs",no_argument,0,0},
     /* Long options with argument, no short option counterpart */
@@ -235,9 +242,12 @@ main(int argc,char **argv)
     {"glb_att_add",required_argument,0,0}, /* [sng] Global attribute add */
     {"hdr_pad",required_argument,0,0},
     {"header_pad",required_argument,0,0},
+    {"log_lvl",required_argument,0,0}, /* [enm] netCDF library debugging verbosity [0..5] */
+    {"log_level",required_argument,0,0}, /* [enm] netCDF library debugging verbosity [0..5] */
     /* Long options with short counterparts */
     {"append",no_argument,0,'A'},
     {"attribute",required_argument,0,'a'},
+    {"dbg_lvl",required_argument,0,'D'},
     {"debug",required_argument,0,'D'},
     {"nco_dbg_lvl",required_argument,0,'D'},
     {"history",no_argument,0,'h'},
@@ -251,6 +261,8 @@ main(int argc,char **argv)
     {"path",required_argument,0,'p'},
     {"retain",no_argument,0,'R'},
     {"rtn",no_argument,0,'R'},
+    {"typ_mch",no_argument,0,'t'},
+    {"type_match",no_argument,0,'t'},
     {"help",no_argument,0,'?'},
     {"hlp",no_argument,0,'?'},
     {0,0,0,0}
@@ -288,8 +300,8 @@ main(int argc,char **argv)
         bfr_sz_hnt=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
       } /* endif cnk */
-      if(!strcmp(opt_crr,"cln") || !strcmp(opt_crr,"mmr_cln") || !strcmp(opt_crr,"clean")) flg_cln=True; /* [flg] Clean memory prior to exit */
-      if(!strcmp(opt_crr,"drt") || !strcmp(opt_crr,"mmr_drt") || !strcmp(opt_crr,"dirty")) flg_cln=False; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"mmr_cln") || !strcmp(opt_crr,"clean")) flg_mmr_cln=True; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"drt") || !strcmp(opt_crr,"mmr_drt") || !strcmp(opt_crr,"dirty")) flg_mmr_cln=False; /* [flg] Clean memory prior to exit */
       if(!strcmp(opt_crr,"gaa") || !strcmp(opt_crr,"glb_att_add")){
         gaa_arg=(char **)nco_realloc(gaa_arg,(gaa_nbr+1)*sizeof(char *));
         gaa_arg[gaa_nbr++]=(char *)strdup(optarg);
@@ -299,7 +311,13 @@ main(int argc,char **argv)
         hdr_pad=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
       } /* endif "hdr_pad" */
-      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"open_ram") || !strcmp(opt_crr,"diskless_all")) RAM_OPEN=True; /* [flg] Create file in RAM */
+      if(!strcmp(opt_crr,"log_lvl") || !strcmp(opt_crr,"log_level")){
+	log_lvl=(int)strtol(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+	if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtol",sng_cnv_rcd);
+	nc_set_log_level(log_lvl);
+      } /* !log_lvl */
+      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"open_ram") || !strcmp(opt_crr,"diskless_all")) RAM_OPEN=True; /* [flg] Open (netCDF3) file(s) in RAM */
+      if(!strcmp(opt_crr,"share_all") || !strcmp(opt_crr,"unbuffered_io") || !strcmp(opt_crr,"uio") || !strcmp(opt_crr,"open_share")) SHARE_OPEN=True; /* [flg] Open (netCDF3) file(s) with unbuffered I/O */
       if(!strcmp(opt_crr,"vrs") || !strcmp(opt_crr,"version")){
         (void)nco_vrs_prn(CVS_Id,CVS_Revision);
         nco_exit(EXIT_SUCCESS);
@@ -319,7 +337,6 @@ main(int argc,char **argv)
     case 'D': /* Debugging level. Default is 0. */
       nco_dbg_lvl=(unsigned short int)strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
       if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
-      nc_set_log_level(nco_dbg_lvl);
       break;
     case 'h': /* Toggle appending to history global attribute */
       HISTORY_APPEND=!HISTORY_APPEND;
@@ -346,7 +363,11 @@ main(int argc,char **argv)
       (void)nco_cnf_prn();
       nco_exit(EXIT_SUCCESS);
       break;
+    case 't': /* Type-match attribute edits */
+      flg_typ_mch=True;
+      break;
     case '?': /* Print proper usage */
+      //(void)fprintf(stdout,"%s ERROR bad syntax in received command line:\n%s\n",nco_prg_nm_get(),cmd_ln);
       (void)nco_usg_prn();
       nco_exit(EXIT_SUCCESS);
       break;
@@ -355,6 +376,7 @@ main(int argc,char **argv)
       nco_exit(EXIT_FAILURE);
       break;
     default: /* Print proper usage */
+      //(void)fprintf(stdout,"%s ERROR bad syntax in received command line:\n%s\n",nco_prg_nm_get(),cmd_ln);
       (void)fprintf(stdout,"%s ERROR in command-line syntax/options. Please reformulate command accordingly.\n",nco_prg_nm_get());
       (void)nco_usg_prn();
       nco_exit(EXIT_FAILURE);
@@ -362,11 +384,11 @@ main(int argc,char **argv)
     if(opt_crr) opt_crr=(char *)nco_free(opt_crr);
   } /* end while loop */
 
-  /* Process positional arguments and fill in filenames */
-  fl_lst_in=nco_fl_lst_mk(argv,argc,optind,&fl_nbr,&fl_out,&FL_LST_IN_FROM_STDIN);
+  /* Process positional arguments and fill-in filenames */
+  fl_lst_in=nco_fl_lst_mk(argv,argc,optind,&fl_nbr,&fl_out,&FL_LST_IN_FROM_STDIN,FORCE_OVERWRITE);
   if(fl_out) FL_OUT_NEW=True; else fl_out=(char *)strdup(fl_lst_in[0]);
 
-  if(nbr_aed == 0){
+  if(nbr_aed == 0 && gaa_nbr == 0){
     (void)fprintf(stdout,"%s: ERROR must specify an attribute to edit\n",nco_prg_nm);
     nco_usg_prn();
     nco_exit(EXIT_FAILURE);
@@ -382,7 +404,7 @@ main(int argc,char **argv)
   /* Parse filename */
   fl_in=nco_fl_nm_prs(fl_in,0,&fl_nbr,fl_lst_in,abb_arg_nbr,fl_lst_abb,fl_pth);
   /* Make sure file is on local system and is readable or die trying */
-  fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,&FL_RTR_RMT_LCN);
+  fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,HPSS_TRY,&FL_RTR_RMT_LCN);
 
   if(FL_OUT_NEW){
     /* Obtain user consent, if needed, to overwrite output file (or die trying) */
@@ -398,8 +420,8 @@ main(int argc,char **argv)
   } /* end if FL_OUT_NEW */
 
   /* Open file. Writing must be enabled and file should be in define mode for renaming */
-  /*  if(nco_dbg_lvl == 8) md_open|=NC_SHARE;*/
   if(RAM_OPEN) md_open=NC_WRITE|NC_DISKLESS; else md_open=NC_WRITE;
+  if(SHARE_OPEN) md_open=md_open|NC_SHARE;
   rcd+=nco_fl_open(fl_out,md_open,&bfr_sz_hnt,&nc_id);
   (void)nco_redef(nc_id);
 
@@ -410,7 +432,7 @@ main(int argc,char **argv)
   trv_tbl_init(&trv_tbl); 
 
   /* Construct GTT (Group Traversal Table) */
-  (void)nco_bld_trv_tbl(nc_id,trv_pth,(int)0,NULL,(int)0,NULL,False,False,NULL,(int)0,NULL,(int) 0,False,False,False,False,True,nco_pck_plc_nil,&flg_dne,trv_tbl);
+  (void)nco_bld_trv_tbl(nc_id,trv_pth,(int)0,NULL,(int)0,NULL,False,False,NULL,(int)0,NULL,(int)0,False,False,False,False,True,False,False,nco_pck_plc_nil,&flg_dne,trv_tbl);
 
   /* Timestamp end of metadata setup and disk layout */
   rcd+=nco_ddra((char *)NULL,(char *)NULL,&ddra_info);
@@ -419,7 +441,7 @@ main(int argc,char **argv)
   for(int idx_aed=0;idx_aed<nbr_aed;idx_aed++){
     if(!aed_lst[idx_aed].var_nm){
       /* Variable name is blank so edit same attribute for all variables */
-      (void)nco_aed_prc_var_all(nc_id,aed_lst[idx_aed],trv_tbl);
+      (void)nco_aed_prc_var_all(nc_id,aed_lst[idx_aed],flg_typ_mch,trv_tbl);
     }else if(strpbrk(aed_lst[idx_aed].var_nm,".*^$\\[]()<>+?|{}")){
       /* Variable name contains a "regular expression" (rx) */
       trv_tbl_sct *trv_tbl_rx;
@@ -429,7 +451,7 @@ main(int argc,char **argv)
       trv_tbl_init(&trv_tbl_rx); 
       /* Use regular expressions in aed structure to construct traversal table
 	 Variables marked for extraction will then have the attributes edited */
-      (void)nco_bld_trv_tbl(nc_id,trv_pth,(int)0,NULL,(int)0,NULL,False,False,NULL,(int)0,var_lst_in,var_lst_in_nbr,False,False,False,False,False,nco_pck_plc_nil,&flg_dne,trv_tbl_rx); 
+      (void)nco_bld_trv_tbl(nc_id,trv_pth,(int)0,NULL,(int)0,NULL,False,False,NULL,(int)0,var_lst_in,var_lst_in_nbr,False,False,False,False,False,False,False,nco_pck_plc_nil,&flg_dne,trv_tbl_rx); 
       /* Edit same attribute for all variables marked for extraction */
       (void)nco_aed_prc_var_xtr(nc_id,aed_lst[idx_aed],trv_tbl_rx);
       trv_tbl_free(trv_tbl_rx);
@@ -441,13 +463,15 @@ main(int argc,char **argv)
       /* Variable name of "global" means edit global attributes */
       (void)nco_aed_prc_glb(nc_id,aed_lst[idx_aed],trv_tbl);
     }else{ 
-      /* Regular ole' variable name means edits attributes that match absoluted and relative names */
+      /* Regular ole' variable name means edit attributes that match absolute and relative names */
       (void)nco_aed_prc_var_nm(nc_id,aed_lst[idx_aed],trv_tbl);
     } /* end var_nm */
   } /* end loop over aed structures */
 
-  /* Catenate the time-stamped command line to the "history" global attribute */
+  /* Catenate time-stamped command line to "history" global attribute */
   if(HISTORY_APPEND) (void)nco_hst_att_cat(nc_id,cmd_ln);
+  if(gaa_nbr > 0) (void)nco_glb_att_add(nc_id,gaa_arg,gaa_nbr);
+  if(HISTORY_APPEND) (void)nco_vrs_att_cat(nc_id);
 
   /* Take output file out of define mode */
   if(hdr_pad == 0UL){
@@ -464,7 +488,7 @@ main(int argc,char **argv)
   if(FL_RTR_RMT_LCN && RM_RMT_FL_PST_PRC) (void)nco_fl_rm(fl_in);
 
   /* Clean memory unless dirty memory allowed */
-  if(flg_cln){
+  if(flg_mmr_cln){
     /* ncatted-specific memory */
     for(int idx=0;idx<nbr_aed;idx++) aed_arg[idx]=(char *)nco_free(aed_arg[idx]);
     for(int idx=0;idx<nbr_aed;idx++){
@@ -485,9 +509,10 @@ main(int argc,char **argv)
     if(fl_lst_in && fl_lst_abb == NULL) fl_lst_in=nco_sng_lst_free(fl_lst_in,fl_nbr); 
     if(fl_lst_in && fl_lst_abb) fl_lst_in=nco_sng_lst_free(fl_lst_in,1);
     if(fl_lst_abb) fl_lst_abb=nco_sng_lst_free(fl_lst_abb,abb_arg_nbr);
+    if(gaa_nbr > 0) gaa_arg=nco_sng_lst_free(gaa_arg,gaa_nbr);
 
     trv_tbl_free(trv_tbl);
-  } /* !flg_cln */
+  } /* !flg_mmr_cln */
 
 #ifdef ENABLE_MPI
   MPI_Finalize();

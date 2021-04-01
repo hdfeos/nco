@@ -9,31 +9,32 @@
 // netCDF4: ncgen arguments depend on version:
 // "-k netCDF-4" for netCDF >= 3.6.3, "-k hdf5" for netCDF < 3.6.3
 // "-k netCDF-4 classic model" for netCDF >= 3.6.3, "-k hdf5-nc3" for netCDF < 3.6.3
-// /usr/local/bin/ncgen -k netCDF-4 -b -o in_4.nc in_4.cdl
-// /usr/local/bin/ncgen -k netCDF-4 -b -o ${HOME}/nco/data/in_4.nc ${HOME}/nco/data/in_4.cdl
+// ncgen -k netCDF-4 -b -o in_4.nc4 in_4.cdl
+// ncgen -k netCDF-4 -b -o ${HOME}/nco/data/in_4.nc4 ${HOME}/nco/data/in_4.cdl
+// ncgen -k cdf5 -b -o ${HOME}/nco/data/in_4.nc5 ${HOME}/nco/data/in_4.cdl
 
 // URL: 
 // http://dust.ess.uci.edu/nco/in.nc
-// http://dust.ess.uci.edu/nco/in_4.nc
+// http://dust.ess.uci.edu/nco/in_4.nc4
 // http://motherlode.ucar.edu:8080/thredds/dodsC/testdods/in.nc
-// http://motherlode.ucar.edu:8080/thredds/dodsC/testdods/in_4.nc
+// http://motherlode.ucar.edu:8080/thredds/dodsC/testdods/in_4.nc4
 
 // netCDF3:
-// ncgen -b -o in_4.nc in_4.cdl
-// ncgen -b -o ${HOME}/nco/data/in_4.nc ${HOME}/nco/data/in_4.cdl
-// scp ~/nco/data/in_4.cdl ~/nco/data/in_4.nc dust.ess.uci.edu:nco/data
-// scp ~/nco/data/in_4.nc ~/nco/data/in_4.nc dust.ess.uci.edu:/var/www/html/nco
-// scp ~/nco/data/in_4.nc ~/nco/data/in_4.nc dust.ess.uci.edu:/data/home/www/html/dodsdata
-// mswrite -t 365 ~/nco/data/in_4.nc /ZENDER/tmp/in_4.nc
-// mswrite -t 365 ~/nco/data/in_4.nc /ZENDER/tmp/h0001.nc
-// mswrite -t 365 ~/nco/data/in_4.nc /ZENDER/tmp/h0002.nc
-// mswrite -t 365 ~/nco/data/in_4.nc /ZENDER/tmp/h0003.nc
-// mswrite -t 365 ~/nco/data/in_4.nc /ZENDER/tmp/h0004.nc
-// msrcp -period 365 ~/nco/data/in_4.nc mss:/ZENDER/tmp/in_4.nc
-// msrcp -period 365 ~/nco/data/in_4.nc mss:/ZENDER/tmp/h0001.nc
-// msrcp -period 365 ~/nco/data/in_4.nc mss:/ZENDER/tmp/h0002.nc
-// msrcp -period 365 ~/nco/data/in_4.nc mss:/ZENDER/tmp/h0003.nc
-// msrcp -period 365 ~/nco/data/in_4.nc mss:/ZENDER/tmp/h0004.nc
+// ncgen -b -o in_4.nc4 in_4.cdl
+// ncgen -b -o ${HOME}/nco/data/in_4.nc4 ${HOME}/nco/data/in_4.cdl
+// scp ~/nco/data/in_4.cdl ~/nco/data/in_4.nc4 dust.ess.uci.edu:nco/data
+// scp ~/nco/data/in_4.nc4 ~/nco/data/in_4.nc4 dust.ess.uci.edu:/var/www/html/nco
+// scp ~/nco/data/in_4.nc4 ~/nco/data/in_4.nc4 dust.ess.uci.edu:/data/home/www/html/dodsdata
+// mswrite -t 365 ~/nco/data/in_4.nc4 /ZENDER/tmp/in_4.nc4
+// mswrite -t 365 ~/nco/data/in_4.nc4 /ZENDER/tmp/h0001.nc
+// mswrite -t 365 ~/nco/data/in_4.nc4 /ZENDER/tmp/h0002.nc
+// mswrite -t 365 ~/nco/data/in_4.nc4 /ZENDER/tmp/h0003.nc
+// mswrite -t 365 ~/nco/data/in_4.nc4 /ZENDER/tmp/h0004.nc
+// msrcp -period 365 ~/nco/data/in_4.nc4 mss:/ZENDER/tmp/in_4.nc4
+// msrcp -period 365 ~/nco/data/in_4.nc4 mss:/ZENDER/tmp/h0001.nc
+// msrcp -period 365 ~/nco/data/in_4.nc4 mss:/ZENDER/tmp/h0002.nc
+// msrcp -period 365 ~/nco/data/in_4.nc4 mss:/ZENDER/tmp/h0003.nc
+// msrcp -period 365 ~/nco/data/in_4.nc4 mss:/ZENDER/tmp/h0004.nc
 
 // WARNING: Changing values of variables below, especially coordinate variables, affects outcome of nco_tst.pl test script
 // Other programs, e.g., ~/f/fff.F90, ~/c++/ccc.cc, ~/c/c.c may also break
@@ -49,7 +50,7 @@
 // double: 1.0, 1.d, 1.0e-20 (decimal point is required, d is not required)
 
 // NCL usage:
-// id_in=addfile("/home/zender/nco/data/in_4.nc","r")
+// id_in=addfile("/home/zender/nco/data/in_4.nc4","r")
 // print(id_in)
 // list_filevars(id_in)
 
@@ -64,6 +65,9 @@ variables:
 	string :sng_att = "Test global string attribute"; // 20130723 This is how to specify global string attributes
 
 //	netCDF4-only atomic types
+	int64 int64_var_max;
+	int64_var_max:long_name = "int64-type variable";
+
 	int64 int64_var;
 	int64_var:long_name = "int64-type variable";
 
@@ -74,10 +78,16 @@ variables:
         string_var2:long_name = "string-type variable with default XML separator";
 
 	string string_arr_var(lon);
-	string_arr_var:long_name = "arrays of string-types";
+	string_arr_var:long_name = "arrays of string-types";   
+
+	string string_greek(lat,lon);
+	string_greek:long_name = "2D arrayof string-types";   
 
 	ubyte ubyte_var;
 	ubyte_var:long_name = "ubyte-type variable";
+
+	uint uint_var_max;
+	uint_var_max:long_name = "uint-type variable";
 
 	uint uint_var;
 	uint_var:long_name = "uint-type variable";
@@ -539,19 +549,17 @@ variables:
         att_var:float_att = 73.0f,72.0f,71.0f,70.010f,69.0010f,68.010000f,67.01000100f;
 	att_var:double_att = 73.0,72.0,71.0,70.010,69.0010,68.010000,67.01000100;
 	att_var:ubyte_att = 0ub, 1ub, 2ub, 127ub, 128ub, 254ub, 255ub, 0ub; // 20130712: ncgen 4.3.0 translates this to byte
-	att_var:ubyte2_att = '\000','\001','\002','\177','\200','\201','\376','\377'; // 20130712: ncgen 4.3.0 translates this to byte
 	att_var:ushort_att = 37us;
-	att_var:uint_att = 73u;
-	att_var:int64_att = 9223372036854775807l; // 20130712: ncgen 4.3.0 chokes on ll, LL suffix for int64 attributes, and translates -l suffixed numbers to NC_UINT64. Bug reported (netCDF #HEX-795132) and fixed in snapshot 20131117
-//	att_var:uint64_att = 18446744073709551615ul; // 20130712: ncgen 4.3.0 chokes on ull, ULL suffix for uint64 attributes. 20131120: XML treats unsigned as signed types, so toolsui produces errors when reading maximum uint64 values (though not when reading maxium ubyte, ushort, and uint values)
-	att_var:uint64_att = 0ul;
+        att_var:uint_att = 73ul; // 20161110: ncgen requires "ul" for uint (a simple "u" is interpretd as uint64)
+//	att_var:int64_att = 9223372036854775807ll; // 20130712: ncgen 4.3.0--4.3.3.1 choke on ll, LL suffix for int64 attributes, and translates -l suffixed numbers to NC_UINT64. Bug reported (netCDF #HEX-795132) and fixed in snapshot 20131117
+//	att_var:uint64_att = 18446744073709551615ul; // 20130712: ncgen 4.3.0--4.3.3.1 chokes on ull, ULL suffix for uint64 attributes. 20131120: XML treats unsigned as signed types, so toolsui produces errors when reading maximum uint64 values (though not when reading maxium ubyte, ushort, and uint values)
 	att_var:string_att1 = "20130723: ncgen -k netCDF-4 version 4.0.x converts quoted string to NC_STRING not NC_CHAR. Incompatible with classic behavior.";
 	att_var:string_att2 = "20130712: ncgen -k netCDF-4 version 4.2.x+ converts quoted string to NC_CHAR not NC_STRING. Backwards compatible with classic behavior.";
 	string att_var:string_att3 = "20130723: Prefixing full attribute name with \"string\" causes CDL to produce NC_STRING.";
 	string att_var:string_att4 = "20130723: Arrays of NC_STRING are simply separated by commas.","If there are commas within a string, well, then, be careful. Did we \"jump the shark\"?","This array comprises three elements. Each is a sentence or three long.";
 	string att_var:string_att5 = "20131121: This NC_STRING contains NCO's default XML string separator, *. And it contains multiple sequential copies of that separator, ***. Be sure ncks automatically switches to a different separator, aka the backup separator, the string obtained by removing the two spaces from this:\"* | *\".";
 
-	int bnd_var(lev,bnd);
+        int bnd_var(lev,bnd);
 	bnd_var:byte_att = '\0';
 	bnd_var:char_att = "Sentence one.\nSentence two.\n";
 	bnd_var:short_att = 37s;
@@ -954,13 +962,18 @@ variables:
 
 data:
 //	netCDF4-specific atomic types:
-	int64_var=9223372036854775807;
+	int64_var_max=9223372036854775807;
+	int64_var=73;
 	string_var="If you prick us, do we not bleed? If you tickle us, do we not laugh? If you poison us, do we not die? And if you wrong us, shall we not revenge?";
 	string_arr_var="20130723: Arrays of NC_STRING are simply separated by commas.","If there are commas within a string, well, then, be careful. Did we \"jump the shark\"?","This array comprises three sentences.","Woops, I mean four.";
+         
+        string_greek="alpha","beta","gamma","delta","epsilon","zeta","theta","iota"; 
+
 	string_var2="20131121: This NC_STRING contains NCO's default XML string separator, *. And it contains multiple sequential copies of that separator, ***. Be sure ncks automatically switches to a different separator, aka the backup separator, the string obtained by removing the two spaces from this:\"* | *\". As of 20131121, ncks handles this correctly, yet toolsui breaks when trying to input the ncks-generated NcML. Appears to be a toolsui bug.";
 
 	ubyte_var='z';
-	uint_var=4294967295;
+	uint_var_max=4294967295;
+	uint_var=73;
 //	uint64_var = 18446744073709551615; // 20131120: XML treats unsigned as signed types, so toolsui produces errors when reading maximum uint64 values (though not when reading maxium ubyte, ushort, and uint values)
 	uint64_var=0;
 	ushort_var=65535;
@@ -1444,10 +1457,3 @@ data:
 				0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,
 				0.5,0.5,2.5,0.5,0.5,2.5,0.5,0.5;
 }
-
-
-
-
-
-
-

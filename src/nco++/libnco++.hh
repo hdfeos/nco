@@ -2,10 +2,10 @@
 
 // Purpose: Prototypes, typedefs, and global variables for libnco++
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* libnco++.hh headers depend on system headers and libnco.a headers
    Thus libnco++.a requires libnco.a to function correctly
@@ -21,13 +21,14 @@
 #include "sym_cls.hh"
 #include "fmc_cls.hh"
 #include "fmc_all_cls.hh"
-#include "nco_gsl.h"
+#include "nco_gsl.hh"
 #ifdef ENABLE_GSL
 # include "fmc_gsl_cls.hh"
 #endif // !ENABLE_GSL
 #include "NcapVar.hh"
 #include "NcapVarVector.hh"
 #include "ncap2_utl.hh"
+#include "ncap2_att.hh"
 #include "prs_cls.hh"
 #include "sdo_utl.hh"
 #include "ncap2_utl.hh"

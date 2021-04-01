@@ -2,10 +2,10 @@
 
 /* Purpose: Sub-set cell-based grids using auxiliary coordinate variable */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_aux.h" *//* Auxiliary coordinates */
@@ -30,12 +30,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-/* WIN32 math.h does not define M_PI, needed for dgr2rdn and rdn2dgr */
-#ifndef M_PI
-# define M_PI		3.14159265358979323846
-#endif /* M_PI */
-
-  lmt_sct **
+lmt_sct **
 nco_aux_evl
 (int in_id, 
  int aux_nbr, 
@@ -65,10 +60,10 @@ void
 nco_aux_prs
 (const char *bnd_bx_sng, 
  const char *units, 
- float *lon_min, 
- float *lon_max, 
- float *lat_min, 
- float *lat_max);
+ double *lon_min, 
+ double *lon_max, 
+ double *lat_min, 
+ double *lat_max);
 
 lmt_sct **                           /* O [lst] Auxiliary coordinate limits */
 nco_aux_evl_trv
@@ -91,7 +86,17 @@ nco_find_lat_lon_trv
  nc_type *crd_typ,                   /* I/O [enm] netCDF type of both "latitude" and "longitude" */
  char units[]);                      /* I/O [sng] Units of both "latitude" and "longitude" */
 
+nco_bool 
+nco_check_nm_aux
+(const int nc_id,                    /* I [ID] netCDF file ID */
+ const trv_sct * const var_trv,      /* I [sct] Variable object that contains "standard_name" attribute */
+ int *dmn_id,                        /* I/O [id] Dimension ID of the diension of "latitude" and "longitude" */
+ nc_type *crd_typ,                   /* I/O [enm] netCDF type of both "latitude" and "longitude" */
+ char units[]);                      /* I/O [sng] Units of both "latitude" and "longitude" */
 
+
+
+  
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif /* __cplusplus */

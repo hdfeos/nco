@@ -36,9 +36,10 @@ netcdf buggy {
  att_var:ubyte_att = 0ub, 1ub, 2ub, 127ub, 128ub, 254ub, 255ub, 0ub; // 20130712: ncgen 4.3.0 translates this to byte
  att_var:ubyte2_att = '\000','\001','\002','\177','\200','\201','\376','\377'; // 20130712: ncgen 4.3.0 translates this to byte
  att_var:ushort_att = 37us;
- att_var:uint_att = 73u;
- att_var:int64_att = 9223372036854775807l; // 20130712: ncgen 4.3.0 chokes on ll, LL suffix for int64 attributes, and translates -l suffixed numbers to NC_UINT64. Bug reported (netCDF #HEX-795132) and fixed in snapshot 20131117
- att_var:uint64_att = 18446744073709551615ul; // 20130712: ncgen 4.3.0 chokes on ull, ULL suffix for uint64 attributes, 20131120: XML treats unsigned as signed types, so toolsui produces errors when reading maximum uint64 values (though not when reading maxium ubyte, ushort, and uint values)
+ att_var:uint_att = 73u; // 20170322: ncgen 4.4.1 converts u-suffixed numbers to uint64 type instead of uint32. Counter-intuitive. Regular uint=uint32 must be obtained by ul suffix. 
+ att_var:uint_att2 = 73ul;
+ att_var:int64_att = 9223372036854775807ll; // 20130712: ncgen 4.3.0 chokes on ll, LL suffix for int64 attributes, and translates l-suffixed numbers to NC_UINT64. Bug reported (netCDF #HEX-795132) and fixed in snapshot 20131117
+ att_var:uint64_att = 18446744073709551615ull; // 20130712: ncgen 4.3.0 chokes on ull, ULL suffix for uint64 attributes, 20131120: XML treats unsigned as signed types, so toolsui produces errors when reading maximum uint64 values (though not when reading maximum ubyte, ushort, and uint values), 20170322: ncgen 4.4.1 works fine with ull
  att_var:string_att1 = "20130723: ncgen -k netCDF-4 version 4.0.x converts quoted string to NC_STRING not NC_CHAR. Incompatible with classic behavior.";
  att_var:string_att2 = "20130712: ncgen -k netCDF-4 version 4.2.x+ converts quoted string to NC_CHAR not NC_STRING. Backwards compatible with classic behavior.";
   string att_var:string_att3 = "20130723: Prefixing full attribute name with \"string\" causes CDL to produce NC_STRING.";
@@ -55,7 +56,7 @@ netcdf buggy {
  nan_arr:note4 = "If your NCO build fails because your version of netCDF does not support nan, then cd to the directory that contains the file nco/data/in.cdl and run the command in note5 first and then try to build again";
  nan_arr:note5 = "sed -e 's/nan;/1.0f;/' in.cdl > foo.cdl;ncgen -b -o in.nc foo.cdl";
  nan_arr:note6 = "It is too troublesome to distribute in.cdl with references to NaNs because users always build with old netCDF versions that do not support it. So just comment out nan's for now.";
- nan_arr:_FillValue = nan;
+ nan_arr:_FillValue = nanf;
 
  float nan_scl;
  nan_scl:long_name = "Intended for scalar representation of IEEE NaN";
@@ -63,8 +64,32 @@ netcdf buggy {
  nan_scl:note2 = "20120330 netCDF ncgen on AIX/bluefire chokes on variable/attribute values of nan";
  nan_scl:note3 = "20120625 netCDF ncgen on netCDF 4.1.1 on apparently chokes on variable/attribute values of nan";
  nan_scl:note6 = "It is too troublesome to distribute in.cdl with references to NaNs because users always build with old netCDF versions that do not support it. So just comment out nan's for now.";
- nan_scl:_FillValue = nan;
+ nan_scl:_FillValue = nanf;
 
+ float nan_val;
+ nan_val:long_name = "Intended for scalar representation of IEEE NaN without missing values";
+ nan_val:note = "20120308 Apparently netCDF ncgen chokes on variable names of nan and NaN";
+ nan_val:note2 = "20120330 netCDF ncgen on AIX/bluefire chokes on variable/attribute values of nan";
+ nan_val:note3 = "20120625 netCDF ncgen on netCDF 4.1.1 on apparently chokes on variable/attribute values of nan";
+ nan_val:note6 = "It is too troublesome to distribute in.cdl with references to NaNs because users always build with old netCDF versions that do not support it. So just comment out nan's for now.";
+ nan_val:note7 = "20170505 For testing without missing values"; 
+
+ double nan_val_dbl;
+ nan_val_dbl:long_name = "Intended for scalar representation of IEEE NaN without missing values";
+ nan_val_dbl:note = "20120308 Apparently netCDF ncgen chokes on variable names of nan and NaN";
+ nan_val_dbl:note2 = "20120330 netCDF ncgen on AIX/bluefire chokes on variable/attribute values of nan";
+ nan_val_dbl:note3 = "20120625 netCDF ncgen on netCDF 4.1.1 on apparently chokes on variable/attribute values of nan";
+ nan_val_dbl:note6 = "It is too troublesome to distribute in.cdl with references to NaNs because users always build with old netCDF versions that do not support it. So just comment out nan's for now.";
+ nan_val_dbl:note7 = "20170505 For testing without missing values"; 
+
+ int tm3_lat_flt(tm3,lat);
+ tm3_lat_flt:purpose = "record variable compressed with netCDF 4.6.0 _Filter attribute"; 
+ tm3_lat_flt:bug = "ncgen until 4.6.0 20180125 fails to parse this. Furthermore, ncgen will only parse this correctly if the bzip2 filter is installed as per instructions below. Variables compressed with _Filters must be chunked, so we make this a record variable. More instructions at https://www.unidata.ucar.edu/software/netcdf/docs/md__Users_wfisher_Desktop_gitprojects_netcdf-c_docs_filters.html";
+ tm3_lat_flt:usage="export HDF5_PLUGIN_PATH=/usr/local/lib";
+ tm3_lat_flt:_Filter = "307,9";
+ tm3_lat_flt:_Storage = "chunked";
+ tm3_lat_flt:_ChunkSizes = 3,2;
+ 
  int lat_time(lat,time);
  lat_time:purpose = "record variable where record dimension is not first dimension"; 
  lat_time:bug = "ncgen until 4.3.3-rc2 20140922 fails to parse this because of Jira NCF-315. Some variables with non-leading record dimensions (like lat_tm2, lat_tm3) did work before today in \"standalone\" files like buggy.cdl, but lat_time did not.";
@@ -97,14 +122,18 @@ netcdf buggy {
   tm2_lat=1,2,3,4; // NB: Braces forbidden when unlimited dimension is first. sizeof(tm2)=sizeof(whole)/$lat
   tm3_lat=1,2,3,4,5,6; // NB: Braces forbidden when unlimited dimension is first. sizeof(tm2)=sizeof(whole)/$lat
 
+  tm3_lat_flt=1,2,3,4,5,6;
+
   tm2_tm3={1.,2.,3.},{4.,5.,6.};
 
   string_var2="20131121: This NC_STRING contains NCO's default XML string separator, *. And it contains multiple sequential copies of that separator, ***. Be sure ncks automatically switches to a different separator, aka the backup separator, the string obtained by removing the two spaces from this:\"* | *\". As of 20131121, ncks handles this correctly, yet toolsui breaks when trying to input the ncks-generated NcML. Appears to be a toolsui bug.";
 
   lat_time={1,2,3,4,5,6,7,8,9,10},{11,12,13,14,15,16,17,18,19,20};
 
-  nan_arr=0,nan;
-  nan_scl=nan;
+  nan_arr=0,nanf;
+  nan_scl=nanf;
+  nan_val=nanf;
+  nan_val_dbl=nan;
 
    // 20130208: netCDF 4.2.1.1- fail as nc_get_var1_uint() returns -60 = NetCDF: Numeric conversion not representable on (valid) input values exceeding INT_MAX=2147483647. This was bug netCDF #PUX-602809 fixed in daily snapshot 20130210.
    uint_var=4294967295; // UINT_MAX = 4294967295, NC_FILL_UINT is 4294967295U

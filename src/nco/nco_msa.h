@@ -2,10 +2,10 @@
 
 /* Purpose: Multi-slabbing algorithm */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_msa.h" *//* Multi-slabbing algorithm */
@@ -28,7 +28,7 @@
 
 /* Personal headers */
 #include "nco.h" /* netCDF Operator (NCO) definitions */
-#include "nco_bnr.h" /* Binary write utilities */
+#include "nco_bnr.h" /* Binary file utilities */
 #include "nco_ctl.h" /* Program flow control functions */
 #include "nco_grp_utl.h" /* Group utilities */
 #include "nco_lmt.h" /* Hyperslab limits */
@@ -155,10 +155,16 @@ nco_cpy_msa_lmt                     /* [fnc] Copy MSA struct from table to local
  lmt_msa_sct ***lmt_msa);           /* O [sct] MSA array for dimensions */
 
 void
-nco_msa_var_get_trv                 /* [fnc] Get variable data from disk taking account of multihyperslabs */
+nco_msa_var_get_trv                 /* [fnc] Define a 'var_sct' hyperslab fields from a GTT variable */
 (const int nc_id,                   /* I [ID] netCDF file ID */
  var_sct *var_in,                   /* I/O [sct] Variable */
  const trv_tbl_sct * const trv_tbl);/* I [sct] GTT (Group Traversal Table) */
+
+void
+nco_msa_var_get_sct                 /* [fnc] Define a 'var_sct' hyperslab fields from a GTT variable ('trv_sct')*/
+(const int nc_id,                   /* I [ID] netCDF file ID */
+  var_sct *var_in,                  /* I/O [sct] Variable */
+  const trv_sct * const var_trv);   /* I [sct] GTT variable */
 
 void
 nco_lmt_msa_free                    /* [fnc] Free MSA */

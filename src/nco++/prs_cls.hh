@@ -1,10 +1,10 @@
 /* Purpose: netCDF arithmetic processor -  */
 /* prs_cls -- symbol table - data members & class methods */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #ifndef PRS_CLS_HH
 #define PRS_CLS_HH
@@ -30,7 +30,8 @@ class fmc_cls;
   int out_id_readonly; /* [id] Output data file ID -Handle for reading only */
   NcapVector<dmn_sct*> &dmn_in_vtr;        //Vector of dimensions in input file nb doesn't change
   NcapVector<dmn_sct*> &dmn_out_vtr;       //Vector of dimensions in output file file
-  std::vector<fmc_cls> &fmc_vtr;         //List of functions/methods nb doesn't change 
+  NcapVector<dmn_cmn_sct*> dmn_cmn_vtr;    // Vector of dmn_cmn -updated regularly from dmn_ot_vtr
+  std::vector<fmc_cls> &fmc_vtr;           //List of functions/methods nb doesn't change
   NcapVarVector &var_vtr;                  // list of attributes & variables
   NcapVarVector &int_vtr;                // stores vars/atts in FIRST PARSE
   NcapVarVector thr_vtr;                 // Temp store for atts in a parallel run  
@@ -40,8 +41,9 @@ class fmc_cls;
   bool ATT_INHERIT;                      //Var on LHS inherits attributtes from var of the same name
                                          // in the input file 
   bool NCAP_MPI_SORT;                    // sort exressions after second parse for MPI optimization
-  bool NCAP4_FILL;                        //if true Ouptut file is netcdf4 & missing value="_FillValue"
-  size_t *cnk_sz; /* [nbr] Chunk sizes */
+  bool NCAP4_FILL;                       //if true Ouptut file is netcdf4 & missing value="_FillValue"
+  bool FLG_CLL_MTH;                      // if true then add @cell_methods attribute to var for an agg_cls operation
+  cnk_sct *cnk_in; /* [nbr] Chunk sizes */
   int dfl_lvl; /* [enm] Deflate level */
 
   // Constructor
@@ -65,6 +67,7 @@ class fmc_cls;
          var_vtr(prs_cpy.var_vtr),            
          int_vtr(prs_cpy.int_vtr) {       
 
+     dmn_cmn_vtr=prs_cpy.dmn_cmn_vtr;
      thr_vtr=prs_cpy.thr_vtr;  
      fl_in=prs_cpy.fl_in;
      in_id=prs_cpy.in_id;
@@ -79,8 +82,9 @@ class fmc_cls;
      ATT_INHERIT=prs_cpy.ATT_INHERIT; 
      NCAP_MPI_SORT=prs_cpy.NCAP_MPI_SORT;
      NCAP4_FILL=prs_cpy.NCAP4_FILL;
+     FLG_CLL_MTH=prs_cpy.FLG_CLL_MTH;
      dfl_lvl=prs_cpy.dfl_lvl;
-     cnk_sz=prs_cpy.cnk_sz;     
+     cnk_in=prs_cpy.cnk_in;
    }
 
    // = operator
@@ -114,8 +118,9 @@ class fmc_cls;
      ATT_INHERIT=prs_cpy.ATT_INHERIT; 
      NCAP_MPI_SORT=prs_cpy.NCAP_MPI_SORT;
      NCAP4_FILL=prs_cpy.NCAP4_FILL;
+     FLG_CLL_MTH=prs_cpy.FLG_CLL_MTH;
      dfl_lvl=prs_cpy.dfl_lvl;      
-
+     cnk_in=prs_cpy.cnk_in;
      return *this;
    }
 
@@ -152,7 +157,18 @@ bool bram);
 
 void 
 ncap_def_ntl_scn           /* define variables captured on first parse */
-(void); 
+(void);
+
+int 
+ncap_get_cnk_sz(
+var_sct *var);
+
+     void
+     ncap_pop_dmn_cmn(void);
+
+     void
+     ncap_pop_var_dmn_cmn(var_sct* var, dmn_cmn_sct *cmn);
+
  };
 
 #endif // PRS_CLS_HH

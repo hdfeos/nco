@@ -6,28 +6,29 @@
 .SH NAME
 ncwa \- netCDF Weighted Averager
 .SH SYNTAX
-ncwa [\-3] [\-4] [\-6] [\-7] [\-A] [\-a 
+ncwa [\-3] [\-4] [\-5] [\-6] [\-7] [\-A] [\-a 
 .IR dim [,...]]
 [\-B 
 .IR mask_cond] 
 [\-b] [\-\-bfr
-.IR sz ] [\-C] [\-c] [\-\-cnk_byt
-.IR sz ] [\-\-cnk_dmn 
-.IR nm,sz ]
+.IR sz_byt ] [\-C] [\-c] [\-\-cnk_byt
+.IR sz_byt ] [\-\-cnk_csh
+.IR sz_byt ] [\-\-cnk_dmn 
+.IR nm,sz_lmn ]
 [\-\-cnk_map 
 .IR map ]
 [\-\-cnk_min
-.IR sz ]
+.IR sz_byt ]
 [\-\-cnk_plc 
 .IR plc ]
 [\-\-cnk_scl 
-.IR sz ] [\-D
+.IR sz_lmn ] [\-D
 .IR dbg_lvl ]
 [\-d 
 .IR dim ,[
 .IR min ][,[
 .IR max ]]]
-[\-\-dbl|flt] [\-F] [\-G
+[\-\-dbl|flt] [-F] [--fl_fmt=fmt] [\-G
 .IR gpe_dsc ]
 [\-g  
 .IR grp [,...]]
@@ -35,7 +36,7 @@ ncwa [\-3] [\-4] [\-6] [\-7] [\-A] [\-a
 .IR att_name=
 .IR att_val ]]
 [\-h] [\-\-hdf] [\-\-hdr_pad
-.IR sz ]
+.IR sz_byt ] [\-\-hpss_try]
 [\-I] [\-L 
 .IR dfl_lvl ] [\-l 
 .IR path ]
@@ -43,7 +44,7 @@ ncwa [\-3] [\-4] [\-6] [\-7] [\-A] [\-a
 .IR val ]
 [\-m 
 .IR mask ]
-[\-N] [\-\-no_cll_mth] [\-\-no_tmp_fl] [\-O] [\-o 
+[\-N] [\-\-no_cll_msr] [\-\-no_cll_mth] [\-\-no_frm_trm] [\-\-no_tmp_fl] [\-O] [\-o 
 .IR output-file ]
 [\-p 
 .IR path ]
@@ -55,7 +56,7 @@ ncwa [\-3] [\-4] [\-6] [\-7] [\-A] [\-a
 .IR mask_comp ]
 [\-t
 .IR thr_nbr ]
-[\--unn] [\-v 
+[\-\-uio] [\-\-unn] [\-v 
 .IR var [,...]]
 [\-w 
 .IR weight ]
@@ -224,7 +225,7 @@ manual pages written by Charlie Zender and originally formatted by Brian Mays.
 Report bugs to <http://sf.net/bugs/?group_id=3331>.
 
 .SH COPYRIGHT
-Copyright \(co 1995-2015 Charlie Zender
+Copyright \(co 1995-2018 Charlie Zender
 .br
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -233,13 +234,13 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 The full documentation for
 .B NCO
 is maintained as a Texinfo manual called the 
-.B NCO User's Guide.
+.B NCO Users Guide.
 Because 
 .B NCO
 is mathematical in nature, the documentation includes TeX-intensive
 portions not viewable on character-based displays. 
 Hence the only complete and authoritative versions of the 
-.B NCO User's Guide 
+.B NCO Users Guide 
 are the PDF (recommended), DVI, and Postscript versions at
 <http://nco.sf.net/nco.pdf>, <http://nco.sf.net/nco.dvi>,
 and <http://nco.sf.net/nco.ps>, respectively.
@@ -262,7 +263,7 @@ TeX-intensive portions.
 .BR ncap2 (1), 
 .BR ncatted (1), 
 .BR ncbo (1), 
-.BR ncdiff (1), 
+.BR ncclimo (1), 
 .BR nces (1), 
 .BR ncecat (1), 
 .BR ncflint (1), 
@@ -271,6 +272,7 @@ TeX-intensive portions.
 .BR ncpdq (1), 
 .BR ncra (1), 
 .BR ncrcat (1), 
+.BR ncremap (1), 
 .BR ncrename (1), 
 .BR ncwa (1) 
 

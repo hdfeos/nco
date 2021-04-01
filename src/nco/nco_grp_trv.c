@@ -2,10 +2,10 @@
 
 /* Purpose: netCDF4 traversal storage */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* This file contains the API for low level group data structures:
    Group Traversal Table (GTT): functions prefixed with "trv_tbl_"
@@ -18,38 +18,37 @@ trv_tbl_init                           /* [fnc] GTT initialize */
 (trv_tbl_sct **tbl)                    /* I/O [sct] Traversal table */
 {
   trv_tbl_sct *tb=(trv_tbl_sct *)nco_malloc(sizeof(trv_tbl_sct));
-
+  
   /* Object (group/variable) list */
   tb->nbr=0;
   tb->lst=NULL; 
-
+  
   /* Dimension list */
   tb->nbr_dmn=0;
   tb->lst_dmn=NULL;
-
+  
   /* Degenerate dimensions used by ncwa */
   tb->nbr_dmn_dgn=0;
   tb->dmn_dgn=NULL;
-
+  
   /* Ensembles */
   tb->nsm_nbr=0;
   tb->nsm=NULL;
   tb->nsm_sfx=NULL;
-
+  
   *tbl=tb;
 } /* trv_tbl_init() */
- 
+
 void 
 trv_tbl_free                           /* [fnc] GTT free memory */
 (trv_tbl_sct *tbl)                     /* I [sct] Traversal table */
 {
-
   const char fnc_nm[]="trv_tbl_free()"; /* [sng] Function name  */
-
+  
 #ifdef DEBUG_LEAKS
   int crt_counter=0;
 #endif
-
+  
   /* Hash Table */
   nco_trv_hsh_del(tbl);
   
@@ -63,16 +62,16 @@ trv_tbl_free                           /* [fnc] GTT free memory */
     tbl->lst[idx].nsm_nm=(char *)nco_free(tbl->lst[idx].nsm_nm);
     tbl->lst[idx].rec_dmn_nm_out=(char *)nco_free(tbl->lst[idx].rec_dmn_nm_out);
     tbl->lst[idx].hsh_key=(char *)nco_free(tbl->lst[idx].hsh_key);
-
+    
     /* Dimensions */
     for(int dmn_idx=0;dmn_idx<tbl->lst[idx].nbr_dmn;dmn_idx++){
-
+      
       /* If dimensions exist (only for variables ) */
       if(tbl->lst[idx].var_dmn){
         tbl->lst[idx].var_dmn[dmn_idx].dmn_nm_fll=(char *)nco_free(tbl->lst[idx].var_dmn[dmn_idx].dmn_nm_fll);
         tbl->lst[idx].var_dmn[dmn_idx].dmn_nm=(char *)nco_free(tbl->lst[idx].var_dmn[dmn_idx].dmn_nm);
         tbl->lst[idx].var_dmn[dmn_idx].grp_nm_fll=(char *)nco_free(tbl->lst[idx].var_dmn[dmn_idx].grp_nm_fll);
-
+	
         int nbr_lat_crd=tbl->lst[idx].var_dmn[dmn_idx].nbr_lat_crd;
         for(int idx_crd=0;idx_crd<nbr_lat_crd;idx_crd++) tbl->lst[idx].var_dmn[dmn_idx].lat_crd[idx_crd].nm_fll=(char *)nco_free(tbl->lst[idx].var_dmn[dmn_idx].lat_crd[idx_crd].nm_fll);
 
@@ -157,7 +156,7 @@ trv_tbl_free                           /* [fnc] GTT free memory */
   tbl->nsm_sfx=(char *)nco_free(tbl->nsm_sfx);  
   tbl=(trv_tbl_sct *)nco_free(tbl);
 #ifdef DEBUG_LEAKS
-  if(nco_dbg_lvl_get() >= nco_dbg_sup)(void)fprintf(stdout,"%s: DEBUG %s %d crd",nco_prg_nm_get(),fnc_nm,crt_counter);
+  if(nco_dbg_lvl_get() >= nco_dbg_sup && nco_dbg_lvl_get() <= nco_dbg_nbr) (void)fprintf(stdout,"%s: DEBUG %s %d crd\n",nco_prg_nm_get(),fnc_nm,crt_counter);
 #endif
 } /* end trv_tbl_free() */
 
@@ -170,11 +169,12 @@ trv_tbl_inq                          /* [fnc] Find and return global totals of d
  int * const dmn_rec_all,            /* O [nbr] Number of record dimensions in file */
  int * const grp_dpt_all,            /* O [nbr] Maximum group depth (root = 0) */
  int * const grp_nbr_all,            /* O [nbr] Number of groups in file */
- int * const var_ntm_all,            /* O [nbr] Number of non-atomic variables in file */
+ int * const var_udt_all,            /* O [nbr] Number of non-atomic variables in file */
  int * const var_tmc_all,            /* O [nbr] Number of atomic-type variables in file */
  const trv_tbl_sct * const trv_tbl)  /* I [sct] Traversal table */
 {
   /* [fnc] Find and return global file summaries like # of dimensions, variables, attributes */
+  //const char fnc_nm[]="trv_tbl_inq()"; /* [sng] Function name  */
 
   int att_glb_lcl; /* [nbr] Number of global attributes in file */
   int att_grp_lcl; /* [nbr] Number of group attributes in file */
@@ -182,9 +182,10 @@ trv_tbl_inq                          /* [fnc] Find and return global totals of d
   int dmn_rec_lcl; /* [nbr] Number of record dimensions in file */
   int grp_dpt_lcl; /* [nbr] Maximum group depth (root = 0) */
   int grp_nbr_lcl; /* [nbr] Number of groups in file */
-  int var_ntm_lcl; /* [nbr] Number of non-atomic variables in file */
+  int typ_nbr_lcl; /* [nbr] Number of user-defined types in file */
+  int var_udt_lcl; /* [nbr] Number of non-atomic variables in file */
   int var_tmc_lcl; /* [nbr] Number of atomic-type variables in file */
- 
+
   /* Initialize */
   att_glb_lcl=0;
   att_grp_lcl=0;
@@ -192,23 +193,29 @@ trv_tbl_inq                          /* [fnc] Find and return global totals of d
   dmn_rec_lcl=0;
   grp_dpt_lcl=0;
   grp_nbr_lcl=0;
-  var_ntm_lcl=0;
+  typ_nbr_lcl=0;
+  var_udt_lcl=0;
   var_tmc_lcl=0;
-
+    
   for(unsigned idx_tbl=0;idx_tbl<trv_tbl->nbr;idx_tbl++){
-    trv_sct trv=trv_tbl->lst[idx_tbl]; 
-    if(trv.nco_typ == nco_obj_typ_var) att_var_lcl+=trv.nbr_att;
-    if(trv.nco_typ == nco_obj_typ_nonatomic_var) var_ntm_lcl++;
-    if(trv.nco_typ == nco_obj_typ_grp){ 
-      grp_nbr_lcl+=trv.nbr_grp;
-      var_tmc_lcl+=trv.nbr_var;
-      if(grp_dpt_lcl < trv.grp_dpt) grp_dpt_lcl=trv.grp_dpt;
-      if(!strcmp(trv.nm_fll,"/")) att_glb_lcl=trv.nbr_att; else att_grp_lcl+=trv.nbr_att; 
+    trv_sct var_trv=trv_tbl->lst[idx_tbl]; 
+    if(var_trv.nco_typ == nco_obj_typ_var) att_var_lcl+=var_trv.nbr_att;
+    if(var_trv.nco_typ == nco_obj_typ_nonatomic_var) var_udt_lcl++;
+    if(var_trv.nco_typ == nco_obj_typ_grp){ 
+      typ_nbr_lcl+=var_trv.nbr_typ;
+      grp_nbr_lcl+=var_trv.nbr_grp;
+      var_tmc_lcl+=var_trv.nbr_var;
+      if(grp_dpt_lcl < var_trv.grp_dpt) grp_dpt_lcl=var_trv.grp_dpt;
+      if(!strcmp(var_trv.nm_fll,"/")) att_glb_lcl=var_trv.nbr_att; else att_grp_lcl+=var_trv.nbr_att; 
     } /* end nco_obj_typ_grp */
   } /* end idx_tbl */
 
   for(unsigned idx_tbl=0;idx_tbl<trv_tbl->nbr_dmn;idx_tbl++)
     if(trv_tbl->lst_dmn[idx_tbl].is_rec_dmn) dmn_rec_lcl++;
+
+  if(typ_nbr_lcl > 0 || var_udt_lcl > 0){
+    (void)fprintf(stderr,"%s: WARNING File contains %d user-defined types (i.e., compound, enum, opaque, or vlen) used to define %d non-atomic variables and their attributes. NCO currently ignores variables and attributes with user-defined types by default, although some preliminary features can be accessed with the --udt flag. Nevertheless, most %s features will only work for atomic variables.\n",nco_prg_nm_get(),typ_nbr_lcl,var_udt_lcl,nco_prg_nm_get());
+  } /* !var_udt_lcl */
 
   if(att_glb_all) *att_glb_all=att_glb_lcl;
   if(att_grp_all) *att_grp_all=att_grp_lcl;
@@ -217,7 +224,7 @@ trv_tbl_inq                          /* [fnc] Find and return global totals of d
   if(dmn_rec_all) *dmn_rec_all=dmn_rec_lcl;
   if(grp_dpt_all) *grp_dpt_all=grp_dpt_lcl;
   if(grp_nbr_all) *grp_nbr_all=grp_nbr_lcl;
-  if(var_ntm_all) *var_ntm_all=var_ntm_lcl;
+  if(var_udt_all) *var_udt_all=var_udt_lcl;
   if(var_tmc_all) *var_tmc_all=var_tmc_lcl;
 
   return;
@@ -247,6 +254,28 @@ trv_tbl_prn_flg_xtr                  /* [fnc] Print table items that have .flg_x
   for(unsigned int tbl_idx=0;tbl_idx<trv_tbl->nbr;tbl_idx++){
     trv_obj=trv_tbl->lst[tbl_idx];
     if(trv_obj.flg_xtr) (void)fprintf(stdout,"%s\n",trv_obj.nm_fll);
+  } /* end loop over trv_tbl */
+} /* end trv_tbl_prn_flg_xtr() */
+
+void
+trv_tbl_prn_dbg                      /* [fnc] Print several table members fields (debug only) */
+(const char * const fnc_nm,          /* I [sng] Function name  */
+const trv_tbl_sct * const trv_tbl)   /* I [sct] Traversal table */
+{
+  (void)fprintf(stdout, "%s: INFO %s reports extracted objects:\n", nco_prg_nm_get(), fnc_nm);
+  /* Print all matching objects from traversal table */
+  trv_sct trv_obj;
+  for(unsigned int tbl_idx=0;tbl_idx<trv_tbl->nbr;tbl_idx++){
+    trv_obj=trv_tbl->lst[tbl_idx];
+    if(trv_obj.flg_xtr && trv_obj.nco_typ == nco_obj_typ_var){
+      (void)fprintf(stdout,"%s\n",trv_obj.nm_fll);
+      (void)fprintf(stdout,"   %d dimensions: ",trv_obj.nbr_dmn);
+      for(int idx_dmn=0; idx_dmn<trv_obj.nbr_dmn;idx_dmn++)
+        (void)fprintf(stdout, " %s ",trv_obj.var_dmn[idx_dmn].dmn_nm);
+      (void)fprintf(stdout,"\n");
+      (void)fprintf(stdout,"   record dimension name: ");
+      if(trv_obj.rec_dmn_nm_out) (void)fprintf(stdout, "%s\n ", trv_obj.rec_dmn_nm_out); else (void)fprintf(stdout, "NULL\n");
+    }
   } /* end loop over trv_tbl */
 } /* end trv_tbl_prn_flg_xtr() */
 
@@ -373,7 +402,6 @@ trv_tbl_mrk_prc_fix                    /* [fnc] Mark fixed/processed flag in tab
       return;
     }
   }
-
   assert(0);
 } /* end trv_tbl_mrk_prc_fix() */
 
@@ -396,24 +424,38 @@ trv_tbl_prn_xtr                        /* [fnc] Print extraction flag of travers
 
 } /* end trv_tbl_prn_xtr() */
 
-static int                             /* O [enm] Comparison result [<,=,>] 0 iff val_1 [<,==,>] val_2 */
-trv_tbl_cmp_nm_fll                     /* [fnc] Compare two trv_sct's by full name member */
+int                                    /* O [enm] Comparison result [<,=,>] 0 iff val_1 [<,==,>] val_2 */
+trv_tbl_cmp_asc_nm_fll                 /* [fnc] Compare two trv_sct's by full name member, return ascending order */
 (const void *val_1,                    /* I [sct] trv_sct to compare */
  const void *val_2)                    /* I [sct] trv_sct to compare */
 {
   /* Purpose: Compare two trv_sct's by name structure member
+     Comparison results, when interpreted by qsort(), sort in ascending (alphabetical) order
      Function is suitable for argument to ANSI C qsort() routine in stdlib.h
      Code based on responses to my comp.lang.c thread 20040101 */
   return strcmp((*(trv_sct const *)val_1).nm_fll,(*(trv_sct const *)val_2).nm_fll);
 } /* end nco_cmp_trv_tbl_nm() */
 
+int                                    /* O [enm] Comparison result [<,=,>] 0 iff val_1 [>,==,<] val_2 */
+trv_tbl_cmp_dsc_nm_fll                 /* [fnc] Compare two trv_sct's by full name member, return descending order */
+(const void *val_1,                    /* I [sct] trv_sct to compare */
+ const void *val_2)                    /* I [sct] trv_sct to compare */
+{
+  /* Purpose: Compare two trv_sct's by name structure member
+     Comparison results, when interpreted by qsort(), sort in descending (reverse alphabetical) order
+     Function is suitable for argument to ANSI C qsort() routine in stdlib.h
+     Code based on responses to my comp.lang.c thread 20040101 */
+  return -1*strcmp((*(trv_sct const *)val_1).nm_fll,(*(trv_sct const *)val_2).nm_fll);
+} /* end nco_cmp_trv_tbl_nm() */
+
 void 
 trv_tbl_srt                            /* [fnc] Sort traversal table */
-(trv_tbl_sct * const trv_tbl)          /* I/O [sct] Traversal table */
+(const int srt_mth,                    /* [enm] Sort method */
+ trv_tbl_sct * const trv_tbl)          /* I/O [sct] Traversal table */
 {
   /* Purpose: Alphabetize list by object full name
      This produces easy-to-search variable name screen output with ncks */
-  qsort(trv_tbl->lst,(size_t)trv_tbl->nbr,sizeof(trv_sct),trv_tbl_cmp_nm_fll);
+  if(srt_mth == 0) qsort(trv_tbl->lst,(size_t)trv_tbl->nbr,sizeof(trv_sct),trv_tbl_cmp_asc_nm_fll); else if(srt_mth == 1) qsort(trv_tbl->lst,(size_t)trv_tbl->nbr,sizeof(trv_sct),trv_tbl_cmp_dsc_nm_fll);
 } /* end trv_tbl_srt() */
 
 void                          
@@ -722,13 +764,13 @@ nco_nm_mch                             /* [fnc] Match 2 lists of strings and mar
  int * nbr_cmn_nm)                     /* I/O [nbr] Number of common names */
 {
   /* Purpose: Match 2 lists of strings and export common strings. 
-  Use cosequential match algorithm described in
-  Folk, Michael; Zoellick, Bill. (1992). File Structures. Addison-Wesley.
+     Use cosequential match algorithm described in
+     Folk, Michael; Zoellick, Bill. (1992). File Structures. Addison-Wesley.
 
   Compare 2 ordered lists of names:
-  if Name(1) is less than Name(2), read next name from List 1; this is done by incrementing current index
-  if Name(1) is greater than Name(2), read next name from List 2
-  if names are identical, read next names from both lists  */
+  If Name(1) is less than Name(2), read next name from List 1; this is done by incrementing current index
+  If Name(1) is greater than Name(2), read next name from List 2
+  If names are identical, read next names from both lists */
 
   int idx_lst;                   /* [idx] Current position in common List */ 
   int idx_tbl_1;                 /* [idx] Current position in List 1 */ 

@@ -2,10 +2,10 @@
 
 /* Purpose: Software configuration management */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_scm.h" /* Software configuration management */
 
@@ -148,9 +148,68 @@ void
 nco_cpy_prn(void) /* [fnc] Print copyright notice */
 {
   /* Purpose: Print copyright notice */
-  (void)fprintf(stderr,"Copyright (C) 1995--2015 Charlie Zender\n");
-  (void)fprintf(stdout,"This program is part of NCO, the netCDF Operators.\nNCO is free software and comes with a BIG FAT KISS and ABOLUTELY NO WARRANTY\nYou may redistribute and/or modify NCO under the terms of the\nGNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file\nGPL: http://www.gnu.org/copyleft/gpl.html\nLICENSE: https://github.com/czender/nco/tree/master/LICENSE\n");
+  (void)fprintf(stderr,"Copyright (C) 1995--2021 Charlie Zender\n");
+  (void)fprintf(stdout,"This program is part of NCO, the netCDF Operators.\nNCO is free software and comes with a BIG FAT KISS and ABSOLUTELY NO WARRANTY\nYou may redistribute and/or modify NCO under the terms of the\n3-Clause BSD License with exceptions described in the LICENSE file\nBSD: https://opensource.org/licenses/BSD-3-Clause\nLICENSE: https://github.com/nco/nco/tree/master/LICENSE\n");
 } /* end copyright_prn() */
+
+void
+nco_lbr_vrs_prn(void) /* [fnc] Print netCDF library version */
+{
+  /* Purpose: Print netCDF library version */
+
+  char *cmp_dat_sng;
+  char *dlr_ptr;
+  char *lbr_sng;
+  char *lbr_vrs_sng;
+  char *of_ptr;
+
+  size_t cmp_dat_sng_lng;
+  size_t lbr_vrs_sng_lng;
+
+  /* Behavior of nc_inq_libvers() depends on library versions. Return values are:
+     netCDF 3.4--3.6.x: "3.4 of May 16 1998 14:06:16 $"
+     netCDF 4.0-alpha1--4.0-alpha10: NULL
+     netCDF 4.0-alpha11--4.0-alpha16: "4.0-alpha11"
+     netCDF 4.0-beta1--4.4: "4.0-beta1"
+     netCDF 4.4--present: "4.5.0-development" */  
+  lbr_sng=(char *)strdup(nc_inq_libvers());
+  /* (void)fprintf(stderr,"%s: nco_lbr_vrs_prn() returns %s\n",nco_prg_nm_get(),lbr_sng);*/
+  of_ptr=strstr(lbr_sng," of ");
+  if(of_ptr == NULL){
+    (void)fprintf(stderr,"%s: WARNING nco_lbr_vrs_prn() reports of_ptr == NULL\n",nco_prg_nm_get());
+    lbr_vrs_sng_lng=(size_t)strlen(lbr_sng);
+  }else{
+    lbr_vrs_sng_lng=(size_t)(of_ptr-lbr_sng);
+  } /* endif */
+  lbr_vrs_sng=(char *)nco_malloc(lbr_vrs_sng_lng+1ul);
+  strncpy(lbr_vrs_sng,lbr_sng,lbr_vrs_sng_lng);
+  lbr_vrs_sng[lbr_vrs_sng_lng]='\0'; /* NUL-terminate */
+
+  dlr_ptr=strstr(lbr_sng," $");
+  if(of_ptr && dlr_ptr){
+    cmp_dat_sng_lng=(size_t)(dlr_ptr-of_ptr-4ul); /* 4 is the length of " of " */
+    cmp_dat_sng=(char *)nco_malloc(cmp_dat_sng_lng+1ul);
+    strncpy(cmp_dat_sng,of_ptr+4ul,cmp_dat_sng_lng); /* 4 is the length of " of " */
+    cmp_dat_sng[cmp_dat_sng_lng]='\0'; /* NUL-terminate */
+  }else{
+    cmp_dat_sng=(char *)strdup("Unknown");
+  } /* endif */
+
+  (void)fprintf(stderr,"Linked to netCDF library version %s compiled %s\n",lbr_vrs_sng,cmp_dat_sng);
+
+  cmp_dat_sng=(char *)nco_free(cmp_dat_sng);
+  lbr_vrs_sng=(char *)nco_free(lbr_vrs_sng);
+  lbr_sng=(char *)nco_free(lbr_sng);
+} /* end nco_lbr_vrs_prn() */
+
+const char * /* O [sng] Mnemonic that describes current NCO version */
+nco_nmn_get(void) /* [fnc] Return mnemonic that describes current NCO version */
+{ 
+  /* Purpose: Return mnemonic describing current NCO version 
+     20191221: ncremap/ncclimo print left quote and first word of this string, so one-word strings look best 
+     20200117: fixed this limitation, multi-word versions work fine */
+  return "Pt. Concepcion IPA";
+} /* !nco_nmn_get() */
 
 void
 nco_vrs_prn /* [fnc] Print NCO version */
@@ -158,9 +217,9 @@ nco_vrs_prn /* [fnc] Print NCO version */
  const char * const CVS_Revision) /* I [sng] CVS revision string */
 {
   /* Purpose: Print NCO version */
-  char *date_cvs; /* Date this file was last modified */
-  char *vrs_rcs; /* Version of this file, e.g., 1.213 */
-  char *vrs_cvs; /* Version according to CVS release tag */
+  char *date_cvs=NULL; /* Date this file was last modified */
+  char *vrs_rcs=NULL; /* Version of this file, e.g., 1.213 */
+  char *vrs_cvs=NULL; /* Version according to CVS release tag */
 
   int date_cvs_lng;
   int vrs_cvs_lng;
@@ -168,9 +227,20 @@ nco_vrs_prn /* [fnc] Print NCO version */
   const char date_cpp[]=__DATE__; /* [sng] Date from C pre-processor */
   const char time_cpp[]=__TIME__; /* [sng] Time from C pre-processor */
   /*  const char time_cpp[]=__TIME__; *//* [sng] Time from C pre-processor */
-  const char vrs_cpp[]=TKN2SNG(VERSION); /* [sng] Version from C pre-processor */
   const char hst_cpp[]=TKN2SNG(HOSTNAME); /* [sng] Hostname from C pre-processor */
   const char usr_cpp[]=TKN2SNG(USER); /* [sng] Hostname from C pre-processor */
+
+  char vrs_cpp[]=TKN2SNG(NCO_VERSION); /* [sng] Version from C pre-processor */
+
+  /* 20170417: vrs_cpp is typically something like "4.6.6-alpha09" (quotes included) 
+     The quotation marks annoy me yet are necessary to protect the string in nco.h 
+     Here we remove the quotation marks by pointing past the first and putting NUL in the last */
+  char *vrs_sng; /* [sng] NCO version */
+  vrs_sng=vrs_cpp;
+  if(vrs_cpp[0L] == '"'){
+    vrs_cpp[strlen(vrs_cpp)-1L]='\0';
+    vrs_sng=vrs_cpp+1L;
+  } /* endif */
 
   if(strlen(CVS_Id) > strlen("*Id*")){
     /* CVS_Id is defined */
@@ -183,7 +253,7 @@ nco_vrs_prn /* [fnc] Print NCO version */
     date_cvs=(char *)strdup("Current");
   } /* endif */
 
-  if(strlen(CVS_Revision) > strlen("*Revision*") || strlen(CVS_Revision) < strlen("*Revision*")){
+  if(strlen(CVS_Revision) != strlen("*Revision*")){
     /* CVS_Revision is defined */
     vrs_cvs_lng=strrchr(CVS_Revision,'$')-strchr(CVS_Revision,':')-3L;
     vrs_rcs=(char *)nco_malloc((vrs_cvs_lng+1L)*sizeof(char));
@@ -194,23 +264,22 @@ nco_vrs_prn /* [fnc] Print NCO version */
     vrs_rcs=(char *)strdup("Current");
   } /* endif */
 
-  vrs_cvs=cvs_vrs_prs();
-
   if(strlen(CVS_Id) > strlen("*Id*")){
-    (void)fprintf(stderr,"NCO netCDF Operators version %s last modified %s built %s on %s by %s\n",vrs_cpp,date_cvs,date_cpp,hst_cpp,usr_cpp);
+    (void)fprintf(stderr,"NCO netCDF Operators version %s last modified %s built %s on %s by %s\n",vrs_sng,date_cvs,date_cpp,hst_cpp,usr_cpp);
   }else{
     /* 20141008: Try new nco.h-based versioning */
-    /*    (void)fprintf(stderr,"NCO netCDF Operators version %s built %s on %s by %s\n",vrs_cpp,date_cpp,hst_cpp,usr_cpp);*/
-    (void)fprintf(stderr,"NCO netCDF Operators version %s built by %s on %s at %s %s\n",NCO_VERSION,usr_cpp,hst_cpp,date_cpp,time_cpp);
+    /*    (void)fprintf(stderr,"NCO netCDF Operators version %s built %s on %s by %s\n",vrs_sng,date_cpp,hst_cpp,usr_cpp);*/
+    (void)fprintf(stderr,"NCO netCDF Operators version %s \"%s\" built by %s on %s at %s %s\n",vrs_sng,nco_nmn_get(),usr_cpp,hst_cpp,date_cpp,time_cpp);
   } /* endif */
   if(strlen(CVS_Id) > strlen("*Id*")){
+    vrs_cvs=cvs_vrs_prs();
     (void)fprintf(stderr,"%s version %s\n",nco_prg_nm_get(),vrs_cvs);
   }else{
-    (void)fprintf(stderr,"%s version %s\n",nco_prg_nm_get(),vrs_cpp);
+    (void)fprintf(stderr,"%s version %s\n",nco_prg_nm_get(),vrs_sng);
   } /* endif */
 
-  date_cvs=(char *)nco_free(date_cvs);
-  vrs_rcs=(char *)nco_free(vrs_rcs);
-  vrs_cvs=(char *)nco_free(vrs_cvs);
+  if(date_cvs) date_cvs=(char *)nco_free(date_cvs);
+  if(vrs_rcs) vrs_rcs=(char *)nco_free(vrs_rcs);
+  if(vrs_cvs) vrs_cvs=(char *)nco_free(vrs_cvs);
 } /* end nco_vrs_prn() */
 

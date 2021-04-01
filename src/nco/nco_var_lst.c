@@ -2,10 +2,10 @@
 
 /* Purpose: Variable list utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_var_lst.h" /* Variable list utilities */
 
@@ -235,7 +235,7 @@ nco_var_lst_crd_add /* [fnc] Add all coordinates to extraction list */
  const int nbr_var, /* I [nbr] Number of variables in input file */
  nm_id_sct *xtr_lst, /* I/O [sct] Current extraction list (destroyed) */
  int * const xtr_nbr, /* I/O [nbr] Number of variables in current extraction list */
- const nco_bool CNV_CCM_CCSM_CF) /* I [flg] file obeys CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv) /* I [flg] file obeys CCM/CCSM/CF conventions */
 {
   /* Purpose: Add all coordinates to extraction list
      Find all coordinates (dimensions which are also variables) and
@@ -274,7 +274,7 @@ nco_var_lst_crd_add /* [fnc] Add all coordinates to extraction list */
 
   /* Detect associated coordinates specified by CF "coordinates" convention
   http://cf-pcmdi.llnl.gov/documents/cf-conventions/1.1/cf-conventions.html#coordinate-system */
-  if(CNV_CCM_CCSM_CF){
+  if(cnv->CCM_CCSM_CF){
     const char dlm_sng[]=" "; /* [sng] Delimiter string */
     const char fnc_nm[]="nco_var_lst_crd_add()"; /* [sng] Function name */
     char **crd_lst; /* [sng] 1D array of list elements */
@@ -313,7 +313,7 @@ nco_var_lst_crd_add /* [fnc] Add all coordinates to extraction list */
           /* Yes, get list of specified attributes */
           (void)nco_inq_att(nc_id,var_id,att_nm,&att_typ,&att_sz);
           if(att_typ != NC_CHAR){
-            (void)fprintf(stderr,"%s: WARNING the \"%s\" attribute for variable %s is type %s, not %s. This violates the CF convention for specifying additional attributes. Therefore %s will skip this attribute.\n",nco_prg_nm_get(),att_nm,xtr_lst[idx_var].nm,nco_typ_sng(att_typ),nco_typ_sng(NC_CHAR),fnc_nm);
+            (void)fprintf(stderr,"%s: WARNING the \"%s\" attribute for variable %s is type %s, not %s. This violates the CF convention for allowed datatypes (http://cfconventions.org/cf-conventions/cf-conventions.html#_data_types). Therefore %s will skip this attribute.\n",nco_prg_nm_get(),att_nm,xtr_lst[idx_var].nm,nco_typ_sng(att_typ),nco_typ_sng(NC_CHAR),fnc_nm);
             return xtr_lst;
           } /* end if */
           att_val=(char *)nco_malloc((att_sz+1L)*sizeof(char));
@@ -358,12 +358,12 @@ nco_var_lst_crd_add /* [fnc] Add all coordinates to extraction list */
         } /* !coordinates */
       } /* end loop over attributes */
     } /* end loop over idx_var */
-  } /* !CNV_CCM_CCSM_CF for "coordinates" */
+  } /* !cnv->CCM_CCSM_CF for "coordinates" */
 
   /* Detect coordinate boundaries specified by CF "bounds" convention
   http://cf-pcmdi.llnl.gov/documents/cf-conventions/1.5/cf-conventions.html#cell-boundaries
   Algorithm copied with modification from "coordinates" algorithm above */
-  if(CNV_CCM_CCSM_CF){
+  if(cnv->CCM_CCSM_CF){
     const char dlm_sng[]=" "; /* [sng] Delimiter string */
     const char fnc_nm[]="nco_var_lst_crd_add()"; /* [sng] Function name */
     char **bnd_lst; /* [sng] 1D array of list elements */
@@ -398,7 +398,7 @@ nco_var_lst_crd_add /* [fnc] Add all coordinates to extraction list */
           /* Yes, get list of specified attributes */
           (void)nco_inq_att(nc_id,var_id,att_nm,&att_typ,&att_sz);
           if(att_typ != NC_CHAR){
-            (void)fprintf(stderr,"%s: WARNING the \"%s\" attribute for variable %s is type %s, not %s. This violates the CF convention for specifying additional attributes. Therefore %s will skip this attribute.\n",nco_prg_nm_get(),att_nm,xtr_lst[idx_var].nm,nco_typ_sng(att_typ),nco_typ_sng(NC_CHAR),fnc_nm);
+            (void)fprintf(stderr,"%s: WARNING the \"%s\" attribute for variable %s is type %s, not %s. This violates the CF convention for allowed datatypes (http://cfconventions.org/cf-conventions/cf-conventions.html#_data_types). Therefore %s will skip this attribute.\n",nco_prg_nm_get(),att_nm,xtr_lst[idx_var].nm,nco_typ_sng(att_typ),nco_typ_sng(NC_CHAR),fnc_nm);
             return xtr_lst;
           } /* end if */
           att_val=(char *)nco_malloc((att_sz+1L)*sizeof(char));
@@ -441,7 +441,7 @@ nco_var_lst_crd_add /* [fnc] Add all coordinates to extraction list */
         } /* !coordinates */
       } /* end loop over attributes */
     } /* end loop over idx_var */
-  } /* !CNV_CCM_CCSM_CF for "bounds" */
+  } /* !cnv->CCM_CCSM_CF for "bounds" */
 
   return xtr_lst;
 } /* end nco_var_lst_crd_add() */
@@ -451,7 +451,7 @@ nco_var_lst_crd_ass_add /* [fnc] Add to extraction list all coordinates associat
 (const int nc_id, /* I netCDF file ID */
  nm_id_sct *xtr_lst, /* I/O current extraction list (destroyed) */
  int * const xtr_nbr, /* I/O number of variables in current extraction list */
- const nco_bool CNV_CCM_CCSM_CF) /* I [flg] file obeys CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv) /* I [flg] file obeys CCM/CCSM/CF conventions */
 {
   /* Purpose: Add coordinates associated with variables to extraction list */
 
@@ -511,7 +511,7 @@ nco_var_lst_crd_ass_add /* [fnc] Add to extraction list all coordinates associat
 
   /* Detect associated coordinates specified by CF "coordinates" convention
   http://cf-pcmdi.llnl.gov/documents/cf-conventions/1.5/cf-conventions.html#coordinate-system */
-  if(CNV_CCM_CCSM_CF){
+  if(cnv->CCM_CCSM_CF){
     const char dlm_sng[]=" "; /* [sng] Delimiter string */
     const char fnc_nm[]="nco_var_lst_crd_ass_add()"; /* [sng] Function name */
     char **crd_lst; /* [sng] 1D array of list elements */
@@ -539,7 +539,7 @@ nco_var_lst_crd_ass_add /* [fnc] Add to extraction list all coordinates associat
           /* Yes, get list of specified attributes */
           (void)nco_inq_att(nc_id,var_id,att_nm,&att_typ,&att_sz);
           if(att_typ != NC_CHAR){
-            (void)fprintf(stderr,"%s: WARNING the \"%s\" attribute for variable %s is type %s, not %s. This violates the CF convention for specifying additional attributes. Therefore %s will skip this attribute.\n",nco_prg_nm_get(),att_nm,xtr_lst[idx_var].nm,nco_typ_sng(att_typ),nco_typ_sng(NC_CHAR),fnc_nm);
+            (void)fprintf(stderr,"%s: WARNING the \"%s\" attribute for variable %s is type %s, not %s. This violates the CF convention for allowed datatypes (http://cfconventions.org/cf-conventions/cf-conventions.html#_data_types). Therefore %s will skip this attribute.\n",nco_prg_nm_get(),att_nm,xtr_lst[idx_var].nm,nco_typ_sng(att_typ),nco_typ_sng(NC_CHAR),fnc_nm);
             return xtr_lst;
           } /* end if */
           att_val=(char *)nco_malloc((att_sz+1L)*sizeof(char));
@@ -586,12 +586,12 @@ nco_var_lst_crd_ass_add /* [fnc] Add to extraction list all coordinates associat
         } /* !coordinates */
       } /* end loop over attributes */
     } /* end loop over idx_var */
-  } /* !CNV_CCM_CCSM_CF for "coordinates" */
+  } /* !cnv->CCM_CCSM_CF for "coordinates" */
 
   /* Detect coordinate boundaries specified by CF "bounds" convention
   http://cf-pcmdi.llnl.gov/documents/cf-conventions/1.5/cf-conventions.html#cell-boundaries
   Algorithm copied with modification from "coordinates" algorithm above */
-  if(CNV_CCM_CCSM_CF){
+  if(cnv->CCM_CCSM_CF){
     const char dlm_sng[]=" "; /* [sng] Delimiter string */
     const char fnc_nm[]="nco_var_lst_crd_ass_add()"; /* [sng] Function name */
     char **bnd_lst; /* [sng] 1D array of list elements */
@@ -620,7 +620,7 @@ nco_var_lst_crd_ass_add /* [fnc] Add to extraction list all coordinates associat
           /* Yes, get list of specified attributes */
           (void)nco_inq_att(nc_id,var_id,att_nm,&att_typ,&att_sz);
           if(att_typ != NC_CHAR){
-            (void)fprintf(stderr,"%s: WARNING the \"%s\" attribute for variable %s is type %s, not %s. This violates the CF convention for specifying additional attributes. Therefore %s will skip this attribute.\n",nco_prg_nm_get(),att_nm,xtr_lst[idx_var].nm,nco_typ_sng(att_typ),nco_typ_sng(NC_CHAR),fnc_nm);
+            (void)fprintf(stderr,"%s: WARNING the \"%s\" attribute for variable %s is type %s, not %s. This violates the CF convention for allowed datatypes (http://cfconventions.org/cf-conventions/cf-conventions.html#_data_types). Therefore %s will skip this attribute.\n",nco_prg_nm_get(),att_nm,xtr_lst[idx_var].nm,nco_typ_sng(att_typ),nco_typ_sng(NC_CHAR),fnc_nm);
             return xtr_lst;
           } /* end if */
           att_val=(char *)nco_malloc((att_sz+1L)*sizeof(char));
@@ -663,7 +663,7 @@ nco_var_lst_crd_ass_add /* [fnc] Add to extraction list all coordinates associat
         } /* !coordinates */
       } /* end loop over attributes */
     } /* end loop over idx_var */
-  } /* !CNV_CCM_CCSM_CF for "bounds" */
+  } /* !cnv->CCM_CCSM_CF for "bounds" */
 
   return xtr_lst;
   
@@ -748,8 +748,6 @@ nco_var_lst_convert /* [fnc] Make variable structure list from variable name ID 
   *var_out_ptr=var_out;
 
 } /* end nco_var_lst_convert() */
-
-
 
 int /* O [enm] Return code */
 nco_var_lst_mrg /* [fnc] Merge two variable lists into same order */
@@ -847,7 +845,7 @@ nco_var_lst_dvd /* [fnc] Divide input lists into output lists */
 (var_sct * const * const var, /* I [sct] Variable list (input file) */
  var_sct * const * const var_out, /* I [sct] Variable list (output file) */
  const int nbr_var, /* I [nbr] Number of variables */
- const nco_bool CNV_CCM_CCSM_CF, /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv, /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const nco_bool FIX_REC_CRD, /* [flg] Do not interpolate/multiply record coordinate variables (ncflint only) */
  const int nco_pck_map, /* I [enm] Packing map */
  const int nco_pck_plc, /* I [enm] Packing policy */
@@ -912,10 +910,11 @@ nco_var_lst_dvd /* [fnc] Divide input lists into output lists */
     if((var_typ == NC_CHAR) || (var_typ == NC_STRING)) var_typ_fnk=True; else var_typ_fnk=False;
 
     /* Many operators should not process coordinate variables, or auxiliary coordinate variables (lat, lon, time, latixy, longxy, ...) and bounds (lat_bnds, lon_bnds, ...)
-       20130112: As of today set is_crd_var true in nco_var_fll() when either of these conditions is true 
-       so no longer need to specify these conditions separately. 
+       20130112: As of today set is_crd_var true in nco_var_fll() when any of these conditions are true so no longer need to specify these conditions separately. 
        20150519: Add nco_is_spc_in_clm_att() to this list
+       20160420: Add nco_is_spc_in_grd_att() to this list
        Keep this old code here as a reminder that is_crd_var also incorporates these conditions
+       is_spc_in_grd_att=nco_is_spc_in_grd_att(var[idx]->nc_id,var[idx]->id);
        is_spc_in_clm_att=nco_is_spc_in_clm_att(var[idx]->nc_id,var[idx]->id);
        is_spc_in_crd_att=nco_is_spc_in_crd_att(var[idx]->nc_id,var[idx]->id);
        is_spc_in_bnd_att=nco_is_spc_in_bnd_att(var[idx]->nc_id,var[idx]->id); */
@@ -968,9 +967,9 @@ nco_var_lst_dvd /* [fnc] Divide input lists into output lists */
 	   Variables are processed for packing/unpacking operator unless... */
         if(
 	   /* ...packing coordinate variables has few benefits... */
-	   (var[idx]->is_crd_var && !(nco_pck_plc == nco_pck_plc_upk) ) ||
+	   (var[idx]->is_crd_var && (nco_pck_plc != nco_pck_plc_upk)) ||
 	   /* unless if it's NOT a record variable and the policy is unpack 
-	      20120711. nco: ncpdq unpack coordinate variables */     
+	      20120711. ncpdq OK to unpack coordinate variables */     
 	   /* ...unpacking requested for unpacked variable... */
 	   (nco_pck_plc == nco_pck_plc_upk && !var[idx]->pck_ram) ||
 	   /* ...or packing unpacked requested and variable is already packed... */
@@ -985,7 +984,11 @@ nco_var_lst_dvd /* [fnc] Divide input lists into output lists */
 	     nco_pck_plc == nco_pck_plc_xst_new_att) &&
 	    /* ...yet map does not allow (re-)packing... */
 	    !nco_pck_plc_typ_get(nco_pck_map,var[idx]->typ_upk,(nc_type *)NULL)
-	    )
+	    ) ||
+	   /* ...or double->float conversion requested and input is not double, or input is coordinate... */ 
+	   (nco_pck_map == nco_pck_map_dbl_flt && ((var[idx]->type != NC_DOUBLE) || var[idx]->is_crd_var)) ||
+	   /* ...or float->double conversion requested and input is not float (allow coordinate promotion)... */ 
+	   (nco_pck_map == nco_pck_map_flt_dbl && var[idx]->type != NC_FLOAT)
 	   )
           var_op_typ[idx]=fix_typ;
       }else{ /* endif packing operation requested */
@@ -1010,11 +1013,15 @@ nco_var_lst_dvd /* [fnc] Divide input lists into output lists */
     if(nco_is_rth_opr(nco_prg_id))
       if(var[idx]->sz == 0L) var_op_typ[idx]=fix_typ;
 
-    if(CNV_CCM_CCSM_CF){
+    if(cnv->CCM_CCSM_CF || cnv->MPAS){
       nco_bool var_is_fix;  /* [fnc] Variable should be treated as a fixed variable */
-      var_is_fix=nco_var_is_fix(var_nm,nco_prg_id,nco_pck_plc);  
+      var_is_fix=nco_var_is_fix(var_nm,nco_prg_id,nco_pck_plc,cnv);  
+      /* Allow promotion from float->double to work for coordinates and special variables */
+      if(nco_prg_id == ncpdq && nco_pck_map == nco_pck_map_flt_dbl) var_is_fix=False;
+      /* Allow unpacking to work for coordinates and special variables */
+      if(nco_prg_id == ncpdq && nco_pck_plc == nco_pck_plc_upk) var_is_fix=False;
       if(var_is_fix) var_op_typ[idx]=fix_typ;
-    } /* end if CNV_CCM_CCSM_CF */
+    } /* end if cnv->CCM_CCSM_CF */
 
     /* Warn about any expected weird behavior */
     if(var_op_typ[idx] == prc_typ){
@@ -1076,13 +1083,13 @@ nco_var_lst_dvd /* [fnc] Divide input lists into output lists */
       (void)fprintf(stdout,"%s: HINT Extraction list must contain a variable that shares at least one dimension with the re-order list\n",nco_prg_nm_get());
       break;
     case ncra:
-      (void)fprintf(stdout,"%s: HINT Extraction list must contain at least one record variable that is not NC_CHAR or NC_STRING. A record variable is a variable defined with a record dimension. Often the record dimension, aka unlimited dimension, refers to time. For more information on creating record dimensions within existing datasets, see http://nco.sf.net/nco.html#mk_rec_dmn\n",nco_prg_nm_get());
+      (void)fprintf(stdout,"%s: HINT Extraction list must contain at least one record variable that is not NC_CHAR or NC_STRING. A record variable is a variable defined with a record dimension. Often the record dimension, aka unlimited dimension, refers to time. To change an existing dimension from a fixed to a record dimensions see http://nco.sf.net/nco.html#mk_rec_dmn or to add a new record dimension to all variables see http://nco.sf.net/nco.html#ncecat_rnm\n",nco_prg_nm_get());
       break;
     case ncrcat:
-      (void)fprintf(stdout,"%s: HINT Extraction list must contain a record variable which to concatenate. A record variable is a variable defined with a record dimension. Often the record dimension, aka unlimited dimension, refers to time. For more information on creating record dimensions within existing datasets, see http://nco.sf.net/nco.html#mk_rec_dmn\n",nco_prg_nm_get());
+      (void)fprintf(stdout,"%s: HINT Extraction list must contain a record variable to concatenate. A record variable is a variable defined with a record dimension. Often the record dimension, aka unlimited dimension, refers to time. To change an existing dimension from a fixed to a record dimensions see http://nco.sf.net/nco.html#mk_rec_dmn or to add a new record dimension to all variables see http://nco.sf.net/nco.html#ncecat_rnm\n",nco_prg_nm_get());
       break;
     case ncwa:
-      (void)fprintf(stdout,"%s: HINT Extraction list must contain a non-character variable with an averaging dimension\n",nco_prg_nm_get());
+      (void)fprintf(stdout,"%s: HINT Extraction list must contain a non-character variable with a dimension to be averaged\n",nco_prg_nm_get());
       break;
     default: nco_dfl_case_prg_id_err(); break;
     } /* end switch */
@@ -1095,13 +1102,13 @@ nco_var_lst_dvd /* [fnc] Divide input lists into output lists */
   *var_prc_ptr=(var_sct **)nco_realloc(var_prc,*nbr_var_prc*sizeof(var_sct *));
   *var_prc_out_ptr=(var_sct **)nco_realloc(var_prc_out,*nbr_var_prc*sizeof(var_sct *));
 
-} /* end nco_var_lst_dvd */
+} /* end nco_var_lst_dvd() */
 
 void
-nco_var_lst_dvd_trv                          /* [fnc] Divide input lists into output lists (ncbo only)  */
+nco_var_lst_dvd_ncbo                          /* [fnc] Divide input lists into output lists (ncbo only)  */
 (var_sct * const var,                        /* I [sct] Variable list (input file) */
  var_sct * const var_out,                    /* I [sct] Variable list (output file) */
- const nco_bool CNV_CCM_CCSM_CF,             /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,             /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const nco_bool FIX_REC_CRD,                 /* I [flg] Do not interpolate/multiply record coordinate variables (ncflint only) */
  const int nco_pck_map,                      /* I [enm] Packing map */
  const int nco_pck_plc,                      /* I [enm] Packing policy */
@@ -1135,7 +1142,9 @@ nco_var_lst_dvd_trv                          /* [fnc] Divide input lists into ou
      20130112: As of today set is_crd_var true in nco_var_fll() when either of these conditions is true 
      so no longer need to specify these conditions separately. 
      20150519: Add nco_is_spc_in_clm_att() to this list
+     20160420: Add nco_is_spc_in_grd_att() to this list
      Keep this old code here as a reminder that is_crd_var also incorporates these conditions
+     is_spc_in_grd_att=nco_is_spc_in_grd_att(var[idx]->nc_id,var[idx]->id);
      is_spc_in_clm_att=nco_is_spc_in_clm_att(var[idx]->nc_id,var[idx]->id);
      is_spc_in_crd_att=nco_is_spc_in_crd_att(var[idx]->nc_id,var[idx]->id);
      is_spc_in_bnd_att=nco_is_spc_in_bnd_att(var[idx]->nc_id,var[idx]->id); */
@@ -1182,7 +1191,7 @@ nco_var_lst_dvd_trv                          /* [fnc] Divide input lists into ou
         /* ...packing coordinate variables has few benefits... */
         (var->is_crd_var && !(nco_pck_plc == nco_pck_plc_upk) ) ||
         /* unless if it's NOT a record variable and the policy is unpack 
-        20120711. nco: ncpdq unpack coordinate variables */     
+        20120711. nco: ncpdq OK to unpack coordinate variables */     
         /* ...unpacking requested for unpacked variable... */
         (nco_pck_plc == nco_pck_plc_upk && !var->pck_ram) ||
         /* ...or packing unpacked requested and variable is already packed... */
@@ -1191,14 +1200,18 @@ nco_var_lst_dvd_trv                          /* [fnc] Divide input lists into ou
         (nco_pck_plc == nco_pck_plc_xst_new_att && !var->pck_ram) ||
         /* ...or... */
         (
-        /* ...any type of packing requested... */
-        (nco_pck_plc == nco_pck_plc_all_new_att || 
-        nco_pck_plc == nco_pck_plc_all_xst_att || 
-        nco_pck_plc == nco_pck_plc_xst_new_att) &&
-        /* ...yet map does not allow (re-)packing... */
-        !nco_pck_plc_typ_get(nco_pck_map,var->typ_upk,(nc_type *)NULL)
-        )
-        )
+	 /* ...any type of packing requested... */
+	 (nco_pck_plc == nco_pck_plc_all_new_att || 
+	  nco_pck_plc == nco_pck_plc_all_xst_att || 
+	  nco_pck_plc == nco_pck_plc_xst_new_att) &&
+	 /* ...yet map does not allow (re-)packing... */
+	 !nco_pck_plc_typ_get(nco_pck_map,var->typ_upk,(nc_type *)NULL)
+	 ) ||
+	/* ...or double->float conversion requested and input is not double, or input is coordinate... */ 
+	(nco_pck_map == nco_pck_map_dbl_flt && ((var->type != NC_DOUBLE) || var->is_crd_var)) ||
+	/* ...or float->double conversion requested and input is not float (allow coordinate promotion to double)... */ 
+	(nco_pck_map == nco_pck_map_flt_dbl && var->type != NC_FLOAT)
+	 )
         var_op_typ=fix_typ;
     }else{ /* endif packing operation requested */
       /* Process every variable containing an altered (averaged, re-ordered, reversed) dimension */
@@ -1225,15 +1238,11 @@ nco_var_lst_dvd_trv                          /* [fnc] Divide input lists into ou
     if(var->sz == 0L)
       var_op_typ=fix_typ;
 
-  if(CNV_CCM_CCSM_CF){
-
-    nco_bool var_is_fix;  /* [fnc] Variable should be treated as a fixed variable */
-
-    var_is_fix=nco_var_is_fix(var_nm,nco_prg_id,nco_pck_plc);  
-
-    if (var_is_fix) var_op_typ=fix_typ;
-
-  } /* end if CNV_CCM_CCSM_CF */
+  if(cnv->CCM_CCSM_CF || cnv->MPAS){
+    nco_bool var_is_fix;  /* [fnc] Treat variable as a fixed variable */
+    var_is_fix=nco_var_is_fix(var_nm,nco_prg_id,nco_pck_plc,cnv);  
+    if(var_is_fix) var_op_typ=fix_typ;
+  } /* end if cnv->CCM_CCSM_CF */
 
   /* Warn about any expected weird behavior */
   if(var_op_typ == prc_typ){
@@ -1248,19 +1257,22 @@ nco_var_lst_dvd_trv                          /* [fnc] Divide input lists into ou
   }else{
     var_out->is_fix_var=False;
     var->is_fix_var=False;
-  } 
+  } /* !fix_typ */
 
   /* Export */
   *prc=var_op_typ;
 
-} /* end nco_var_lst_dvd_trv */
+} /* end nco_var_lst_dvd_ncbo() */
 
 nco_bool
-nco_var_is_fix                               /* [fnc] Variable should be treated as a fixed variable */
-(const char * const var_nm,                  /* I [sng] Variable name */
- const int nco_prg_id,                       /* I [enm] Program key */
- const int nco_pck_plc)                      /* I [enm] Packing policy */
+nco_var_is_fix /* [fnc] Variable should be treated as a fixed variable */
+(const char * const var_nm, /* I [sng] Variable name */
+ const int nco_prg_id, /* I [enm] Program key */
+ const int nco_pck_plc, /* I [enm] Packing policy */
+ const cnv_sct * const cnv) /* I [sct] Convention structure */
 {
+  const char fnc_nm[]="nco_var_is_fix()"; /* [sng] Function name */
+
   nco_bool var_is_fix;            /* [fnc] Variable should be treated as a fixed variable (return value) */
   nco_bool is_sz_rnk_prv_rth_opr; /* [flg] Size- and rank-preserving operator */
 
@@ -1269,8 +1281,11 @@ nco_var_is_fix                               /* [fnc] Variable should be treated
   var_is_fix=False;
 
   if(!strcmp(var_nm,"ntrm") || !strcmp(var_nm,"ntrn") || !strcmp(var_nm,"ntrk") || !strcmp(var_nm,"ndbase") || !strcmp(var_nm,"nsbase") || !strcmp(var_nm,"nbdate") || !strcmp(var_nm,"nbsec") || !strcmp(var_nm,"mdt") || !strcmp(var_nm,"mhisf")) var_is_fix=True;
-  /* NB: all !strcmp()'s except "msk_" which uses strstr() */
-  if(is_sz_rnk_prv_rth_opr && (!strcmp(var_nm,"hyam") || !strcmp(var_nm,"hybm") || !strcmp(var_nm,"hyai") || !strcmp(var_nm,"hybi") || !strcmp(var_nm,"gw") || !strcmp(var_nm,"lon_bnds") || !strcmp(var_nm,"lat_bnds") || !strcmp(var_nm,"area") || !strcmp(var_nm,"ORO") || !strcmp(var_nm,"date") || !strcmp(var_nm,"datesec") || (strstr(var_nm,"msk_") == var_nm))) var_is_fix=True;
+
+  if(nco_dbg_lvl_get() >= nco_dbg_sbr) (void)fprintf(stderr,"%s: INFO %s reports %s %s use stored lists of fixed variables for size- and rank-preserving operators\n",nco_prg_nm_get(),fnc_nm,nco_prg_nm_get(),is_sz_rnk_prv_rth_opr ? "will" : "will not");
+
+  /* NB: all !strcmp()'s except "msk_" and "wgt_" which use strstr() */
+  if(is_sz_rnk_prv_rth_opr && (!strcmp(var_nm,"hyam") || !strcmp(var_nm,"hybm") || !strcmp(var_nm,"hyai") || !strcmp(var_nm,"hybi") || !strcmp(var_nm,"gw") || !strcmp(var_nm,"lon_bnds") || !strcmp(var_nm,"lat_bnds") || !strcmp(var_nm,"area") || !strcmp(var_nm,"ORO") || !strcmp(var_nm,"date") || !strcmp(var_nm,"datesec") || (strstr(var_nm,"msk_") == var_nm) || (strstr(var_nm,"wgt_") == var_nm))) var_is_fix=True;
   /* Known "multi-dimensional coordinates" in CCSM-like model output:
      lat, lon, lev are normally 1-D coordinates
      Known exceptions:
@@ -1300,7 +1315,30 @@ nco_var_is_fix                               /* [fnc] Variable should be treated
   
   /* Conditions #1 and #2 are already implemented above in the case() statement */
   /* Check condition #4 above: */
-  if(is_sz_rnk_prv_rth_opr && (!strcmp(var_nm,"lat") || !strcmp(var_nm,"lon") || !strcmp(var_nm,"lev") || !strcmp(var_nm,"longxy") || !strcmp(var_nm,"latixy") )) var_is_fix=True;
+  if(is_sz_rnk_prv_rth_opr && (!strcmp(var_nm,"lat") || !strcmp(var_nm,"lon") || !strcmp(var_nm,"lev") || !strcmp(var_nm,"longxy") || !strcmp(var_nm,"latixy") || !strcmp(var_nm,"latitude") || !strcmp(var_nm,"longitude") )) var_is_fix=True;
+
+  if(is_sz_rnk_prv_rth_opr && cnv->MPAS){
+    
+    /* 20180912: Do not arithmetically process (e.g., difference, average) MPAS grid variables
+       Six nCells-variables may be valuable when regridded to lat/lon
+       mpas_xcl_lst in nco_rgr_wgt() and MPAS var_xcl_lst in nco_var_is_fix() differ by these six variables:
+       areaCell for comparison to area(lat,lon)
+       cellMask for area-weighted mask
+       maxLevelCell for area-weighted underwater topographic mask
+       xCell, yCell, zCell for area-weighted cartesian coordinates */
+    const int var_xcl_lst_nbr=39; /* [nbr] Number of objects on exclusion list */
+    const char *var_xcl_lst[]={"angleEdge","areaCell","areaTriangle","cellMask","cellsOnCell","cellsOnEdge","cellsOnVertex","dcEdge","dvEdge","edgesOnCell","edgesOnEdge","edgesOnVertex","indexToCellID","indexToEdgeID","indexToVertexID","kiteAreasOnVertex","latCell","latEdge","latVertex","lonCell","lonEdge","lonVertex","maxLevelCell","meshDensity","nEdgesOnCell","nEdgesOnEdge","vertexMask","verticesOnCell","verticesOnEdge","weightsOnEdge","xCell","xEdge","xVertex","yCell","yEdge","yVertex","zCell","zEdge","zVertex"};
+    int idx;
+    int var_xcl_nbr=0; /* [nbr] Number of deleted variables */
+    for(idx=0;idx<var_xcl_lst_nbr;idx++)
+      if(!strcmp(var_nm,var_xcl_lst[idx])) break;
+    if(idx < var_xcl_lst_nbr){
+      if(nco_dbg_lvl_get() >= nco_dbg_var) (void)fprintf(stdout,"%s: INFO %s preventing arithmetic processing of MPAS grid-like variable %s\n",nco_prg_nm_get(),fnc_nm,var_nm);
+      var_xcl_nbr++;
+      var_is_fix=True;
+    } /* endif */
+  
+  } /* !MPAS */
 
   return var_is_fix;
 

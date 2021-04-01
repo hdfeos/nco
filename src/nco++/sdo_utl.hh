@@ -2,10 +2,10 @@
 
 // Purpose: Description (definition) of SDO stand-alone utilities
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 // Source: Routines are subset of CSZ's ~/c++/utl.[cc/hh]
 
@@ -51,6 +51,8 @@ void dbg_prn(std::string nco_prg_nm,std::string fnc_nm,std::string msg);
 void err_prn(std::string msg);
 void err_prn(std::string fnc_nm,std::string msg);
 void err_prn(std::string nco_prg_nm,std::string fnc_nm,std::string msg);
+void nfo_prn(std::string fnc_nm,std::string msg);
+void nfo_prn(std::string nco_prg_nm,std::string fnc_nm,std::string msg);
 void wrn_prn(std::string fnc_nm,std::string msg);
 void wrn_prn(std::string nco_prg_nm,std::string fnc_nm,std::string msg);
 

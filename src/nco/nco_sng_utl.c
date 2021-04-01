@@ -2,12 +2,36 @@
 
 /* Purpose: String utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_sng_utl.h" /* String utilities */
+
+#ifdef NEED_STRSEP
+/* 20161106 UNIX always provides strsep(), MSVC never does */
+char * /* O [sng] String to separate */
+strsep /* [fnc] Separate strings */
+(char ** const sng_trg, /* I [sng] String to separate */
+ const char * const sng_dlm) /* I [sng] Delimiter */
+{
+  /* Purpose: NCO replacement for strsep() for Windows MSVC
+     http://stackoverflow.com/questions/8512958/is-there-a-windows-variant-of-strsep */
+  char* sng_srt = *sng_trg;
+  char* sng_ptr;
+
+  sng_ptr= (sng_srt != NULL) ? strpbrk(sng_srt,sng_dlm) : NULL;
+
+  if(sng_ptr == NULL){
+    *sng_trg = NULL;
+  }else{
+    *sng_ptr='\0';
+    *sng_trg=sng_ptr+1;
+  } /* endif */
+  return sng_srt;
+} /* !strsep() */
+#endif /* !NEED_STRSEP */
 
 #ifdef NEED_STRCASECMP
 int /* O [enm] [-1,0,1] sng_1 [<,=,>] sng_2 */
@@ -38,7 +62,9 @@ strcasecmp /* [fnc] Lexicographical case-insensitive string comparison */
     if(chr_1 == 0)    return 0;
   } /* end while */
 } /* end strcasecmp() */
+#endif /* !NEED_STRCASECMP */
 
+#ifdef NEED_STRNCASECMP
 int /* O [enm] [-1,0,1] sng_1 [<,=,>] sng_2 */
 strncasecmp /* [fnc] Lexicographical case-insensitive string comparison */
 (const char * const sng_1, /* I [sng] First string */
@@ -70,7 +96,7 @@ strncasecmp /* [fnc] Lexicographical case-insensitive string comparison */
   } /* end while */
   return 0;
 } /* end strncasecmp() */
-#endif /* !NEED_STRCASECMP */
+#endif /* !NEED_STRNCASECMP */
 
 #ifdef NEED_ISBLANK
 int /* O [flg] Character is a space or horizontal tab */
@@ -239,6 +265,8 @@ nm2sng_cdl /* [fnc] Turn variable/dimension/attribute name into legal CDL */
   while(*chr_in_ptr){
     if(isascii(*chr_in_ptr)){
       if(iscntrl(*chr_in_ptr)){	/* Render control chars as two hex digits, \%xx */
+	/* 20170810: GCC7+ produces -Wformat-truncation warning here, that 4 B destination is too small
+	   False-positive warning? How to eliminate? */
 	snprintf(chr_out_ptr,4,"\\%%%.2x",*chr_in_ptr);
 	chr_out_ptr+=4;
       }else{
@@ -292,6 +320,67 @@ nm2sng_cdl /* [fnc] Turn variable/dimension/attribute name into legal CDL */
   return nm_cdl;
 } /* end nm2sng_cdl() */
 
+char * /* O [sng] JSON-compatible name */
+nm2sng_jsn /* [fnc] Turn variable/dimension/attribute name into legal JSON */
+(const char * const nm_sng) /* I [sng] Name to CDL-ize */
+{
+  /* Valid JSON strings can be any selected set of control chars, any non-conrol chars from ASCII and Unicode 
+     Leave Unicode as is for now see Reference: http://www.json.org */   
+ 
+  char *chr_in_ptr; /* [sng] Pointer to current character in input name */
+  char *chr_out_ptr; /* [sng] Pointer to current character in output name */
+  char *nm_jsn; /* [sng] CDL-compatible name */
+  char *nm_cpy; /* [sng] Copy of input */
+
+  int nm_lng; /* [nbr] Length of original name */
+  
+  if(nm_sng == NULL) return NULL;
+
+  /* Otherwise name may contain special character(s)... */
+  nm_lng=strlen(nm_sng);
+  /* Maximum conceivable length of CDL-ized name */
+  chr_out_ptr=nm_jsn=(char *)nco_malloc(4*nm_lng+1L);
+  /* Copy to preserve const-ness */
+  chr_in_ptr=nm_cpy=(char *)strdup(nm_sng);
+  /* NUL-terminate in case input string is empty so will be output string */
+  chr_out_ptr[0]='\0';
+
+  /* Search and replace special characters */
+  while(*chr_in_ptr){
+    if(iscntrl(*chr_in_ptr)){ 
+      switch(*chr_in_ptr){    
+         case '\b':
+         case '\f':
+         case '\n':
+         case '\r':
+         case '\t': 
+         case '\\': 
+         case '\"': 
+	 /* According to json spec control char  '/' should be escaped but this is mangles filepaths so leave it out for now */
+         /* case '\/': */
+         case '\0':
+           *chr_out_ptr++='\\';
+	   *chr_out_ptr++=*chr_in_ptr;
+	   break;
+         default: 
+            /* ignore other control chars */
+      	  break;
+      } /* !switch */
+    }else{ /* !iscntrl() */
+      *chr_out_ptr++=*chr_in_ptr;
+    } /* !iscntrl() */
+    /* Advance character */
+    chr_in_ptr++;
+  } /* !while() */
+  /* NUL-terminate */
+  *chr_out_ptr='\0';
+
+  /* Free memory */
+  nm_cpy=(char *)nco_free(nm_cpy);
+
+  return nm_jsn;
+} /* end nm2sng_jsn() */
+
 char * /* O [sng] CDL-compatible name */
 nm2sng_fl /* [fnc] Turn file name into legal string for shell commands */
 (const char * const nm_sng) /* I [sng] Name to sanitize */
@@ -331,6 +420,8 @@ nm2sng_fl /* [fnc] Turn file name into legal string for shell commands */
   while(*chr_in_ptr){
     if(isascii(*chr_in_ptr)){
       if(iscntrl(*chr_in_ptr)){	/* Render control chars as two hex digits, \%xx */
+	/* 20170810: GCC7+ produces -Wformat-truncation warning here, that 4 B destination is too small 
+	   False-positive warning? How to eliminate? */
 	snprintf(chr_out_ptr,4,"\\%%%.2x",*chr_in_ptr);
 	chr_out_ptr+=4;
       }else{
@@ -385,6 +476,57 @@ nm2sng_fl /* [fnc] Turn file name into legal string for shell commands */
 } /* end nm2sng_fl() */
 
 char * /* O [sng] String containing printable result */
+sng2sng_sf /* [fnc] Translate C language string to printable, visible ASCII bytes */
+(const char * const sng_val,
+ int flg_sf) /* I [sng] String to process */
+{
+  /* Purpose: Translate string to C-printable, visible ASCII bytes for CDL
+     Reference: netcdf-c/ncdump/ncdump.c:pr_att_string() */
+  char *sng_val_sng=NULL_CEWI; /* [sng] String of NC_CHAR */
+
+  char chr_val; /* [sng] Current character */
+  char val_sng[NCO_ATM_SNG_LNG];
+
+  long chr_idx;
+  long sng_lng=long_CEWI; /* [nbr] Length of NC_CHAR string */
+
+  char * (*chr2sng_sf)(const char chr_val, char * const val_sng); 
+  
+  switch(flg_sf){
+
+    case 1:   
+       chr2sng_sf=chr2sng_cdl;
+       break;
+       
+    case 2:
+       chr2sng_sf=chr2sng_xml;
+       break;
+       
+    case 3:  
+       chr2sng_sf=chr2sng_jsn;
+       break;
+       
+    default:
+       chr2sng_sf=chr2sng_cdl;
+       break;
+  }
+
+      
+  sng_lng=strlen(sng_val);
+
+  /* Worst case is printable strings are six or four times longer than unformatted, i.e., '\"' == "&quot;" or '\\' == "\\\\" */
+  sng_val_sng=(char *)nco_malloc(6*sng_lng+1UL);
+  sng_val_sng[0]='\0';
+  for(chr_idx=0;chr_idx<sng_lng;chr_idx++){
+    val_sng[0]='\0';
+    chr_val=sng_val[chr_idx];
+    (void)strcat(sng_val_sng,chr2sng_sf(chr_val,val_sng));
+  } /* end loop over character */
+  
+  return sng_val_sng;
+} /* end sng2sng_sf() */
+
+  char * /* O [sng] String containing printable result */
 chr2sng_cdl /* [fnc] Translate C language character to printable, visible ASCII bytes */
 (const char chr_val, /* I [chr] Character to process */
  char * const val_sng) /* I/O [sng] String to stuff printable result into */
@@ -411,7 +553,7 @@ chr2sng_cdl /* [fnc] Translate C language character to printable, visible ASCII 
   } /* end switch */
 
   return val_sng;
-} /* end chr2sng_cdl(0 */
+} /* end chr2sng_cdl() */
 
 char * /* O [sng] String containing printable result */
 chr2sng_xml /* [fnc] Translate C language character to printable, visible ASCII bytes */
@@ -441,7 +583,36 @@ chr2sng_xml /* [fnc] Translate C language character to printable, visible ASCII 
   } /* end switch */
 
   return val_sng;
-} /* end chr2sng_xml(0 */
+} /* end chr2sng_xml() */
+
+char * /* O [sng] String containing printable result */
+chr2sng_jsn /* [fnc] Translate C language character to printable, visible ASCII bytes */
+(const char chr_val, /* I [chr] Character to process */
+ char * const val_sng) /* I/O [sng] String to stuff printable result into */
+{
+  /* Purpose: Translate character to C-printable, visible ASCII bytes for JSON
+     Reference: http://www.json.org */
+  switch(chr_val){              /* man ascii:Oct   Dec   Hex   Char \X  */
+  case '\b': strcpy(val_sng,"\\b"); break; /* 010   8     08    BS  '\b' Backspace */
+  case '\f': strcpy(val_sng,"\\f"); break; /* 014   12    0C    FF  '\f' Formfeed */
+  case '\n': strcpy(val_sng,"\\n"); break; /* 012   10    0A    LF  '\n' Linefeed */
+  case '\r': strcpy(val_sng,"\\r"); break; /* 015   13    0D    CR  '\r' Carriage return */
+  case '\t': strcpy(val_sng,"\\t"); break; /* 011   9     09    HT  '\t' Horizontal tab */
+  case '\\': strcpy(val_sng,"\\\\"); break; /* 134  92    5C    \   '\\' */
+  case '\"': strcpy(val_sng,"\\\""); break;/* Unsure why or if this works! */
+  /* fxm: According to JSON spec '/' should be escaped but this mangles UNIX filepaths so leave it out for now */
+  /* case '\/': strcpy(val_sng,"\\/"); break; */ /* 057   47    2F    /   '\\' */
+  case '\0':	
+    break;
+  default: 
+    /* JSON is quite strict about control-chars - only the above are allowed */
+    // if(iscntrl(chr_val)) *val_sng=0; else sprintf(val_sng,"%c",chr_val);
+    if(iscntrl(chr_val)) *val_sng='\0'; else sprintf(val_sng,"%c",chr_val);
+    break;
+  } /* end switch */
+
+  return val_sng;
+} /* end chr2sng_jsn() */
 
 int /* O [nbr] Number of escape sequences translated */
 sng_ascii_trn /* [fnc] Replace C language '\X' escape codes in string with ASCII bytes */
@@ -502,6 +673,9 @@ sng_ascii_trn /* [fnc] Replace C language '\X' escape codes in string with ASCII
       (void)fprintf(stderr,"%s: WARNING C language escape code %.2s found in string, not translating to NUL since this would make the subsequent portion of the string invisible to all C Standard Library string functions\n",nco_prg_nm_get(),backslash_ptr); 
       trn_flg=False;
       /* 20101013: Tried changing above behavior to following, and it opened a Hornet's nest of problems... */
+      /* 20170221: Use-case where translating "\0" to NUL would be helpful is when user needs to pad netCDF3 character
+	 array value to size of underlying dimension, and have user-specified value NUL-terminated short of full 
+	 dimension size */
       /* *backslash_ptr='\0'; *//* 000   0     00    NUL '\0' */
       /*      (void)fprintf(stderr,"%s: WARNING translating C language escape code \"\\0\" found in user-supplied string to NUL. This will make the subsequent portion of the string, if any, invisible to C Standard Library string functions. And that may cause unintended consequences.\n",nco_prg_nm_get());*/
       break;
@@ -512,7 +686,7 @@ sng_ascii_trn /* [fnc] Replace C language '\X' escape codes in string with ASCII
     } /* end switch */
     if(trn_flg){
       /* Remove character after backslash character */
-      (void)memmove(backslash_ptr+1,backslash_ptr+2,(strlen(backslash_ptr+2)+1)*sizeof(char));
+      (void)memmove(backslash_ptr+1,backslash_ptr+2,(strlen(backslash_ptr+2)+1L)*sizeof(char));
       /* Count translations performed */
       trn_nbr++;
     } /* end if */
@@ -601,74 +775,132 @@ sng_trm_trl_zro /* [fnc] Trim zeros trailing decimal point and preceding exponen
   return;
 } /* end sng_trm_trl_zro() */
 
-kvm_sct /* O [sct] Key-value pair */
-nco_sng2kvm /* [fnc] Parse string into key-value pair */
-(char *sng) /* I [sng] String to parse, including "=" */
+nc_type /* O [enm] netCDF type */
+nco_sng2typ /* [fnc] Convert user-supplied string to netCDF type enum */
+(const char * const typ_sng) /* I [sng] String indicating type */
 {
-  /* Purpose: Convert string separated by single delimiter into two strings
-     Routine converts argument "--ppc key1,key2,...,keyN=val" into kvm.key="key1,key2,...keyN" and kvm.val=val
-     e.g., routine converts argument "--ppc one,two=3" into kvm.key="one,two" and kvm.val=3 */
-  char *tkn_sng;
-  const char dlm[]="="; /* [sng] Delimiter */
-  int arg_idx=0; /* [nbr] */
-  kvm_sct kvm;
+  /* Purpose: Convert user-supplied string to netCDF type */
+  const char fnc_nm[]="nco_sng2typ()";
 
-  /* NB: Replace strtok() by strsep()? strtok() does not handle consecutive delimiters well */
-  tkn_sng=strtok(sng,dlm);
-  while(tkn_sng){
-    arg_idx++;
-    /* fxm: Whitespace-stripping may be unnecessary */
-    nco_sng_strip(tkn_sng);
-    switch(arg_idx){
-    case 1:
-      kvm.key=strdup(tkn_sng);
-      break;
-    case 2:
-      kvm.val=strdup(tkn_sng);
-      break;
-    default:
-      (void)fprintf(stderr,"nco_sng2kvm() cannot get key-value pair from input: %s\n",sng);
-      break;
-    }/* end switch */
-    tkn_sng=strtok(NULL,dlm);
-  }/* end while */
-  return kvm;
-} /* end nco_sng2kvm() */
+  /* Convert single letter code to type enum */
+  switch(*typ_sng){
+  case 'F':	
+  case 'f': return (nc_type)NC_FLOAT; break;
+  case 'D':	
+  case 'd': return (nc_type)NC_DOUBLE; break;
+  case 'C':	
+  case 'c': return (nc_type)NC_CHAR; break;
+  case 'B':	
+  case 'b': return (nc_type)NC_BYTE; break;
+  default: 
+    /* Ambiguous single letters and extended matches must use full string comparisons */
+    if(!strcasecmp(typ_sng,"float") || !strcasecmp(typ_sng,"float32") || !strcasecmp(typ_sng,"NC_FLOAT")) return (nc_type)NC_FLOAT; 
+    else if(!strcasecmp(typ_sng,"l") || !strcasecmp(typ_sng,"i") || !strcasecmp(typ_sng,"int") || !strcasecmp(typ_sng,"int32") || !strcasecmp(typ_sng,"NC_INT")) return (nc_type)NC_INT; 
+    else if(!strcasecmp(typ_sng,"s") || !strcasecmp(typ_sng,"short") || !strcasecmp(typ_sng,"int16") || !strcasecmp(typ_sng,"NC_SHORT")) return (nc_type)NC_SHORT; 
+#ifdef ENABLE_NETCDF4
+    else if(!strcasecmp(typ_sng,"ub") || !strcasecmp(typ_sng,"ubyte") || !strcasecmp(typ_sng,"uint8") || !strcasecmp(typ_sng,"NC_UBYTE")) return (nc_type)NC_UBYTE; 
+    else if(!strcasecmp(typ_sng,"us") || !strcasecmp(typ_sng,"ushort") || !strcasecmp(typ_sng,"uint16") || !strcasecmp(typ_sng,"NC_USHORT")) return (nc_type)NC_USHORT; 
+    else if(!strcasecmp(typ_sng,"u") || !strcasecmp(typ_sng,"ui") || !strcasecmp(typ_sng,"uint") || !strcasecmp(typ_sng,"uint32") || !strcasecmp(typ_sng,"ul") || !strcasecmp(typ_sng,"NC_UINT")) return (nc_type)NC_UINT; 
+    else if(!strcasecmp(typ_sng,"ll") || !strcasecmp(typ_sng,"int64") || !strcasecmp(typ_sng,"NC_INT64")) return (nc_type)NC_INT64; 
+    else if(!strcasecmp(typ_sng,"ull") || !strcasecmp(typ_sng,"uint64") || !strcasecmp(typ_sng,"NC_UINT64")) return (nc_type)NC_UINT64; 
+    else if(!strcasecmp(typ_sng,"sng") || !strcasecmp(typ_sng,"string") || !strcasecmp(typ_sng,"NC_STRING")) return (nc_type)NC_STRING; 
+    else{
+      (void)fprintf(stderr,"NCO: ERROR `%s' is not a supported netCDF data type\n",typ_sng);
+      (void)fprintf(stderr,"NCO: HINT: Valid data types are `c' = char, `f' = float, `d' = double,`s' = short, `i' = `l' = integer, `b' = byte");
+      (void)fprintf(stderr,", `ub' = unsigned byte, `us' = unsigned short, `u' or `ui' or `ul' = unsigned int,`ll' or `int64' = 64-bit signed integer, `ull' or `uint64` = unsigned 64-bit integer, `sng' or `string' = string");
+      (void)fprintf(stderr,"\n");
+      nco_err_exit(0,fnc_nm);
+    }
+#endif /* ENABLE_NETCDF4 */
+    break;
+  } /* end switch */
+  
+  return (nc_type)NC_NAT;
 
-char * /* O [sng] Stripped-string */
-nco_sng_strip /* [fnc] Strip leading and trailing white space */
-(char *sng) /* I/O [sng] String to strip */
+} /* end nco_sng2typ() */
+
+char * /* O [sng] Sanitized string */
+nco_sng_sntz /* [fnc] Ensure input string contains only white-listed innocuous characters */
+(char * const sng_drt) /* I [sng] String to sanitize */
 {
-  /* fxm: seems not working for \n??? */
-  char *srt=sng;
-  while(isspace(*srt)) srt++;
-  size_t end=strlen(srt);
-  if(srt != sng){
-    memmove(sng,srt,end);
-    sng[end]='\0';
-  } /* endif */
-  while(isblank(*(sng+end-1L))) end--;
-  sng[end]='\0';
-  return sng;
-} /* end nco_sng_strip() */
+  /* Purpose: Ensure input string contains only white-listed innocuous characters 
 
-kvm_sct * /* O [sct] Pointer to free'd kvm list */
-nco_kvm_lst_free /* [fnc] Relinquish dynamic memory from list of kvm structures */
-(kvm_sct *kvm, /* I/O [sct] List of kvm structures */
- const int kvm_nbr) /* I [nbr] Number of kvm structures */
-{
-  /* Purpose: Relinquish dynamic memory from list of kvm structures
-     End of list is indicated by NULL in key slot */
-  for(int kvm_idx=0;kvm_idx<kvm_nbr;kvm_idx++){
-    kvm[kvm_idx].key=(char *)nco_free(kvm[kvm_idx].key);
-    kvm[kvm_idx].val=(char *)nco_free(kvm[kvm_idx].val);
-  } /* end for */
-  if(kvm) kvm=(kvm_sct *)nco_free(kvm);
-  return kvm;
-} /* end nco_kvm_lst_free() */
+     Testing: ncra -D 73 -O ~/nco/data/8?.nc ~/foo.nc 2>&1 | grep sanitized
 
-void
-nco_kvm_prn(kvm_sct kvm)
-{
-  if(kvm.key) (void)fprintf(stdout,"%s = %s\n",kvm.key,kvm.val); else return;
-} /* end nco_kvm_prn() */
+     Whitelist algorithm based on:
+     https://wiki.sei.cmu.edu/confluence/display/c/STR02-C.+Sanitize+data+passed+to+complex+subsystems 
+
+     Whitelist alternatives suggested at:
+     https://github.com/nco/nco/issues/104
+
+     Other resources:
+     https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
+
+     NCO modifications to CMU default whitelist:
+     20180214: White-list colon (WRF filenames sometimes have timestamps with colons, Windows drive labels have colons) 
+     20180214: White-list space (Methinks some Windows people do have data files with spaces)
+     20180214: White-list forward slash on UNIX, backslash on Windows (path separators) 
+     20180222: White-list percent sign (NCO regression test uses, e.g., %tmp_fl_00)
+     20180227: White-list forward slash on Windows so URLs are acceptable (http://...)
+     20180323: White-list question mark and asterisk so shell-globbing works (in*.nc, in?.nc)
+     20180401: Black-list question mark and asterisk again since shell-globbing now works
+     20180420: White-list DAP-constraint characters that follow protocol indicators (http://,https://,dap4://)
+     Crucial characters that are currently implicitly blacklisted (and could be transformed into underscores) are:
+     "!#$^;|<>[](){},&*?<>" */
+  static char wht_lst_dap[]="#=:[];|{}/<>";
+  static char wht_lst[]="abcdefghijklmnopqrstuvwxyz"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "1234567890_-.@"
+    " :%/"
+#ifdef _MSC_VER
+    "\\"
+#endif /* !_MSC_VER */
+    ;
+  /* ": re-balance syntax highlighting */
+
+  const char fnc_nm[]="nco_sng_sntz()"; /* [sng] Function name */
+
+  const char dap4_url_sng[]="dap4://";
+  const char http_url_sng[]="http://";
+  const char https_url_sng[]="https://";
+    
+  char *usr_dta=sng_drt;
+  char *cp=usr_dta; /* Cursor into string */
+  nco_bool flg_blk_lst=False;
+  
+  const char *sng_end=usr_dta+strlen(usr_dta);
+
+  if(nco_dbg_lvl_get() == 73) (void)fprintf(stderr,"%s: INFO %s reports input unsanitized user-input string \"%s\".\n",nco_prg_nm_get(),fnc_nm,usr_dta);
+
+  for(cp+=strspn(cp,wht_lst);cp!=sng_end;cp+=strspn(cp,wht_lst)){
+    /* Uncomment next two lines to sanitize unsafe character with an innocuous underscore
+     *cp='_';
+     if(nco_dbg_lvl_get() >= nco_dbg_io) (void)fprintf(stderr,"%s: DEBUG %s reports sanitized usr_dta = %s\n",nco_prg_nm_get(),fnc_nm,usr_dta); */
+    
+#ifdef ENABLE_DAP
+    if((strstr(sng_drt,http_url_sng) == sng_drt) || (strstr(sng_drt,https_url_sng) == sng_drt) || (strstr(sng_drt,dap4_url_sng) == sng_drt)){
+      /* Filename starts with "http://" or "https://" or "dap4://" so allow DAP whitelist */
+      if(strchr(wht_lst_dap,*cp)){
+	(void)fprintf(stderr,"%s: INFO %s reports allowing black-listed character \'%c\' from unsanitized user-input string \"%s\" because DAP is enabled and \'%c\' is a valid DAP parameter or constraint character\n",nco_prg_nm_get(),fnc_nm,*cp,usr_dta,*cp);
+	break;
+      } /* !strchr() */
+    } /* !strstr */
+#endif /* !ENABLE_DAP */
+
+    flg_blk_lst=True;
+    break;
+  } /* !cp */
+
+  if(flg_blk_lst){
+    if(nco_dbg_lvl_get() == 73){
+      /* Provide escape route so newly broken workflows will still work with -D 73
+	 Eliminate this "back-door" after a few new versions of NCO, e.g., by version 4.7.5 */
+      (void)fprintf(stderr,"%s: WARNING %s reports manual override of exit() due to black-listed character \'%c\' from unsanitized user-input string \"%s\".\n",nco_prg_nm_get(),fnc_nm,*cp,usr_dta);
+    }else{
+      (void)fprintf(stderr,"%s: ERROR %s reports character \'%c\' from unsanitized user-input string \"%s\" is not on whitelist of acceptable characters. For security purposes NCO restricts the set of characters appearing in user input, including filenames, to: \"%s\". NB: This restriction was first imposed in NCO 4.7.3 (February, 2018), and may cause breakage of older workflows. Please contact NCO if you have a real-world use-case that shows why the character \'%c\' should be white-listed. HINT: Re-try command after replacing transgressing characters with innocuous characters.\n",nco_prg_nm_get(),fnc_nm,*cp,usr_dta,wht_lst,*cp);
+      nco_exit(EXIT_FAILURE);
+    } /* !dbg */
+  } /* !flg_blk_lst */
+
+  return usr_dta;
+} /* !nco_sng_sntz() */

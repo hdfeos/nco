@@ -1,3 +1,6 @@
+# $Header$ -*-makefile-*-
+
+# fxm: 20150923 Allow for building documentation (man pages) without TeXInfo
 info_TEXINFOS = nco.texi
 EXTRA_DIST = nco nco.dvi nco.html nco.pdf nco.ps nco.xml VERSION
 
@@ -8,6 +11,10 @@ EXTRA_DIST = nco nco.dvi nco.html nco.pdf nco.ps nco.xml VERSION
 # AM_MAKEINFOHTMLFLAGS = --ifinfo
 # Create single HTML file instead of file-per-node
 AM_MAKEINFOHTMLFLAGS = --ifinfo --no-split
+
+# 20200917 Attempt to improve TAG-generation
+ETAGS_ARGS = Makefile.am VERSION nco.texi ANNOUNCE MANIFEST debian.txt
+TAGS_DEPENDENCIES = Makefile.am VERSION nco.texi ANNOUNCE MANIFEST debian.txt
 
 ## Automake manual section 14:
 ## If configure built it, 'distclean' should delete it
@@ -34,4 +41,3 @@ AM_MAKEINFOHTMLFLAGS = --ifinfo --no-split
 #.texi.xml:
 #	$(MAKEINFO) --xml --ifinfo --no-split --output=$@ $<
 
-	

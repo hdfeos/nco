@@ -2,10 +2,10 @@
 
 /* Purpose: Hyperslab limits */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_lmt.h" *//* Hyperslab limits */
@@ -54,7 +54,7 @@ nco_lmt_init /* [fnc] Initialize limit to NULL/default values */
 (lmt_sct *lmt); /* I/O [sct] Limit structure to initialize */
 
 void
-nco_lmt_prt /* [fnc] Print a Limit structure */
+nco_lmt_prn /* [fnc] Print a Limit structure */
 (lmt_sct *lmt); /* I/O [sct] Limit structure to print */
 
 void

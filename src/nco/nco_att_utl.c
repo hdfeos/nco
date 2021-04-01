@@ -2,10 +2,10 @@
 
 /* Purpose: Attribute utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_att_utl.h" /* Attribute utilities */
 
@@ -26,75 +26,28 @@ nco_aed_prc_wrp /* [fnc] Expand regular expressions then pass attribute edits to
 {
   /* Purpose: Wrapper for nco_aed_prc(), which processes single attribute edit for single variable
      This wrapper passes its arguments straight throught to nco_aed_prc() with one exception---
-     it unrolls attribute name that are regular expression into multiple calls to nco_aed_prc() */
+     it unrolls attribute names that are regular expressions into multiple calls to nco_aed_prc() */
   const char fnc_nm[]="nco_aed_prc_wrp()"; /* [sng] Function name */
   nco_bool flg_chg=False; /* [flg] Attribute was altered */
 
-  if(!strpbrk(aed.att_nm,".*^$\\[]()<>+?|{}")){
+  if(aed.att_nm && !strpbrk(aed.att_nm,".*^$\\[]()<>+?|{}")){
     // const char foo[]="foo {{";
     /* NB: previous line confuses Emacs C-mode indenter. Restore with isolated parenthesis? */
     /* If attribute name is not regular expression, call single attribute routine then return */
     flg_chg|=nco_aed_prc(nc_id,var_id,aed);
     return flg_chg; /* [flg] Attribute was altered */
   } /* !rx */
-  
-#ifndef NCO_HAVE_REGEX_FUNCTIONALITY
-  (void)fprintf(stdout,"%s: ERROR: Sorry, wildcarding (extended regular expression matches to attributes) was not built into this NCO executable, so unable to compile regular expression \"%s\".\nHINT: Make sure libregex.a is on path and re-build NCO.\n",nco_prg_nm_get(),aed.att_nm);
-  nco_exit(EXIT_FAILURE);
-#else /* NCO_HAVE_REGEX_FUNCTIONALITY */
-  /* aed.att_nm is regular expression */
+
+  if(aed.att_nm && strpbrk(aed.att_nm,".*^$[]()<>+{}") && !strpbrk(aed.att_nm,"?|\\")){
+    /* If attribute name contains special character that could indicate regular expression,
+       and that could also be legal in a CDL name, and contains no characters that are illegal
+       in CDL names, then attempt attribute edit based on verbatim name string 
+       before attempting to expand regular expression. */
+    flg_chg|=nco_aed_prc(nc_id,var_id,aed);
+    if(flg_chg) return flg_chg; /* [flg] Attribute was altered */
+  } /* !rx */
 
   aed_sct aed_swp; /* [sct] Attribute-edit information */
-
-  char *rx_sng; /* [sng] Regular expression pattern */
-
-  int err_id;
-  int flg_cmp; /* Comparison flags */
-  int flg_exe; /* Execution flages */
-  int mch_nbr=0;
-  
-  regex_t *rx;
-  regmatch_t *result;
-
-  size_t rx_prn_sub_xpr_nbr;
-
-  rx_sng=aed.att_nm;
-  rx=(regex_t *)nco_malloc(sizeof(regex_t));
-
-  /* Choose RE_SYNTAX_POSIX_EXTENDED regular expression type */
-  flg_cmp=(REG_EXTENDED | REG_NEWLINE);
-  /* Set execution flags */
-  flg_exe=0;
-
-  /* Compile regular expression */
-  if((err_id=regcomp(rx,rx_sng,flg_cmp))){ /* Compile regular expression */
-    char const * rx_err_sng;  
-    /* POSIX regcomp return error codes */
-    switch(err_id){
-    case REG_BADPAT: rx_err_sng="Invalid pattern"; break;  
-    case REG_ECOLLATE: rx_err_sng="Not implemented"; break;
-    case REG_ECTYPE: rx_err_sng="Invalid character class name"; break;
-    case REG_EESCAPE: rx_err_sng="Trailing backslash"; break;
-    case REG_ESUBREG: rx_err_sng="Invalid back reference"; break;
-    case REG_EBRACK: rx_err_sng="Unmatched left bracket"; break;
-    case REG_EPAREN: rx_err_sng="Parenthesis imbalance"; break;
-    case REG_EBRACE: rx_err_sng="Unmatched {"; break;
-    case REG_BADBR: rx_err_sng="Invalid contents of { }"; break;
-    case REG_ERANGE: rx_err_sng="Invalid range end"; break;
-    case REG_ESPACE: rx_err_sng="Ran out of memory"; break;
-    case REG_BADRPT: rx_err_sng="No preceding re for repetition op"; break;
-    default: rx_err_sng="Invalid pattern"; break;  
-    } /* end switch */
-    (void)fprintf(stdout,"%s: ERROR %s error in regular expression \"%s\" %s\n",nco_prg_nm_get(),fnc_nm,rx_sng,rx_err_sng); 
-    nco_exit(EXIT_FAILURE);
-  } /* end if err */
-
-  rx_prn_sub_xpr_nbr=rx->re_nsub+1L; /* Number of parenthesized sub-expressions */
-
-  /* Search string */
-  result=(regmatch_t *)nco_malloc(sizeof(regmatch_t)*rx_prn_sub_xpr_nbr);
-
-  /* Regular expression is ready to use */
   char **att_nm_lst;
   int att_idx;
   int att_nbr;
@@ -104,37 +57,107 @@ nco_aed_prc_wrp /* [fnc] Expand regular expressions then pass attribute edits to
   (void)nco_inq_varnatts(grp_id,var_id,&att_nbr);
 
   /* 20150629: Read in all attribute names before any editing 
-     This is because creation or deletion of attributes can change their number
-     According to the netCDF documentation, "The number of an attribute is more volatile than the name, since it can change when other attributes of the same variable are deleted. This is why an attribute number is not called an attribute ID." */
+     This is because creation and deletion of attributes changes their number
+     According to netCDF documentation, "The number of an attribute is more volatile than the name, since it can change when other attributes of the same variable are deleted. This is why an attribute number is not called an attribute ID." */
   att_nm_lst=(char **)nco_malloc(att_nbr*sizeof(char *));
   for(att_idx=0;att_idx<att_nbr;att_idx++){
     att_nm_lst[att_idx]=(char *)nco_malloc((NC_MAX_NAME+1L)*sizeof(char));
     nco_inq_attname(grp_id,var_id,att_idx,att_nm_lst[att_idx]);
   } /* !att */
 
-  /* Check each attribute for match to rx */
-  for(att_idx=0;att_idx<att_nbr;att_idx++){
-    if(!regexec(rx,att_nm_lst[att_idx],rx_prn_sub_xpr_nbr,result,flg_exe)){
-      mch_nbr++;
+  if(!aed.att_nm){
+
+    /* Attribute name is blank, meaning intent is to edit all attributes for this variable/group */
+    for(att_idx=0;att_idx<att_nbr;att_idx++){
       /* Swap original attibute name (the regular expression) with its current match */
       aed_swp=aed;
       aed_swp.att_nm=att_nm_lst[att_idx];
       flg_chg|=nco_aed_prc(nc_id,var_id,aed_swp);
-    } /* !mch */
-  } /* !att */
+    } /* !att */
 
-  if(att_nm_lst) att_nm_lst=nco_sng_lst_free(att_nm_lst,att_nbr);
-  if(!mch_nbr) (void)fprintf(stdout,"%s: WARNING: Regular expression \"%s\" does not match any attribute\nHINT: See regular expression syntax examples at http://nco.sf.net/nco.html#rx\n",nco_prg_nm_get(),aed.att_nm); 
+  }else{
+    
+#ifndef NCO_HAVE_REGEX_FUNCTIONALITY
+    (void)fprintf(stdout,"%s: ERROR: Sorry, wildcarding (extended regular expression matches to attributes) was not built into this NCO executable, so unable to compile regular expression \"%s\".\nHINT: Make sure libregex.a is on path and re-build NCO.\n",nco_prg_nm_get(),aed.att_nm);
+    nco_exit(EXIT_FAILURE);
+#else /* NCO_HAVE_REGEX_FUNCTIONALITY */
+    /* aed.att_nm is regular expression */
+    
+    char *rx_sng; /* [sng] Regular expression pattern */
+    
+    int err_id;
+    int flg_cmp; /* Comparison flags */
+    int flg_exe; /* Execution flages */
+    int mch_nbr=0;
+    
+    regex_t *rx;
+    regmatch_t *result;
+    
+    size_t rx_prn_sub_xpr_nbr;
+    
+    rx_sng=aed.att_nm;
+    rx=(regex_t *)nco_malloc(sizeof(regex_t));
+    
+    /* Choose RE_SYNTAX_POSIX_EXTENDED regular expression type */
+    flg_cmp=(REG_EXTENDED | REG_NEWLINE);
+    /* Set execution flags */
+    flg_exe=0;
+    
+    /* Compile regular expression */
+    if((err_id=regcomp(rx,rx_sng,flg_cmp))){ /* Compile regular expression */
+      char const * rx_err_sng;  
+      /* POSIX regcomp return error codes */
+      switch(err_id){
+      case REG_BADPAT: rx_err_sng="Invalid pattern"; break;  
+      case REG_ECOLLATE: rx_err_sng="Not implemented"; break;
+      case REG_ECTYPE: rx_err_sng="Invalid character class name"; break;
+      case REG_EESCAPE: rx_err_sng="Trailing backslash"; break;
+      case REG_ESUBREG: rx_err_sng="Invalid back reference"; break;
+      case REG_EBRACK: rx_err_sng="Unmatched left bracket"; break;
+      case REG_EPAREN: rx_err_sng="Parenthesis imbalance"; break;
+      case REG_EBRACE: rx_err_sng="Unmatched {"; break;
+      case REG_BADBR: rx_err_sng="Invalid contents of { }"; break;
+      case REG_ERANGE: rx_err_sng="Invalid range end"; break;
+      case REG_ESPACE: rx_err_sng="Ran out of memory"; break;
+      case REG_BADRPT: rx_err_sng="No preceding re for repetition op"; break;
+      default: rx_err_sng="Invalid pattern"; break;  
+      } /* end switch */
+      (void)fprintf(stdout,"%s: ERROR %s error in regular expression \"%s\" %s\n",nco_prg_nm_get(),fnc_nm,rx_sng,rx_err_sng); 
+      nco_exit(EXIT_FAILURE);
+    } /* end if err */
 
-  regfree(rx); /* Free regular expression data structure */
-  rx=(regex_t *)nco_free(rx);
-  result=(regmatch_t *)nco_free(result);
+    rx_prn_sub_xpr_nbr=rx->re_nsub+1L; /* Number of parenthesized sub-expressions */
+
+    /* Search string */
+    result=(regmatch_t *)nco_malloc(sizeof(regmatch_t)*rx_prn_sub_xpr_nbr);
+    
+    /* Regular expression is ready to use */
+    
+    /* Check each attribute for match to rx */
+    for(att_idx=0;att_idx<att_nbr;att_idx++){
+      if(!regexec(rx,att_nm_lst[att_idx],rx_prn_sub_xpr_nbr,result,flg_exe)){
+	mch_nbr++;
+	/* Swap original attibute name (the regular expression) with its current match */
+	aed_swp=aed;
+	aed_swp.att_nm=att_nm_lst[att_idx];
+	flg_chg|=nco_aed_prc(nc_id,var_id,aed_swp);
+      } /* !mch */
+    } /* !att */
+    
+    if(!mch_nbr) (void)fprintf(stdout,"%s: WARNING: Regular expression \"%s\" does not match any attribute\nHINT: See regular expression syntax examples at http://nco.sf.net/nco.html#rx\n",nco_prg_nm_get(),aed.att_nm); 
+
+    regfree(rx); /* Free regular expression data structure */
+    rx=(regex_t *)nco_free(rx);
+    result=(regmatch_t *)nco_free(result);
 #endif /* NCO_HAVE_REGEX_FUNCTIONALITY */
+  } /* !aed.att_nm */
   
- return flg_chg; /* [flg] Attribute was altered */
-} /* end nco_aed_prc() */
+  if(att_nm_lst) att_nm_lst=nco_sng_lst_free(att_nm_lst,att_nbr);
 
- nco_bool /* [flg] Attribute was changed */
+  return flg_chg; /* [flg] Attribute was altered */
+} /* end nco_aed_prc_wrp() */
+
+nco_bool /* [flg] Attribute was changed */
 nco_aed_prc /* [fnc] Process single attribute edit for single variable */
 (const int nc_id, /* I [id] Input netCDF file ID */
  const int var_id, /* I [id] ID of variable on which to perform attribute editing */
@@ -175,7 +198,7 @@ nco_aed_prc /* [fnc] Process single attribute edit for single variable */
     (void)nco_inq_var(nc_id,var_id,var_nm,(nc_type *)NULL,(int *)NULL,(int *)NULL,&nbr_att);
   } /* end else */
   
-  if(nco_dbg_lvl_get() >= nco_dbg_crr && nco_dbg_lvl_get() != nco_dbg_dev) (void)fprintf(stdout,"%s: INFO %s examining variable %s\n",nco_prg_nm_get(),fnc_nm,var_nm);
+  if(nco_dbg_lvl_get() >= nco_dbg_crr && nco_dbg_lvl_get() != nco_dbg_dev) (void)fprintf(stdout,"%s: INFO %s examining variable \"%s\"\n",nco_prg_nm_get(),fnc_nm,var_nm);
 
   /* Query attribute metadata when attribute name was specified */
   if(aed.att_nm) rcd_inq_att=nco_inq_att_flg(nc_id,var_id,aed.att_nm,&att_typ,&att_sz);
@@ -207,7 +230,7 @@ nco_aed_prc /* [fnc] Process single attribute edit for single variable */
     ptr_unn var_val;
     var_sct *var=NULL_CEWI;
 
-    if(nco_dbg_lvl_get() >= nco_dbg_std && nco_dbg_lvl_get() != nco_dbg_dev) (void)fprintf(stdout,"%s: INFO Replacing missing value data in variable %s\n",nco_prg_nm_get(),var_nm);
+    if(nco_dbg_lvl_get() >= nco_dbg_std && nco_dbg_lvl_get() != nco_dbg_dev) (void)fprintf(stdout,"%s: INFO Replacing missing value data in variable \"%s\"\n",nco_prg_nm_get(),var_nm);
 
     /* Take file out of define mode */
     (void)nco_enddef(nc_id);
@@ -252,7 +275,7 @@ nco_aed_prc /* [fnc] Process single attribute edit for single variable */
 
     /* Sanity check */
     if(var->has_mss_val == False){
-      (void)fprintf(stdout,"%s: ERROR variable %s does not have \"%s\" attribute in %s\n",nco_prg_nm_get(),var_nm,nco_mss_val_sng_get(),fnc_nm);
+      (void)fprintf(stdout,"%s: ERROR variable \"%s\" does not have \"%s\" attribute in %s\n",nco_prg_nm_get(),var_nm,nco_mss_val_sng_get(),fnc_nm);
       nco_exit(EXIT_FAILURE);
     } /* end if */
 
@@ -264,6 +287,7 @@ nco_aed_prc /* [fnc] Process single attribute edit for single variable */
     mss_val_crr.vp=(void *)nco_malloc(att_sz*nco_typ_lng(var->type));
     mss_val_new.vp=(void *)nco_malloc(aed.sz*nco_typ_lng(var->type));
 
+    /* 20170505: Does nco_val_cnf_typ() work as expected on NaNs? */
     (void)nco_val_cnf_typ(var->type,var->mss_val,var->type,mss_val_crr); 
     (void)nco_val_cnf_typ(aed.type,aed.val,var->type,mss_val_new);
 
@@ -335,9 +359,10 @@ nco_aed_prc /* [fnc] Process single attribute edit for single variable */
   /* According to netCDF4 C Reference Manual:
      "Fill values must be written while the file is still in initial define mode, that
      is, after the file is created, but before it leaves define mode for the first time.
-     NC EFILLVALUE is returned when the user attempts to set the fill value after
+     NC_EFILLVALUE is returned when the user attempts to set the fill value after
      it is too late." 
-     The netCDF4/_FillValue code (and rename trick) works around that limitation. */
+     (netcdf.h replaced NC_EFILLVALUE by NC_ELATEFILL after about netCDF ~4.2.1)
+     The NCO netCDF4/_FillValue code (and rename trick) works around that limitation */
 
   /* Bold hack which gets around problem of modifying netCDF4 "_FillValue" attributes
      netCDF4 does not allow this by default, though netCDF3 does
@@ -357,11 +382,13 @@ nco_aed_prc /* [fnc] Process single attribute edit for single variable */
      aed.att_nm && /* 20130419: Verify att_nm exists before using it in strcmp() below. att_nm does not exist when user leaves field blank. Fix provided by Etienne Tourigny. */
      !strcmp(aed.att_nm,nco_mss_val_sng_get()) && /* ... attribute is missing value and ... */
      aed.mode != aed_delete &&  /* ... we are not deleting attribute */
-     NC_LIB_VERSION <= 440){ /* netCDF library does not contain fix to NCF-187 */
+     // 20170523: Remove this condition as it did not seem to help anymore
+     //     NC_LIB_VERSION <= 440 && /* netCDF library does not contain fix to NCF-187 */
+     True){
     /* Rename existing attribute to netCDF4-safe name 
        After modifying missing value attribute with netCDF4-safe name below, 
        we will rename attribute to original missing value name. */
-    if(nco_dbg_lvl_get() >= nco_dbg_var && nco_dbg_lvl_get() != nco_dbg_dev) (void)fprintf(stdout,"%s: INFO %s reports creating, modifying, or overwriting %s attribute %s in netCDF4 file requires re-name trick\n",nco_prg_nm_get(),fnc_nm,var_nm,aed.att_nm);
+    if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stdout,"%s: INFO %s reports attempt to create, modify, or overwrite %s attribute \"%s\" in netCDF4 file violates netCDF4 capabilities (and would result in NC_ELATEFILL error) so will invoke NCO hocus-pocus rename trick...\n",nco_prg_nm_get(),fnc_nm,var_nm,aed.att_nm);
     if(rcd_inq_att == NC_NOERR) (void)nco_rename_att(nc_id,var_id,aed.att_nm,att_nm_tmp);
     flg_netCDF4_rename_trick=True; /* [flg] Re-name _FillValue in order to create/modify/overwrite it */
     strcpy(aed.att_nm,att_nm_tmp); 
@@ -370,10 +397,11 @@ nco_aed_prc /* [fnc] Process single attribute edit for single variable */
 
   switch(aed.mode){
   case aed_append:	
+  case aed_nappend:	
     if(rcd_inq_att == NC_NOERR){
       /* Append to existing attribute value */
       if(aed.type != att_typ){
-	(void)fprintf(stdout,"%s: ERROR %s attribute %s is of type %s not %s, unable to append\n",nco_prg_nm_get(),var_nm,aed.att_nm,nco_typ_sng(att_typ),nco_typ_sng(aed.type));
+	(void)fprintf(stdout,"%s: ERROR %s attribute \"%s\" is of type %s not %s, unable to append\n",nco_prg_nm_get(),var_nm,aed.att_nm,nco_typ_sng(att_typ),nco_typ_sng(aed.type));
 	nco_exit(EXIT_FAILURE);
       } /* end if */
       att_val_new=(void *)nco_malloc((att_sz+aed.sz)*nco_typ_lng(aed.type));
@@ -391,7 +419,7 @@ nco_aed_prc /* [fnc] Process single attribute edit for single variable */
       rcd+=nco_put_att(nc_id,var_id,aed.att_nm,aed.type,att_sz+aed.sz,att_val_new);
       flg_chg=True; /* [flg] Attribute was altered */
       att_val_new=nco_free(att_val_new);
-    }else{
+    }else if(aed.mode == aed_append){
       /* Create new attribute */
       rcd+=nco_put_att(nc_id,var_id,aed.att_nm,aed.type,aed.sz,aed.val.vp);
       flg_chg=True; /* [flg] Attribute was altered */
@@ -467,7 +495,7 @@ nco_aed_prc_glb /* [fnc] Process attributes in root group */
     } /* !grp */
   } /* !tbl */ 
 
-  if(nco_dbg_lvl_get() > nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute %s was not changed in root group\n",fnc_nm,nco_prg_nm_get(),aed.att_nm);
+  if(nco_dbg_lvl_get() > nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute \"%s\" was not changed in root group\n",fnc_nm,nco_prg_nm_get(),aed.att_nm);
 
   return flg_chg;
 } /* nco_aed_prc_glb() */
@@ -490,7 +518,7 @@ nco_aed_prc_grp /* [fnc] Process attributes in groups */
     } /* !group */
   } /* end loop over tables */ 
 
-  if(nco_dbg_lvl_get() > nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute %s was not changed in any group\n",fnc_nm,nco_prg_nm_get(),aed.att_nm);
+  if(nco_dbg_lvl_get() > nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute \"%s\" was not changed in any group\n",fnc_nm,nco_prg_nm_get(),aed.att_nm);
 
   return flg_chg;
 } /* nco_aed_prc_grp() */
@@ -499,6 +527,7 @@ nco_bool /* [flg] Attribute was changed */
 nco_aed_prc_var_all /* [fnc] Process attributes in all variables */
 (const int nc_id, /* I [id] netCDF file ID */
  const aed_sct aed, /* I [sct] Attribute-edit information */
+ const nco_bool flg_typ_mch, /* I [flg] Type-match attribute edits */
  const trv_tbl_sct * const trv_tbl) /* I [lst] Traversal table */ 
 {
   /* Purpose: Process attributes in all variables */
@@ -510,18 +539,24 @@ nco_aed_prc_var_all /* [fnc] Process attributes in all variables */
 
   for(unsigned tbl_idx=0;tbl_idx<trv_tbl->nbr;tbl_idx++){
     if(trv_tbl->lst[tbl_idx].nco_typ == nco_obj_typ_var){
-      (void)nco_inq_grp_full_ncid(nc_id,trv_tbl->lst[tbl_idx].grp_nm_fll,&grp_id);
-      (void)nco_inq_varid(grp_id,trv_tbl->lst[tbl_idx].nm,&var_id);
-      flg_chg|=nco_aed_prc_wrp(grp_id,var_id,aed);
-      var_fnd=True;
+      if((flg_typ_mch && trv_tbl->lst[tbl_idx].var_typ == aed.type) || !flg_typ_mch){
+	(void)nco_inq_grp_full_ncid(nc_id,trv_tbl->lst[tbl_idx].grp_nm_fll,&grp_id);
+	(void)nco_inq_varid(grp_id,trv_tbl->lst[tbl_idx].nm,&var_id);
+	var_fnd=True;
+	flg_chg|=nco_aed_prc_wrp(grp_id,var_id,aed);
+      } /* !typ */
     } /* !var */
   } /* !tbl */ 
 
   if(!var_fnd){
-    (void)fprintf(stderr,"%s: ERROR File contains no variables so variable attributes cannot be changed\n",nco_prg_nm_get());
-    nco_exit(EXIT_FAILURE);
+    if(flg_typ_mch){
+      if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stderr,"%s: INFO File contains no variables of same type (%s) as attribute so no attributes were changed\n",nco_prg_nm_get(),nco_typ_sng(aed.type));
+    }else{
+      (void)fprintf(stderr,"%s: ERROR File contains no variables so variable attributes cannot be changed\n",nco_prg_nm_get());
+      nco_exit(EXIT_FAILURE);
+    } /* !flg_typ_mch */
   } /* var_fnd */
-  if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute %s was not changed in any variable\n",fnc_nm,nco_prg_nm_get(),aed.att_nm);
+  if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute \"%s\" was not changed in any variable\n",fnc_nm,nco_prg_nm_get(),aed.att_nm);
 
   return flg_chg;
 } /* nco_aed_prc_var_all() */
@@ -547,7 +582,7 @@ nco_aed_prc_var_nm /* [fnc] Process attributes in variables that match input nam
       (void)nco_inq_varid(grp_id,trv.nm,&var_id);
       flg_chg|=nco_aed_prc_wrp(grp_id,var_id,aed);
       /* Only 1 match possible, return */
-      if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute %s was not changed for variable %s\n",fnc_nm,nco_prg_nm_get(),aed.att_nm,trv.grp_nm_fll);
+      if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute \"%s\" was not changed for variable \"%s\"\n",fnc_nm,nco_prg_nm_get(),aed.att_nm,trv.grp_nm_fll);
       return flg_chg;
     } /* !var */
   } /* !tbl */ 
@@ -569,7 +604,7 @@ nco_aed_prc_var_nm /* [fnc] Process attributes in variables that match input nam
     if(trv.nco_typ == nco_obj_typ_grp && !strcmp(aed.var_nm,trv.nm_fll)){
       (void)nco_inq_grp_full_ncid(nc_id,trv.grp_nm_fll,&grp_id);
       flg_chg|=nco_aed_prc_wrp(grp_id,NC_GLOBAL,aed);
-      if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute %s was not changed for group %s\n",fnc_nm,nco_prg_nm_get(),aed.att_nm,trv.grp_nm_fll);
+      if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute \"%s\" was not changed for group \"%s\"\n",fnc_nm,nco_prg_nm_get(),aed.att_nm,trv.grp_nm_fll);
       /* Only 1 match possible, return */
       return flg_chg;
     } /* !var */
@@ -586,10 +621,10 @@ nco_aed_prc_var_nm /* [fnc] Process attributes in variables that match input nam
   } /* !tbl */ 
 
   if(!var_fnd){
-    (void)fprintf(stderr,"%s: ERROR File contains no variables or groups that match name %s so attribute %s cannot be changed\n",nco_prg_nm_get(),aed.var_nm,aed.att_nm);
+    (void)fprintf(stderr,"%s: ERROR File contains no variables or groups that match name \"%s\" so attribute \"%s\" cannot be changed\n",nco_prg_nm_get(),aed.var_nm,aed.att_nm);
     nco_exit(EXIT_FAILURE);
   } /* var_fnd */
-  if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute %s was not changed for groups or variables that match relative name %s\n",fnc_nm,nco_prg_nm_get(),aed.att_nm,aed.var_nm);
+  if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute \"%s\" was not changed for groups or variables that match relative name %s\n",fnc_nm,nco_prg_nm_get(),aed.att_nm,aed.var_nm);
 
   return flg_chg;
 } /* nco_aed_prc_var_nm() */
@@ -618,10 +653,10 @@ nco_aed_prc_var_xtr /* [fnc] Process attributes in variables with extraction fla
   } /* !tbl */ 
 
   if(!var_fnd){
-    (void)fprintf(stderr,"%s: ERROR File contains no extracted variables or groups so attribute %s cannot be changed\n",nco_prg_nm_get(),aed.att_nm);
+    (void)fprintf(stderr,"%s: ERROR File contains no extracted variables or groups so attribute \"%s\" cannot be changed\n",nco_prg_nm_get(),aed.att_nm);
     nco_exit(EXIT_FAILURE);
   } /* var_fnd */
-  if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute %s was not changed in any extracted variables\n",fnc_nm,nco_prg_nm_get(),aed.att_nm);
+  if(nco_dbg_lvl_get() >= nco_dbg_var && !flg_chg) (void)fprintf(stderr,"%s: INFO %s reports attribute \"%s\" was not changed in any extracted variables\n",fnc_nm,nco_prg_nm_get(),aed.att_nm);
 
   return flg_chg;
 } /* nco_aed_prc_var_xtr() */
@@ -660,7 +695,7 @@ nco_att_cpy  /* [fnc] Copy attributes from input netCDF file to output netCDF fi
   }else{
     (void)nco_inq_varnatts(in_id,var_in_id,&nbr_att);
     if(nbr_att > 0) (void)nco_inq_varname(out_id,var_out_id,var_nm);
-    if(nbr_att > NC_MAX_ATTRS) (void)fprintf(stdout,"%s: WARNING Variable %s has %d attributes which exceeds number permitted by netCDF NC_MAX_ATTRS = %d\n",nco_prg_nm_get(),var_nm,nbr_att,NC_MAX_ATTRS);
+    if(nbr_att > NC_MAX_ATTRS) (void)fprintf(stdout,"%s: WARNING variable \"%s\" has %d attributes which exceeds number permitted by netCDF NC_MAX_ATTRS = %d\n",nco_prg_nm_get(),var_nm,nbr_att,NC_MAX_ATTRS);
   } /* end else */
 
   /* Jump back here if current attribute is treated specially */
@@ -685,7 +720,8 @@ nco_att_cpy  /* [fnc] Copy attributes from input netCDF file to output netCDF fi
 	if(nco_prg_id == ncrcat || nco_prg_id == ncecat){
 	  /* ...then risk exists that packing attributes in first file do not match subsequent files... */
 	  static short FIRST_WARNING=True;
-	  if(FIRST_WARNING) (void)fprintf(stderr,"%s: INFO/WARNING Multi-file concatenator encountered packing attribute %s for variable %s. NCO copies the packing attributes from the first file to the output file. The packing attributes from the remaining files must match exactly those in the first file or data from subsequent files will not unpack correctly. Be sure all input files share the same packing attributes. If in doubt, unpack (with ncpdq -U) the input files, then concatenate them, then pack the result (with ncpdq). This message is printed only once per invocation.\n",nco_prg_nm_get(),att_nm,var_nm);
+	  /* 20200405: Quiet this message by printing only when debug >= 1 */
+	  if(FIRST_WARNING && nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stderr,"%s: INFO/WARNING Multi-file concatenator encountered packing attribute \"%s\" for variable \"%s\". NCO copies the packing attributes from the first file to the output file. The packing attributes from the remaining files must match exactly those in the first file or data from subsequent files will not unpack correctly. Be sure all input files share the same packing attributes. If in doubt, unpack (with ncpdq -U) the input files, then concatenate them, then pack the result (with ncpdq). This message is printed only once per invocation.\n",nco_prg_nm_get(),att_nm,var_nm);
 	  FIRST_WARNING=False;
 	} /* endif ncrcat or ncecat */
       }else{ /* ...do not copy packing attributes... */
@@ -698,9 +734,9 @@ nco_att_cpy  /* [fnc] Copy attributes from input netCDF file to output netCDF fi
     if(nco_dbg_lvl_get() >= nco_dbg_std && nco_dbg_lvl_get() != nco_dbg_dev){
       if(rcd == NC_NOERR){
         if(var_out_id == NC_GLOBAL){
-          (void)fprintf(stderr,"%s: INFO Overwriting global or group attribute %s\n",nco_prg_nm_get(),att_nm);
+          (void)fprintf(stderr,"%s: INFO Overwriting global or group attribute \"%s\"\n",nco_prg_nm_get(),att_nm);
         }else{
-          (void)fprintf(stderr,"%s: INFO Overwriting attribute %s for output variable %s\n",nco_prg_nm_get(),att_nm,var_nm);
+          (void)fprintf(stderr,"%s: INFO Overwriting attribute \"%s\" for output variable \"%s\"\n",nco_prg_nm_get(),att_nm,var_nm);
         } /* end else */
       } /* end if */
     } /* end if dbg */
@@ -708,15 +744,23 @@ nco_att_cpy  /* [fnc] Copy attributes from input netCDF file to output netCDF fi
     /* File format needed for autoconversion */
     (void)nco_inq_format(out_id,&fl_fmt);
 
-    /* Allow ncks to autoconvert netCDF4 atomic types to netCDF3 output type ... */
-    if(nco_prg_id_get() == ncks && fl_fmt != NC_FORMAT_NETCDF4 && !nco_typ_nc3(att_typ_in)){
-      att_typ_out=nco_typ_nc4_nc3(att_typ_in);
-      flg_autoconvert=True;
-      if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stdout,"%s: INFO Autoconverting %s%s attribute %s from netCDF4 type %s to netCDF3 type %s\n",nco_prg_nm_get(),(var_out_id == NC_GLOBAL) ? "global or group" : "variable ",(var_out_id == NC_GLOBAL) ? "" : var_nm,att_nm,nco_typ_sng(att_typ_in),nco_typ_sng(att_typ_out));
-    } /* !flg_autoconvert */
+    /* Allow ncks to autoconvert netCDF4 atomic types to netCDF3- or CDF5-supported output type ... */
+    if(nco_prg_id_get() == ncks){
+      if(((fl_fmt == NC_FORMAT_CLASSIC || fl_fmt == NC_FORMAT_64BIT_OFFSET || fl_fmt == NC_FORMAT_NETCDF4_CLASSIC) && !nco_typ_nc3(att_typ_in)) ||
+	 (fl_fmt == NC_FORMAT_64BIT_DATA && !nco_typ_nc5(att_typ_in))){
+	flg_autoconvert=True;
+	if(fl_fmt == NC_FORMAT_64BIT_DATA) att_typ_out=nco_typ_nc4_nc5(att_typ_in); else att_typ_out=nco_typ_nc4_nc3(att_typ_in);
+	if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stdout,"%s: INFO Autoconverting %s%s attribute \"%s\" from type %s to %s-supported type %s\n",nco_prg_nm_get(),(var_out_id == NC_GLOBAL) ? "global or group" : "variable ",(var_out_id == NC_GLOBAL) ? "" : var_nm,att_nm,nco_fmt_sng(fl_fmt),nco_typ_sng(att_typ_in),nco_typ_sng(att_typ_out));
+      } /* !flg_autoconvert */
+    } /* !ncks */
 
     if(strcmp(att_nm,nco_mss_val_sng_get())){
-      if(flg_autoconvert){
+      /* Normal (non-_FillValue) attributes */
+      if(!flg_autoconvert){
+	/* Copy all attributes except _FillValue with fast library routine
+	   20170516: library routine does not copy empty NC_CHAR attributes? */
+	(void)nco_copy_att(in_id,var_in_id,att_nm,out_id,var_out_id);
+      }else{ /* autoconvert */
 	var_sct att_var; /* [sct] Variable structure */
 	var_sct *att_var_ptr=NULL; /* [sct] Variable structure */
 
@@ -740,11 +784,8 @@ nco_att_cpy  /* [fnc] Copy attributes from input netCDF file to output netCDF fi
 	  rcd=nco_put_att(out_id,var_out_id,att_nm,att_typ_out,att_sz,att_var_ptr->val.vp);
 	  if(att_var_ptr->val.vp) att_var_ptr->val.vp=nco_free(att_var_ptr->val.vp);
 	} /* !NC_STRING */
-      }else{
-	/* Copy all attributes except _FillValue with fast library routine */
-	(void)nco_copy_att(in_id,var_in_id,att_nm,out_id,var_out_id);
-      } /* !Autoconvert */
-    }else{
+      } /* !autoconvert */
+    }else{ /* !_FillValue */
       /* Convert "_FillValue" attribute to unpacked type then copy 
 	 Impose NCO convention that _FillValue is same type as variable,
 	 whether variable is packed or not */
@@ -775,7 +816,7 @@ nco_att_cpy  /* [fnc] Copy attributes from input netCDF file to output netCDF fi
 
       if(!flg_autoconvert){
 	/* Do not convert global attributes or PCK_ATT_CPY */  
-	if(PCK_ATT_CPY || var_out_id==NC_GLOBAL) att_typ_out=att_typ_in; else (void)nco_inq_vartype(out_id,var_out_id,&att_typ_out);
+	if(PCK_ATT_CPY || var_out_id == NC_GLOBAL) att_typ_out=att_typ_in; else (void)nco_inq_vartype(out_id,var_out_id,&att_typ_out);
       } /* flg_autoconvert */
 
       if(att_typ_out == att_typ_in){
@@ -1108,24 +1149,24 @@ nco_prs_aed_lst /* [fnc] Parse user-specified attribute edits into structure lis
      
      One mode must be set for each edited attribute: append (a), create (c), delete (d), modify (m), or overwrite (o).
      -a: Attribute append mode
-     Append value att_val to current var_nm attribute att_nm value att_val, if any. 
-     If var_nm does not have an attribute att_nm, there is no effect.
+     Append value att_val to current var_nm attribute att_nm value att_val, if any
+     If var_nm does not have an attribute att_nm, there is no effect
      
      -c: Attribute create mode
-     Create variable var_nm attribute att_nm with att_val if att_nm does not yet exist. 
-     If var_nm already has an attribute att_nm, there is no effect.
+     Create variable var_nm attribute att_nm with att_val if att_nm does not yet exist
+     If var_nm already has an attribute att_nm, there is no effect
      
      -d: Attribute delete mode
-     Delete current var_nm attribute att_nm.
-     If var_nm does not have an attribute att_nm, there is no effect.
+     Delete current var_nm attribute att_nm
+     If var_nm does not have an attribute att_nm, there is no effect
      
      -m: Attribute modify mode
-     Change value of current var_nm attribute att_nm to value att_val.
-     If var_nm does not have an attribute att_nm, there is no effect.
+     Change value of current var_nm attribute att_nm to value att_val
+     If var_nm does not have an attribute att_nm, there is no effect
      
      -o: Attribute overwrite mode
-     Write attribute att_nm with value att_val to variable var_nm, overwriting existing attribute att_nm, if any.
-     This is default mode. */
+     Write attribute att_nm with value att_val to variable var_nm, overwriting existing attribute att_nm, if any
+     This is default mode */
   
   aed_sct *aed_lst;
   
@@ -1163,8 +1204,14 @@ nco_prs_aed_lst /* [fnc] Parse user-specified attribute edits into structure lis
     }else if(arg_lst[3] == NULL && *(arg_lst[2]) != 'd' && *(arg_lst[2]) != 'm'){
       msg_sng=strdup("Type must be explicitly specified for all modes except delete and modify");
       NCO_SYNTAX_ERROR=True;
-    }else if(arg_lst[idx_att_val_arg] == NULL && *(arg_lst[2]) != 'd' && *(arg_lst[3]) == 'c'){
-      /* ... value is not specified except that att_val = "" is valid for character type */
+    }else if(arg_lst[idx_att_val_arg] == NULL && *(arg_lst[2]) != 'd' && *(arg_lst[3]) != 'c' && strcmp(arg_lst[3],"sng")){
+      /* 20170515: 
+	 ncks --cdl -v one ~/nco/data/in.nc
+	 ncatted -O -a long_name,one,o,c,'' ~/nco/data/in.nc ~/foo.nc
+	 ncatted -O -a long_name,one,o,sng,'' ~/nco/data/in_4.nc ~/foo.nc
+	 ncks --cdl -v one ~/foo.nc
+      */
+      /* ... value is not specified except that att_val = "" is valid for character and string types */
       msg_sng=strdup("Value must be explicitly specified for all modes except delete (although an empty string value is permissible for attributes of type NC_CHAR and NC_STRING)");
       NCO_SYNTAX_ERROR=True;
     } /* end else */
@@ -1200,16 +1247,18 @@ nco_prs_aed_lst /* [fnc] Parse user-specified attribute edits into structure lis
 	  }else if(!strcmp("create",arg_lst[2])){aed_lst[idx].mode=aed_create;
 	  }else if(!strcmp("delete",arg_lst[2])){aed_lst[idx].mode=aed_delete;
 	  }else if(!strcmp("modify",arg_lst[2])){aed_lst[idx].mode=aed_modify;
+	  }else if(!strcmp("nappend",arg_lst[2])){aed_lst[idx].mode=aed_nappend;
 	  }else if(!strcmp("overwrite",arg_lst[2])){aed_lst[idx].mode=aed_overwrite;} */
     switch(*(arg_lst[2])){
     case 'a': aed_lst[idx].mode=aed_append; break;
     case 'c': aed_lst[idx].mode=aed_create; break;
     case 'd': aed_lst[idx].mode=aed_delete; break;
     case 'm': aed_lst[idx].mode=aed_modify; break;
+    case 'n': aed_lst[idx].mode=aed_nappend; break;
     case 'o': aed_lst[idx].mode=aed_overwrite; break;
     default: 
       (void)fprintf(stderr,"%s: ERROR `%s' is not a supported mode\n",nco_prg_nm_get(),arg_lst[2]);
-      (void)fprintf(stderr,"%s: HINT: Valid modes are `a' = append, `c' = create,`d' = delete, `m' = modify, and `o' = overwrite",nco_prg_nm_get());
+      (void)fprintf(stderr,"%s: HINT: Valid modes are `a' = append, `c' = create,`d' = delete, `m' = modify, `n' = nappend, and `o' = overwrite",nco_prg_nm_get());
       nco_exit(EXIT_FAILURE);
       break;
     } /* end switch */
@@ -1223,42 +1272,12 @@ nco_prs_aed_lst /* [fnc] Parse user-specified attribute edits into structure lis
       nco_exit(EXIT_FAILURE);
     } /* !ATT_TYP_INHERIT */
 
-    /* Attribute type and value do not matter if we are deleting it */
+    /* Attribute type and value do not matter when we will delete attribute */
     if(aed_lst[idx].mode != aed_delete && !ATT_TYP_INHERIT){
 
       /* Set type of current aed structure */
-      /* Convert single letter code to type enum */
-      switch(*(arg_lst[3])){
-      case 'F':	
-      case 'f':	aed_lst[idx].type=(nc_type)NC_FLOAT; break;
-      case 'D':	
-      case 'd':	aed_lst[idx].type=(nc_type)NC_DOUBLE; break;
-      case 'C':	
-      case 'c':	aed_lst[idx].type=(nc_type)NC_CHAR; break;
-      case 'B':	
-      case 'b':	aed_lst[idx].type=(nc_type)NC_BYTE; break;
-      default: 
-        /* Ambiguous single letters must use full string comparisons */
-        if(!strcasecmp(arg_lst[3],"l") || !strcasecmp(arg_lst[3],"i")) aed_lst[idx].type=(nc_type)NC_INT; 
-        else if(!strcasecmp(arg_lst[3],"s")) aed_lst[idx].type=(nc_type)NC_SHORT; 
-#ifdef ENABLE_NETCDF4
-        else if(!strcasecmp(arg_lst[3],"ub")) aed_lst[idx].type=(nc_type)NC_UBYTE; 
-        else if(!strcasecmp(arg_lst[3],"us")) aed_lst[idx].type=(nc_type)NC_USHORT; 
-        else if(!strcasecmp(arg_lst[3],"u") || !strcasecmp(arg_lst[3],"ui") || !strcasecmp(arg_lst[3],"ul")) aed_lst[idx].type=(nc_type)NC_UINT; 
-        else if(!strcasecmp(arg_lst[3],"ll") || !strcasecmp(arg_lst[3],"int64")) aed_lst[idx].type=(nc_type)NC_INT64; 
-        else if(!strcasecmp(arg_lst[3],"ull") || !strcasecmp(arg_lst[3],"uint64")) aed_lst[idx].type=(nc_type)NC_UINT64; 
-        else if(!strcasecmp(arg_lst[3],"sng") || !strcasecmp(arg_lst[3],"string")) aed_lst[idx].type=(nc_type)NC_STRING; 
-        else{
-          (void)fprintf(stderr,"%s: ERROR `%s' is not a supported netCDF data type\n",nco_prg_nm_get(),arg_lst[3]);
-          (void)fprintf(stderr,"%s: HINT: Valid data types are `c' = char, `f' = float, `d' = double,`s' = short, `i' = `l' = integer, `b' = byte",nco_prg_nm_get());
+      aed_lst[idx].type=nco_sng2typ(arg_lst[3]);
 
-          (void)fprintf(stderr,", `ub' = unsigned byte, `us' = unsigned short, `u' or `ui' or `ul' = unsigned int,`ll' or `int64' = 64-bit signed integer, `ull' or `uint64` = unsigned 64-bit integer, `sng' or `string' = string");
-
-          (void)fprintf(stderr,"\n");
-          nco_exit(EXIT_FAILURE);} /*  end if error */
-#endif /* ENABLE_NETCDF4 */
-        break;
-      } /* end switch */
     } /* end if not delete mode and !ATT_TYP_INHERIT */
 
     if(aed_lst[idx].mode != aed_delete){
@@ -1314,12 +1333,12 @@ nco_prs_aed_lst /* [fnc] Parse user-specified attribute edits into structure lis
         /* strdup() attaches a trailing NUL to the user-specified string 
 	   Retaining is obliquely discussed in netCDF Best Practices document:
 	   http://www.unidata.ucar.edu/software/netcdf/docs/BestPractices.html#Strings%20and%20Variables%20of%20type%20char */
-        aed_lst[idx].val.cp=(nco_char *)strdup(arg_lst[idx_att_val_arg]);
+	aed_lst[idx].val.cp= (aed_lst[idx].sz > 0L) ? (nco_char *)strdup(arg_lst[idx_att_val_arg]) : NULL; 
       }else if(aed_lst[idx].type == NC_STRING){
         aed_lst[idx].val.vp=(void *)nco_malloc(aed_lst[idx].sz*nco_typ_lng(aed_lst[idx].type));
         for(lmn=0L;lmn<aed_lst[idx].sz;lmn++){
-          aed_lst[idx].val.sngp[lmn]=(nco_string)strdup(arg_lst[idx_att_val_arg+lmn]);
-        } /* end loop over elements */
+	  if(arg_lst[idx_att_val_arg+lmn] != NULL) aed_lst[idx].val.sngp[lmn]=(nco_string)strdup(arg_lst[idx_att_val_arg+lmn]); else aed_lst[idx].val.sngp[lmn]=(nco_string)NULL;
+	} /* !lmn */
       }else{
         char *sng_cnv_rcd=NULL_CEWI; /* [sng] strtol()/strtoul() return code */
         double *val_arg_dbl=NULL_CEWI;
@@ -1334,6 +1353,24 @@ nco_prs_aed_lst /* [fnc] Parse user-specified attribute edits into structure lis
         case NC_DOUBLE: 
           val_arg_dbl=(double *)nco_malloc(aed_lst[idx].sz*sizeof(double));
           for(lmn=0L;lmn<aed_lst[idx].sz;lmn++){
+#ifdef WIN32
+	    /* 20161104: strtod() on MinGW fails to parse "nan" so implement a "NaN-trap". Test with:
+	       ncatted -O -a _FillValue,fll_val,m,f,nan ~/nco/data/in.nc ~/foo.nc
+	       ncks -C -v fll_val ~/foo.nc */
+	    size_t chr_nbr=3;
+	    char nan_trap[]="NaN-trap"; /* [sng] Test for NaN-like number */
+	    /* Copy first three characters */
+	    strncpy(nan_trap,arg_lst[idx_att_val_arg],chr_nbr);
+	    nan_trap[chr_nbr]='\0'; /* NUL-terminate */
+	    if(!strncasecmp(nan_trap,"NaN",chr_nbr)){
+	    /* http://stackoverflow.com/questions/16691207/c-c-nan-constant-literal: NAN literal is in C <math.h>, while C++ requires <limits> header 
+	       #ifdef __cplusplus
+	       val_arg_dbl[lmn]=std::numeric_limits<double>::quiet_NaN();
+	       #endif __cplusplus */
+	    val_arg_dbl[lmn]=NAN;
+	    continue;
+	  } /* !NaN */
+#endif /* !WIN32 */
             val_arg_dbl[lmn]=strtod(arg_lst[idx_att_val_arg+lmn],&sng_cnv_rcd);
             if(*sng_cnv_rcd) nco_sng_cnv_err(arg_lst[idx_att_val_arg+lmn],"strtod",sng_cnv_rcd);
           } /* end loop over elements */
@@ -1899,31 +1936,44 @@ nco_vrs_att_cat /* [fnc] Add NCO version global attribute */
   /* Purpose: Write NCO version information to global metadata */
   aed_sct vrs_sng_aed;
   char att_nm[]="NCO"; /* [sng] Name of attribute in which to store NCO version */
-  char vrs_git[]=TKN2SNG(VERSION); /* [sng] Version according to Git */
-  char *vrs_cvs; /* [sng] Version according to RCS/CVS-like release tag */
-  char *vrs_sng; /* [sng] NCO version */
+  char vrs_cpp[]=TKN2SNG(NCO_VERSION); /* [sng] Version according to Git */
+  char *vrs_sng; /* [sng] NCO version, numeric part only */
+  char vrs_pfx[]="netCDF Operators version ";; /* [sng] NCO version attribute prefix */
+  char vrs_sfx[]=" (Homepage = http://nco.sf.net, Code = http://github.com/nco/nco)"; /* [sng] NCO version attribute suffix */
+  char *vrs_sng_xtn; /* [sng] NCO version value, with extended information */
   ptr_unn att_val;
   
-  vrs_cvs=cvs_vrs_prs();
-  
-  vrs_sng=vrs_cvs;
-  vrs_sng=vrs_git;
+  /* 20170417: vrs_cpp is typically something like "4.6.6-alpha10" (quotes included) 
+     The quotation marks annyoy me yet are necessary to protect the string in nco.h 
+     Here we remove the quotation marks by pointing past the first and putting NUL in the last */
+  vrs_sng=vrs_cpp;
+  if(vrs_cpp[0L] == '"'){
+    vrs_cpp[strlen(vrs_cpp)-1L]='\0';
+    vrs_sng=vrs_cpp+1L;
+  } /* endif */
 
-  /* Insert thread number into value */
-  att_val.cp=vrs_sng;
+  /* Insert numeric version into extended version string */
+  vrs_sng_xtn=(char *)nco_malloc(strlen(vrs_pfx)+strlen(vrs_sng)+strlen(vrs_sfx)+1L);
+  vrs_sng_xtn[0]='\0';
+  vrs_sng_xtn=strcat(vrs_sng_xtn,vrs_pfx);
+  vrs_sng_xtn=strcat(vrs_sng_xtn,vrs_sng);
+  vrs_sng_xtn=strcat(vrs_sng_xtn,vrs_sfx);
+  
+  /* Insert version number into value */
+  att_val.cp=vrs_sng_xtn;
   /* Initialize NCO version attribute edit structure */
   vrs_sng_aed.att_nm=att_nm;
   vrs_sng_aed.var_nm=NULL;
   vrs_sng_aed.id=NC_GLOBAL;
-  vrs_sng_aed.sz=strlen(vrs_sng)+1L;
+  vrs_sng_aed.sz=strlen(vrs_sng_xtn)+1L;
   vrs_sng_aed.type=NC_CHAR;
   /* Insert value into attribute structure */
   vrs_sng_aed.val=att_val;
   vrs_sng_aed.mode=aed_overwrite;
   /* Write NCO version attribute to disk */
   (void)nco_aed_prc(out_id,NC_GLOBAL,vrs_sng_aed);
-  // vrs_sng=(char *)nco_free(vrs_sng);
 
+  if(vrs_sng_xtn) vrs_sng_xtn=(char *)nco_free(vrs_sng_xtn);
 } /* end nco_vrs_att_cat() */
 
 void 
@@ -1934,38 +1984,18 @@ nco_glb_att_add /* [fnc] Add global attributes */
 {
   /* Purpose: Decode arguments into attributes and add as global metadata to output file */
   aed_sct gaa_aed;
-  int gaa_idx;
-  int gaa_arg_idx;
+  int gaa_idx=0;
   int gaa_nbr=0;
   kvm_sct *gaa_lst=NULL; /* [sct] List of all GAA specifications */
-  kvm_sct kvm;
   ptr_unn att_val;
+  /* Join arguments together */
+  char *sng_fnl=nco_join_sng(gaa_arg,gaa_arg_nbr);
+  gaa_lst=nco_arg_mlt_prs(sng_fnl);
 
-  gaa_lst=(kvm_sct *)nco_malloc(NC_MAX_VARS*sizeof(kvm_sct));
+  if(sng_fnl) sng_fnl=(char *)nco_free(sng_fnl);
 
-  /* Parse GAAs */
-  for(gaa_arg_idx=0;gaa_arg_idx<gaa_arg_nbr;gaa_arg_idx++){
-    if(!strstr(gaa_arg[gaa_arg_idx],"=")){
-      (void)fprintf(stdout,"%s: Invalid --gaa specification: %s. Must contain \"=\" sign, e.g., \"key=value\".\n",nco_prg_nm_get(),gaa_arg[gaa_arg_idx]);
-      if(gaa_lst) gaa_lst=(kvm_sct *)nco_free(gaa_lst);
-      nco_exit(EXIT_FAILURE);
-    } /* endif */
-    kvm=nco_sng2kvm(gaa_arg[gaa_arg_idx]);
-    /* nco_sng2kvm() converts argument "--gaa one,two=3" into kvm.key="one,two" and kvm.val=3
-       Then nco_lst_prs_2D() converts kvm.key into two items, "one" and "two", with the same value, 3 */
-    if(kvm.key){
-      int att_idx; /* [idx] Index over attribute names in current GAA argument */
-      int att_nbr; /* [nbr] Number of attribute names in current GAA argument */
-      char **att_lst;
-      att_lst=nco_lst_prs_2D(kvm.key,",",&att_nbr);
-      for(att_idx=0;att_idx<att_nbr;att_idx++){ /* Expand multi-attribute-name specification */
-        gaa_lst[gaa_nbr].key=strdup(att_lst[att_idx]);
-	gaa_lst[gaa_nbr].val=strdup(kvm.val);
-        gaa_nbr++;
-      } /* end for */
-      att_lst=nco_sng_lst_free(att_lst,att_nbr);
-    } /* end if */
-  } /* end for */
+  /* jm fxm use more descriptive name than i---what does i count? */
+  for(int index=0;gaa_lst[index].key;index++,gaa_nbr++); /* end loop over i */
 
   for(gaa_idx=0;gaa_idx<gaa_nbr;gaa_idx++){
     /* Insert attribute value */
@@ -1977,7 +2007,16 @@ nco_glb_att_add /* [fnc] Add global attributes */
     gaa_aed.type=NC_CHAR;
     /* Insert value into attribute structure */
     gaa_aed.val=att_val;
-    gaa_aed.sz=strlen(gaa_aed.val.cp);
+    /* 20170428 jm: Update for flag parsing*/
+    if(gaa_aed.val.cp)
+      gaa_aed.sz=strlen(gaa_aed.val.cp);
+    else
+      gaa_aed.sz=0;
+    /* 20160324: which is better mode for gaa---overwrite or append? 
+       20160330: answer is overwrite. otherwise, climo_nco.sh produces ANN file with, e.g.,
+       :climo_script = "climo_nco.shclimo_nco.shclimo_nco.sh" ;
+       :climo_hostname = "aerosolaerosolaerosol" ;
+       :climo_version = "4.5.6-alpha374.5.6-alpha374.5.6-alpha37" ; */
     gaa_aed.mode=aed_overwrite;
     /* Write attribute to disk */
     (void)nco_aed_prc(out_id,NC_GLOBAL,gaa_aed);
@@ -2065,19 +2104,19 @@ nco_xcp_prc /* [fnc] Perform exception processing on this variable */
  const nc_type var_typ, /* I [enm] netCDF type of operand */
  const long var_sz, /* I [nbr] Size (in elements) of operand */
  char * const var_val) /* I/O [sng] Values of string operand */
- {
+{
   /* Purpose: Perform exception processing on this variable
      Exception processing currently limited to variables of type NC_CHAR */
-   char *ctime_sng;
-   time_t time_crr_time_t;
-   struct tm *time_crr_tm;
-
+  char *ctime_sng;
+  time_t time_crr_time_t;
+  struct tm *time_crr_tm;
+  
   /* Create timestamp string */
   time_crr_time_t=time((time_t *)NULL);
   /* NB: easy to replace with localtime() if desired */
   time_crr_tm=gmtime(&time_crr_time_t);
   ctime_sng=ctime(&time_crr_time_t);
-
+  
   /* Currently both variables in list are NC_CHAR of size 8 when written
      Interestingly, date_written and time_written are 2D (time x char)
      Thus operators like ncra, ncwa may need to reduce their rank and shrink their size 
@@ -2107,5 +2146,73 @@ nco_xcp_prc /* [fnc] Perform exception processing on this variable */
     return;
   } /* !time_written */
   
- } /* end nco_xcp_prc() */
+} /* end nco_xcp_prc() */
 
+char * /* O [sng] Attribute value */
+nco_char_att_get /* [fnc] Get a character string attribute from an open file */
+(const int in_id, /* I [id] netCDF input-file ID */
+ const int var_id, /* I [id] netCDF variable ID */
+ const char * const att_nm) /* [sng] Attribute name */
+{
+  /* Get a character string attribute from an open file
+     Return NUL-terminated string if attribute exists and NULL otherwise
+     Memory allocated by this routine must be freed by calling routine */
+
+  char *att_val=NULL; /* O [sng] Attribute value */
+  
+  int rcd;
+
+  long att_sz;
+
+  nc_type att_typ;
+
+  rcd=nco_inq_att_flg(in_id,var_id,att_nm,&att_typ,&att_sz);
+  if(rcd != NC_NOERR || att_typ != NC_CHAR) return NULL;
+  att_val=(char *)nco_malloc((att_sz+1L)*nco_typ_lng(att_typ));
+  rcd=nco_get_att(in_id,var_id,att_nm,att_val,att_typ);
+  /* NUL-terminate attribute before using strstr() */
+  att_val[att_sz]='\0';
+  
+  return att_val;
+  
+} /* !nco_char_att_get() */
+
+int /* O [rcd] Return code */
+nco_char_att_put /* [fnc] Get a character string attribute from an open file */
+(const int out_id, /* I [id] netCDF output-file ID */
+ const char * const var_nm_sng, /* [sng] Variable name */
+ const char * const att_nm_sng, /* [sng] Attribute name */
+ const char * const att_val_sng) /* [sng] Attribute value */
+{
+  /* Put a character string attribute into an open file
+     Return NC_NOERR on success
+     This routine allocates no externally visible memory */
+
+  char *var_nm; /* [sng] Variable name */
+  char *att_nm; /* [sng] Attribute name */
+  char *att_val; /* [sng] Attribute value */
+
+  int rcd=NC_NOERR;
+
+  aed_sct aed_mtd;
+
+  if(var_nm_sng) var_nm=(char *)strdup(var_nm_sng); else var_nm=NULL;
+  if(att_nm_sng) att_nm=(char *)strdup(att_nm_sng); else att_nm=NULL;
+  if(att_val_sng) att_val=(char *)strdup(att_val_sng); else att_val=NULL;
+
+  aed_mtd.att_nm=att_nm;
+  aed_mtd.var_nm=var_nm;
+  if(var_nm) rcd=nco_inq_varid(out_id,var_nm,&aed_mtd.id); else aed_mtd.id=NC_GLOBAL;
+  if(att_val_sng) aed_mtd.sz=strlen(att_val); else aed_mtd.sz=0L;
+  aed_mtd.type=NC_CHAR;
+  aed_mtd.val.cp=att_val;
+  aed_mtd.mode=aed_create;
+
+  (void)nco_aed_prc(out_id,aed_mtd.id,aed_mtd);
+
+  if(var_nm) var_nm=(char *)nco_free(var_nm);
+  if(att_nm) att_nm=(char *)nco_free(att_nm);
+  if(att_val) att_val=(char *)nco_free(att_val);
+
+  return rcd;
+} /* !nco_char_att_put() */

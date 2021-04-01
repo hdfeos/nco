@@ -2,10 +2,10 @@
 
 /* Purpose: Description (definition) of regridding functions */
 
-/* Copyright (C) 2015--2015 Charlie Zender
+/* Copyright (C) 2015--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_rgr.h" *//* Regridding */
@@ -18,6 +18,7 @@
 #include <math.h> /* sin cos cos sin 3.14159 */
 #include <stdio.h> /* stderr, FILE, NULL, printf */
 #include <stdlib.h> /* atof, atoi, malloc, getopt */
+#include <time.h> /* machine time */
 
 /* 3rd party vendors */
 #include <netcdf.h> /* netCDF definitions and C library */
@@ -25,21 +26,34 @@
 
 /* Personal headers */
 #include "nco.h" /* netCDF Operator (NCO) definitions */
+#include "nco_fl_utl.h" /* File manipulation */
 #include "nco_mmr.h" /* Memory management */
 #include "nco_omp.h" /* OpenMP utilities */
-#include "nco_sld.h" /* Swath-Like Data */
+#include "nco_s1d.h" /* Sparse-1D CLM/ELM datasets */
 #include "nco_sng_utl.h" /* String utilities */
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-/* WIN32 math.h does not define M_PI, needed for dgr2rdn and rdn2dgr */
-#ifndef M_PI
-# define M_PI		3.14159265358979323846
-#endif /* M_PI */
+  typedef enum nco_vrt_ntp_typ_enm{ /* [enm] Vertical interpolation type enum */
+    nco_ntp_nil=0,
+    nco_ntp_hyb_to_hyb,
+    nco_ntp_hyb_to_prs,
+    nco_ntp_prs_to_hyb,
+    nco_ntp_prs_to_prs,
+  } nco_vrt_ntp_typ_enm;
+  
+  typedef enum nco_grd_vrt_typ_enm{ /* [enm] Vertical grid-type enum */
+    nco_vrt_grd_nil=0,
+    nco_vrt_grd_hyb, /* Hybrid coordinate */
+    nco_vrt_grd_prs, /* Pressure coordinate */
+    nco_vrt_grd_sgm, /* Sigma coordinate */
+    nco_vrt_grd_dpt, /* Depth coordinate */
+    nco_vrt_grd_hgt, /* Height coordinate */
+  } nco_grd_vrt_typ_enm;
 
-  typedef enum nco_rgr_cmd_typ_enm{ /* [enm] Tempest remap type enum */
+  typedef enum nco_rgr_tps_cmd_enm{ /* [enm] Tempest remap type enum */
     nco_rgr_AAA_nil=0,
     nco_rgr_ApplyOfflineMap,
     nco_rgr_CalculateDiffNorms,
@@ -53,13 +67,16 @@ extern "C" {
     nco_rgr_GenerateTestData,
     nco_rgr_MeshToTxt,
     nco_rgr_ZZZ_last
-  } nco_rgr_cmd_typ;
+  } nco_rgr_tps_cmd;
 
   typedef enum nco_rgr_mpf_typ_enm{ /* [enm] Mapfile type enum */
-    nco_rgr_mpf_nil=0,
+    nco_rgr_mpf_nil=0, /* Map-file type is nil until set to a definite (including unknown) type listed below */
     nco_rgr_mpf_ESMF,
     nco_rgr_mpf_SCRIP,
     nco_rgr_mpf_Tempest,
+    nco_rgr_mpf_ESMF_weight_only,
+    nco_rgr_mpf_NCO, 
+    nco_rgr_mpf_unknown /* e.g., CDO */
   } nco_rgr_mpf_typ_enm;
 
   typedef enum nco_rgr_typ_enm{ /* [enm] Regrid type enum */
@@ -85,7 +102,7 @@ extern "C" {
     nco_rgr_nrm_unknown, /* Tempest */
   } nco_rgr_nrm_typ_enm;
 
-  /* ESMF: The map_method attribute indicates the interpolation type. The format of the interpolation weight file was developed by a group outside of ESMF, because of its use by utilities outside of ESMF control, the range of some of the meta data is constrained. The map_method is one of these. Because of this constraint, there is no map method corresponding to patch interpolation. A weight file generated with the "patch" interpolation method will have map_method set to "Bilinear remapping".  */
+  /* ESMF: The map_method attribute indicates the interpolation type. The format of the interpolation weight file was developed by a group outside of ESMF, because of its use by utilities outside of ESMF control, the range of some of the meta data is constrained. The map_method is one of these. Because of this constraint, there is no map method corresponding to patch interpolation. A weight file generated with the "patch" interpolation method will have map_method set to "Bilinear remapping". */
   typedef enum nco_rgr_mth_typ_enm{ /* [enm] Mapfile type enum */
     nco_rgr_mth_nil=0,
     nco_rgr_mth_conservative,
@@ -110,6 +127,15 @@ extern "C" {
     char *dest_grid; /* [sng] Destination grid */
   } nco_mpf_sct;
   
+  typedef struct{ /* nco_xtr_sct */
+    /* NCO extrapolation structure */
+    bool xtr_fll; // Full extrapolation is allowed (implies xtr_prt)
+    bool xtr_prt; // Partial extrapolation is allowed
+    bool xtr_vrb; // Print verbose warning when extrapolation is performed
+    nco_xtr_typ_enm typ_fll; /* Method for full extrapolation */
+    nco_xtr_typ_enm typ_prt; /* Method for partial extrapolation */
+  } nco_xtr_sct;
+  
   void
   nco_bsl_zro /*  Return Bessel function zeros */
   (const int bsl_zro_nbr, /* O [nbr] Order of Bessel function */
@@ -119,14 +145,33 @@ extern "C" {
   nco_grd_mk /* [fnc] Create SCRIP-format grid file */
   (rgr_sct * const rgr); /* I/O [sct] Regridding structure */
 
+  int /* O [enm] Return code */
+  nco_grd_nfr /* [fnc] Infer SCRIP-format grid file from data file */
+  (rgr_sct * const rgr); /* I/O [sct] Regridding structure */
+
+  void
+  nco_sph_plg_area /* [fnc] Compute area of spherical polygon */
+  (rgr_sct * const rgr, /* I [sct] Regridding structure */
+   const double * const lat_bnd, /* [dgr] Latitude  boundaries of rectangular grid */
+   const double * const lon_bnd, /* [dgr] Longitude boundaries of rectangular grid */
+   const long grd_sz_nbr, /* [nbr] Number of gridcells in grid */
+   const int bnd_nbr, /* [nbr] Number of bounds in gridcell */
+   double * const area_out); /* [sr] Gridcell area */
+
   void
   nco_lat_wgt_gss /* [fnc] Compute and return sine of Gaussian latitudes and their weights */
   (const int lat_nbr, /* I [nbr] Latitude number */
+   const nco_bool flg_s2n, /* I [enm] Latitude grid-direction is South-to-North */
    double * const lat_sin, /* O [frc] Sine of latitudes */
    double * const wgt_Gss); /* O [frc] Gaussian weights */
 
   int /* O [enm] Return code */
-  nco_rgr_map /* [fnc] Regrid with external weights */
+  nco_ntp_vrt /* [fnc] Interpolate vertically */
+  (rgr_sct * const rgr, /* I/O [sct] Regridding structure */
+   trv_tbl_sct * const trv_tbl); /* I/O [sct] Traversal Table */
+
+  int /* O [enm] Return code */
+  nco_rgr_wgt /* [fnc] Regrid with external weights */
   (rgr_sct * const rgr_nfo, /* I/O [sct] Regridding structure */
    trv_tbl_sct * const trv_tbl); /* I/O [sct] Traversal Table */
 
@@ -145,9 +190,13 @@ extern "C" {
    char * const rgr_out, /* I [sng] File containing regridded fields */
    char * const rgr_grd_src, /* I [sng] File containing input grid */
    char * const rgr_grd_dst, /* I [sng] File containing destination grid */
+   char * const rgr_hrz, /* I [sng] File containing horizontal coordinate grid */
    char * const rgr_map, /* I [sng] File containing mapping weights from source to destination grid */
    char * const rgr_var, /* I [sng] Variable for special regridding treatment */
-   const double wgt_vld_thr); /* I [frc] Weight threshold for valid destination value */
+   char * const rgr_vrt, /* I [sng] File containing vertical coordinate grid */
+   const double wgt_vld_thr, /* I [frc] Weight threshold for valid destination value */
+   char **xtn_var, /* I [sng] Extensive variables */
+   const int xtn_nbr); /* I [nbr] Number of extensive variables */
     
   rgr_sct * /* O [sct] Pointer to free'd regridding structure */
   nco_rgr_free /* [fnc] Deallocate regridding structure */
@@ -178,12 +227,16 @@ extern "C" {
   (const nco_rgr_typ_enm nco_rgr_typ); /* I [enm] Grid conversion enum */
 
   const char * /* O [sng] String describing regridding method */
-  nco_rgr_mth_sng /* [fnc] Convert regridding method enum to string */
+  nco_ply_dcm_sng /* [fnc] Convert regridding method enum to string */
   (const nco_rgr_mth_typ_enm nco_rgr_mth_typ); /* I [enm] Regridding method enum */
 
   const char * /* O [sng] String describing mapfile generator */
   nco_rgr_mpf_sng /* [fnc] Convert mapfile generator enum to string */
   (const nco_rgr_mpf_typ_enm nco_rgr_mpf_typ); /* I [enm] Mapfile generator enum */
+
+  const char * /* O [sng] String describing regridding method */
+  nco_rgr_mth_sng /* [fnc] Convert regridding method enum to string */
+  (const nco_rgr_mth_typ_enm nco_rgr_mth_typ); /* I [enm] Regridding method enum */
 
   const char * /* O [sng] String describing regridding normalization */
   nco_rgr_nrm_sng /* [fnc] Convert regridding normalization enum to string */
@@ -191,14 +244,47 @@ extern "C" {
 
   const char * /* O [sng] String containing regridding command and format */
   nco_tps_cmd_fmt_sng /* [fnc] Convert Tempest remap command enum to command string */
-  (const nco_rgr_cmd_typ nco_rgr_cmd); /* I [enm] Tempest remap command enum */
+  (const nco_rgr_tps_cmd nco_tps_cmd); /* I [enm] Tempest remap command enum */
 
   const char * /* O [sng] String containing regridding command name */
   nco_tps_cmd_sng /* [fnc] Convert Tempest remap command enum to command name */
-  (const nco_rgr_cmd_typ nco_rgr_cmd); /* I [enm] Tempest remap command enum */
+  (const nco_rgr_tps_cmd nco_tps_cmd); /* I [enm] Tempest remap command enum */
+
+  double /* O [dgr] Longitude difference (lon_r-lon_l) */
+  nco_lon_dff_brnch_dgr /* [fnc] Subtract longitudes with branch-cut rules */
+  (double lon_r, /* I [dgr] Longitude on right of gridcell (subtractor) */
+   double lon_l); /* I [dgr] Longitude on  left of gridcell (subtractee) */
+
+  double /* O [rdn] Longitude difference (lon_r-lon_l) */
+  nco_lon_dff_brnch_rdn /* [fnc] Subtract longitudes with branch-cut rules */
+  (double lon_r, /* I [rdn] Longitude on right of gridcell (subtractor) */
+   double lon_l); /* I [rdn] Longitude on  left of gridcell (subtractee) */
+
+  double /* O [dgr] Longitude average */
+  nco_lon_ply_avg_brnch_dgr /* [fnc] Average polygon longitude with branch-cut rules */
+  (double *lon_crn, /* I [dgr] Longitude of gridcell corners */
+   long lon_nbr); /* I [nbr] Number of vertices in polygon */
+
+  double /* O [dgr] Longitude average */
+  nco_lon_crn_avg_brnch /* [fnc] Average quadrilateral longitude with branch-cut rules */
+  (double lon_ll, /* I [dgr] Longitude at lower left  of gridcell */
+   double lon_lr, /* I [dgr] Longitude at lower right of gridcell */
+   double lon_ur, /* I [dgr] Longitude at upper right of gridcell */
+   double lon_ul); /* I [dgr] Longitude at upper left  of gridcell */
+
+  nco_bool /* O [flg] Input corners were CCW */
+  nco_ccw_chk /* [fnc] Convert quadrilateral gridcell corners to CCW orientation */
+  (double * const crn_lat, /* [dgr] Latitude corners of gridcell */
+   double * const crn_lon, /* [dgr] Latitude corners of gridcell */
+   const int crn_nbr, /* [nbr] Number of corners per gridcell */
+   int idx_ccw, /* [idx] Index of starting vertice for CCW check (Point A = tail side AB) */
+   const int rcr_lvl); /* [nbr] Recursion level */
 
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif /* __cplusplus */
+
+/* its here temporarily as a func prototype uses nco_mf_sct */
+#include "nco_map.h" /* Map generation */
 
 #endif /* NCO_RGR_H */

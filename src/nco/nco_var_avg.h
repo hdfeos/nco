@@ -2,10 +2,10 @@
 
 /* Purpose: Average variables */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_var_avg.h" *//* Average variables */
@@ -14,6 +14,7 @@
 #define NCO_VAR_AVG_H
 
 /* Standard header files */
+#include <math.h> /* sin cos cos sin 3.14159 isfinite isinf isnan */
 #include <stdio.h> /* stderr, FILE, NULL, printf */
 
 /* 3rd party vendors */

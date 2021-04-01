@@ -1,9 +1,9 @@
 /* Purpose: netCDF arithmetic processor class methods */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #ifndef FMC_GSL_CLS_HH // Contents have not yet been inserted in current source file  
 #define FMC_GSL_CLS_HH
@@ -36,18 +36,26 @@
 #include <gsl/gsl_spline.h>
 #include <gsl/gsl_fit.h>
 
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_multifit.h>
+
 #include "ncoTree.hpp"
 #include "ncap2_utl.hh"
 #include "vtl_cls.hh"
 
-#ifndef NCO_GSL_MINOR_VERSION
-#ifdef _MSC_VER
-# define NCO_GSL_MINOR_VERSION 7
-#else
-# define NCO_GSL_MINOR_VERSION 12
-#endif // _MSC_VER
-#endif // NCO_GSL_MINOR_VERSION
-
+#ifdef NCO_GSL_MAJOR_VERSION
+# if NCO_GSL_MAJOR_VERSION >= 2
+#  define NCO_GSL_VERSION ( NCO_GSL_MAJOR_VERSION * 100 + NCO_GSL_MINOR_VERSION * 10 + NCO_GSL_PATCH_VERSION )
+# endif // NCO_GSL_MAJOR_VERSION
+#endif // NCO_GSL_MAJOR_VERSION
+#ifndef NCO_GSL_VERSION
+# ifdef _MSC_VER
+#  define NCO_GSL_VERSION 107
+# else
+#  define NCO_GSL_VERSION 221
+# endif // _MSC_VER
+#endif // NCO_GSL_VERSION
 
 // Some of the gsl_ran_* functions return an unsigned int (NC_UINT)
 // netcdf3 has no NC_UINT type So we converte the returned values to an NC_INT
@@ -346,7 +354,7 @@ public:
 // GSL Function
 class gsl_cls : public vtl_cls {
 private:
-   bool _flg_dbg;
+   //bool _flg_dbg;
   std::vector<gpr_cls> gpr_vtr;
 
 public:
@@ -388,7 +396,7 @@ static  var_sct *hnd_fnc_stat4(HANDLE_ARGS);
 class gsl2_cls: public vtl_cls {
 private:
    enum {PGSL_RNG_MIN,PGSL_RNG_MAX,PGSL_RNG_NAME };
-   bool _flg_dbg;
+   //bool _flg_dbg;
 public:
    gsl2_cls(bool flg_dbg);
   var_sct *fnd(RefAST expr, RefAST fargs,fmc_cls &fmc_obj, ncoTree &walker);
@@ -406,7 +414,7 @@ private:
          PWVAR_M,   PWSD_M,   PWABSDEV_M, PWSKEW_M_SD,
          PWKURTOSIS_M_SD
        };
-   bool _flg_dbg;
+   //bool _flg_dbg;
 public:
   gsl_stt2_cls(bool flg_dbg);
   var_sct *fnd(RefAST expr, RefAST fargs,fmc_cls &fmc_obj, ncoTree &walker);
@@ -420,7 +428,7 @@ public:
 class gsl_spl_cls: public vtl_cls {
 private:
    enum {PLINEAR,PPOLY,PCSPLINE,PCSPLINE_PER,PAKIMA,PAKIMA_PER,PEVAL };
-   bool _flg_dbg;
+   //bool _flg_dbg;
 public:
    gsl_spl_cls(bool flg_dbg);
   var_sct *fnd(RefAST expr, RefAST fargs,fmc_cls &fmc_obj, ncoTree &walker);
@@ -436,13 +444,28 @@ public:
 class gsl_fit_cls: public vtl_cls {
 private:
    enum { PLIN,PWLIN,PLIN_EST,PMUL,PWMUL,PMUL_EST };
-   bool _flg_dbg;
+   //bool _flg_dbg;
 public:
    gsl_fit_cls(bool flg_dbg);
   var_sct *fnd(RefAST expr, RefAST fargs,fmc_cls &fmc_obj, ncoTree &walker);
   var_sct *fit_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker);  
   var_sct *fit_est_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker);  
-  int rm_miss_arr(double *x_in,long long x_stride,double *y_in, long long y_stride, double *w_in,long long w_stride,long long n);
+  // int rm_miss_arr(double *x_in,long long x_stride,double *y_in, long long y_stride, double *w_in,long long w_stride,long long n);
+};
+
+
+//GSL  /****************************************/
+// gsl multi-parameter Least Square Fitting 
+class gsl_mfit_cls: public vtl_cls {
+private:
+  enum { PMLIN, PMWLIN, PMLIN_EST};
+   //bool _flg_dbg;
+public:
+   gsl_mfit_cls(bool flg_dbg);
+  var_sct *fnd(RefAST expr, RefAST fargs,fmc_cls &fmc_obj, ncoTree &walker);
+  var_sct *mfit_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker);
+  var_sct *mfit_est_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker);    
+
 };
 
 #endif // !ENABLE_GSL
@@ -452,7 +475,7 @@ class nco_gsl_cls: public vtl_cls
 {
 private:
   enum {NCO_GSL_FUNC1,NCO_GSL_FUNC2};
-  bool _flg_dbg;
+  //bool _flg_dbg;
   std::vector<gpr_cls> gpr_vtr;
 public:
   nco_gsl_cls(bool flg_dbg);

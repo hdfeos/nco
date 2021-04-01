@@ -2,10 +2,10 @@
 
 /* Purpose: Description (definition) of chunking functions */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_cnk.h" *//* Chunking */
@@ -74,6 +74,10 @@ const char * /* O [sng] Chunking policy string */
 nco_cnk_plc_sng_get /* [fnc] Convert chunking policy enum to string */
 (const int nco_cnk_plc); /* I [enm] Chunking policy */
 
+int /* [rcd] Return code */
+nco_cnk_csh_ini /* [fnc] Initialize global chunk cache user-specified input */
+(const size_t cnk_csh_byt); /* I [B] Chunk cache size */
+
 int /* [rcd] [enm] Return code */
 nco_cnk_ini /* [fnc] Initialize chunking from user-specified inputs */
 (const int in_id, /* I [id] netCDF input file ID */
@@ -82,6 +86,7 @@ nco_cnk_ini /* [fnc] Initialize chunking from user-specified inputs */
  const int cnk_nbr, /* I [nbr] Number of chunksizes specified */
  const int cnk_map, /* I [enm] Chunking map */
  const int cnk_plc, /* I [enm] Chunking policy */
+ const size_t cnk_csh_byt, /* I [B] Chunk cache size */
  const size_t cnk_min_byt, /* I [B] Minimize size of variable to chunk */
  const size_t cnk_sz_byt, /* I [B] Chunk size in bytes */
  const size_t cnk_sz_scl, /* I [nbr] Chunk size scalar */

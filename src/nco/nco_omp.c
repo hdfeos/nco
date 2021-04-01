@@ -2,10 +2,10 @@
 
 /* Purpose: OpenMP utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_omp.h" /* OpenMP utilities */
 
@@ -31,13 +31,15 @@ nco_openmp_ini /* [fnc] Initialize OpenMP threading environment */
 (const int thr_nbr) /* I [nbr] User-requested thread number */
 {
   /* Purpose: Initialize OpenMP multi-threading environment
-     Honor user-requested thread number, balance against known code efficiency,
-     print diagnostics
+     Honor user-requested thread number, balance against known code efficiency, print diagnostics
      Returns thr_nbr=1 in three situations:
      1. UP codes (not threaded)
      2. SMP codes compiled with compilers which lack OpenMP support
      3. SMP codes where single thread requested/advised
      Otherwise returns system-dependent thr_nbr */
+
+  /* Test run-time OpenMP configuration by calling regridder:
+     ncks -O --thr_nbr=4 --dbg=5 --rgr grd_ttl='Title'#grid=grd.nc#latlon=3,6 ~/nco/data/in.nc ~/foo.nc;/bin/rm grd.nc ~/foo.nc */
 
   /* Using naked stdin/stdout/stderr in parallel region generates warning
      Copy appropriate filehandle to variable scoped shared in parallel clause */
@@ -58,7 +60,7 @@ nco_openmp_ini /* [fnc] Initialize OpenMP threading environment */
   int thr_nbr_rqs=int_CEWI; /* [nbr] Number of threads to request */
 
 #ifndef _OPENMP
-  if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(fp_stderr,"%s: INFO Build compiler lacked (or user turned off) OpenMP support. Code will execute with single thread in Uni-Processor (UP) mode.\n",nco_prg_nm_get());
+  if(nco_dbg_lvl_get() >= nco_dbg_fl) (void)fprintf(fp_stderr,"%s: INFO Build compiler lacked (or user turned-off) OpenMP support. Code will execute with single thread in Uni-Processor (UP) mode.\n",nco_prg_nm_get());
   return (int)1;
 #endif /* !_OPENMP */
 
@@ -76,8 +78,8 @@ nco_openmp_ini /* [fnc] Initialize OpenMP threading environment */
   } /* endif err */
 
   if(thr_nbr == 0)
-    if(nco_dbg_lvl_get() >= nco_dbg_scl && nco_dbg_lvl_get() != nco_dbg_dev )
-      (void)fprintf(fp_stderr,"%s: INFO User did not specify thread request > 0 on command line. NCO will automatically assign threads based on OMP_NUM_THREADS environment and machine capabilities.\nHINT: Not specifiying any --thr_nbr (or specifying --thr_nbr=0) causes NCO to try to pick the optimal thread number. Specifying --thr_nbr=1 tells NCO to execute in Uni-Processor (UP) (i.e., single-threaded) mode.\n",nco_prg_nm_get());
+    if(nco_dbg_lvl_get() >= nco_dbg_scl && nco_dbg_lvl_get() != nco_dbg_dev)
+      (void)fprintf(fp_stderr,"%s: INFO User did not specify thread request > 0 on command line. NCO will automatically assign threads based on OMP_NUM_THREADS environment and machine capabilities.\nHINT: Not specifying any --thr_nbr (or specifying --thr_nbr=0) causes NCO to try to pick the optimal thread number. Specifying --thr_nbr=1 tells NCO to execute in Uni-Processor (UP) (i.e., single-threaded) mode.\n",nco_prg_nm_get());
 
   if(thr_nbr > 0) USR_SPC_THR_RQS=True;
 
@@ -104,7 +106,7 @@ nco_openmp_ini /* [fnc] Initialize OpenMP threading environment */
     /* ...if possible... */
     if(nco_dbg_lvl_get() >= nco_dbg_scl) (void)fprintf(fp_stderr,"%s: INFO Command-line requests %d thread%s\n",nco_prg_nm_get(),thr_nbr,(thr_nbr > 1) ? "s" : "");
     if(thr_nbr > thr_nbr_max){
-      (void)fprintf(fp_stderr,"%s: WARNING Reducing user-requested thread number = %d to maximum thread number allowed = %d\n",nco_prg_nm_get(),thr_nbr,thr_nbr_max);
+      (void)fprintf(fp_stderr,"%s: INFO Reducing user-requested thread number = %d to maximum thread number omp_get_max_threads() allows = %d\n",nco_prg_nm_get(),thr_nbr,thr_nbr_max);
       thr_nbr_rqs=thr_nbr_max; /* [nbr] Number of threads to request */
     } /* endif */
   }else{ /* !USR_SPC_THR_RQS */
@@ -171,13 +173,13 @@ nco_openmp_ini /* [fnc] Initialize OpenMP threading environment */
     
     /* Automatic algorithm tries to play nice with others */
     (void)omp_set_dynamic(dyn_thr); /* [flg] Allow system to dynamically set number of threads */
-    if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(fp_stderr,"%s: INFO omp_set_dynamic() used to %s OS to dynamically set threads\n",nco_prg_nm_get(),(dyn_thr ? "ALLOW" : "DISALLOW"));
+    if(nco_dbg_lvl_get() >= nco_dbg_fl) (void)fprintf(fp_stderr,"%s: INFO omp_set_dynamic() used to %s OS to dynamically set threads\n",nco_prg_nm_get(),(dyn_thr ? "ALLOW" : "DISALLOW"));
     dyn_thr=omp_get_dynamic(); /* [flg] Allow system to dynamically set number of threads */
-    if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(fp_stderr,"%s: INFO omp_get_dynamic() reports system will%s utilize dynamic threading\n",nco_prg_nm_get(),(dyn_thr ? "" : " NOT"));
+    if(nco_dbg_lvl_get() >= nco_dbg_fl) (void)fprintf(fp_stderr,"%s: INFO omp_get_dynamic() reports system will%s utilize dynamic threading\n",nco_prg_nm_get(),(dyn_thr ? "" : " NOT"));
 
     /* Apply program/system limitations */
     if(thr_nbr_max > thr_nbr_max_fsh){
-      if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(fp_stderr,"%s: INFO Reducing default thread number from %d to %d, an operator-dependent \"play-nice\" number set in nco_openmp_ini()\n",nco_prg_nm_get(),thr_nbr_max,thr_nbr_max_fsh);
+      if(nco_dbg_lvl_get() >= nco_dbg_fl) (void)fprintf(fp_stderr,"%s: INFO Reducing default thread number from %d to %d, an operator-dependent \"play-nice\" number set in nco_openmp_ini()\n",nco_prg_nm_get(),thr_nbr_max,thr_nbr_max_fsh);
       thr_nbr_rqs=thr_nbr_max_fsh; /* [nbr] Number of threads to request */
     } /* endif */      
   } /* !USR_SPC_THR_RQS */
@@ -195,19 +197,21 @@ nco_openmp_ini /* [fnc] Initialize OpenMP threading environment */
     nco_exit(EXIT_FAILURE);
   }else{
     (void)omp_set_num_threads(thr_nbr_rqs); 
-    if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(fp_stderr,"%s: INFO omp_set_num_threads() used to set execution environment to spawn teams of %d thread(s)\n",nco_prg_nm_get(),thr_nbr_rqs);
+    if(nco_dbg_lvl_get() >= nco_dbg_fl) (void)fprintf(fp_stderr,"%s: INFO omp_set_num_threads() used to set execution environment to spawn teams of %d thread(s)\n",nco_prg_nm_get(),thr_nbr_rqs);
   } /* end error */
 
   thr_nbr_act=omp_get_max_threads();
   if(nco_dbg_lvl_get() >= nco_dbg_scl) (void)fprintf(fp_stderr,"%s: INFO After using omp_set_num_threads() to adjust for any user requests/NCO optimizations, omp_get_max_threads() reports that a parallel construct here/now would spawn %d thread(s)\n",nco_prg_nm_get(),thr_nbr_act);
 #ifdef _OPENMP
   if(nco_dbg_lvl_get() >= nco_dbg_scl){
-# pragma omp parallel default(none) shared(thr_nbr_act)
+    // 20190203: Remove default(none) clause to prevent GCC9 errors on missing declaration for fp_stderr
+    //# pragma omp parallel default(none) shared(thr_nbr_act)
+# pragma omp parallel shared(thr_nbr_act)
     { /* begin OpenMP parallel */
 # pragma omp single nowait
       { /* begin OpenMP single */
 	thr_nbr_act=omp_get_num_threads(); /* [nbr] Number of threads NCO uses */
-	if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(fp_stderr,"%s: INFO Small parallel test region spawned team of %d thread(s)\n",nco_prg_nm_get(),thr_nbr_act);
+	if(nco_dbg_lvl_get() >= nco_dbg_fl) (void)fprintf(fp_stderr,"%s: INFO Small parallel test region spawned team of %d thread(s)\n",nco_prg_nm_get(),thr_nbr_act);
       } /* end OpenMP single */
     } /* end OpenMP parallel */
   } /* end dbg */
@@ -215,8 +219,8 @@ nco_openmp_ini /* [fnc] Initialize OpenMP threading environment */
   
   /* Issue any warnings about OpenMP credibility during debugging phase */
   if(True)
-     if((nco_prg_id_get() == ncwa || nco_prg_id_get() == ncra) && thr_nbr_act > 1)
-      if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(fp_stderr,"%s: WARNING OpenMP threading active with %d threads but not guaranteed to work on this operator. If strange behavior (e.g., NaN results) ensues, manually turn-off multi-threading by specifying \"-t 1\" option.\n",nco_prg_nm_get(),thr_nbr_act);
+    if((nco_prg_id_get() == ncwa || nco_prg_id_get() == ncra) && thr_nbr_act > 1)
+      if(nco_dbg_lvl_get() >= nco_dbg_fl) (void)fprintf(fp_stderr,"%s: WARNING OpenMP threading active with %d threads but not guaranteed to work on this operator. If strange behavior (e.g., NaN results) ensues, manually turn-off multi-threading by specifying \"-t 1\" option.\n",nco_prg_nm_get(),thr_nbr_act);
 
   return thr_nbr_act; /* O [nbr] Number of threads NCO uses */
 } /* end nco_openmp_ini() */
@@ -237,4 +241,47 @@ nco_var_prc_crr_prn /* [fnc] Print name of current variable */
 #endif /* !_OPENMP */
 
   return rcd;
-} /* end nco_var_prc_crr_prn() */
+} /* !nco_var_prc_crr_prn() */
+
+void
+nco_omp_chk /* [fnc] Check and print how many threads a new parallel region would spawn */
+(const char *smsg) /* I [sng] Small string to print */
+{
+  char fnc_nm[]="nco_omp_chk()";
+  int thr_nbr_act=omp_get_max_threads();
+
+  FILE *fp_stderr=stderr;
+
+  (void) fprintf(fp_stderr,"%s%s: INFO After using omp_set_num_threads() to adjust for any user requests/NCO optimizations, omp_get_max_threads() reports that a parallel construct here/now would spawn %d thread(s)\n",fnc_nm,smsg,thr_nbr_act);
+
+#ifdef _OPENMP
+#pragma omp parallel shared(thr_nbr_act)
+  { /* begin OpenMP parallel */
+# pragma omp single nowait
+    { /* begin OpenMP single */
+      thr_nbr_act = omp_get_num_threads(); /* [nbr] Number of threads NCO uses */
+      (void) fprintf(fp_stderr, "%s: %s INFO Small parallel test region spawned team of %d thread(s)\n",fnc_nm,smsg,thr_nbr_act);
+    } /* end OpenMP single */
+  } /* end OpenMP parallel */
+#endif /* !_OPENMP */
+
+} /* !nco_omp_chk() */
+
+void nco_omp_for_chk(
+const char *smsg)
+{
+  char fnc_nm[]="nco_omp_for_chk()";
+  int thr_nbr_act=omp_get_max_threads();
+  int idx;
+  int cnt=10;
+
+  FILE *fp_stderr=stderr;
+
+  (void)fprintf(fp_stderr,"%s:%s: INFO After using omp_set_num_threads() to adjust for any user requests/NCO optimizations, omp_get_max_threads() reports that a parallel construct here/now would spawn %d thread(s)\n",fnc_nm,smsg,thr_nbr_act);
+
+#ifdef _OPENMP
+#pragma omp parallel for private(idx)
+#endif /* !_OPENMP */
+    for(idx=0;idx<cnt;idx++)
+      (void)fprintf(fp_stderr,"%s: %d %d\n",fnc_nm,idx,omp_get_thread_num());
+} /* !nco_omp_for_chk() */

@@ -9,7 +9,7 @@ file:///home/zender/nco/doc/highlights_old.shtml
 
 Usage:
 /usr/bin/scp ~/nco/doc/highlights_old.shtml zender,nco@web.sf.net:/home/project-web/nco/htdocs
-scp -p ~/nco/doc/highlights_old.shtml dust.ess.uci.edu:/var/www/html/nco
+scp -p ~/nco/doc/highlights_old.shtml dust.ess.uci.edu:Sites/nco
 -->
 
 <!doctype html public "-//W3C//DTD HTML 3.2//EN">
@@ -23,8 +23,246 @@ scp -p ~/nco/doc/highlights_old.shtml dust.ess.uci.edu:/var/www/html/nco
 <body bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink="#008080" alink="#FF0000">
 
 <dt><a name="News"></a></dt>
-<h2>Release Highlights from 2000&ndash;2012 (versions 1.1.47&ndash;4.2.3)</h2>
+<h2>Release Highlights from 200001&ndash;201712 (versions 1.1.47&ndash;4.7.1)</h2>
 
+<li><b>NCO 4.7.1</b>: 
+Conda Windows port;
+<tt>ncclimo --clm_md=dly/ann</tt> fix;
+JSON tweaks;</li>
+<li><b>NCO 4.7.0</b>: 
+CMake build-engine intrinsic math, networking support on MS Windows;
+<tt>ncclimo/ncremap --fl_fmt</tt> options;
+<tt>ncclimo/ncremap --dfl_lvl</tt> compression;
+<tt>ncclimo --ppc</tt> compression;
+<tt>ncra/ncrcat</tt> fix negative hyperslab off-by-one error;</li>
+<li><b>NCO 4.6.9</b>: 
+CDF5 autoconversion, features to help detect <a href="#bug_cdf5">corruption</a>;
+CMake build-engine is mature;
+<tt>ncks</tt> estimates correct filesizes;
+<tt>ncks</tt> CDL prints variable RAM size;
+<tt>ncks</tt> prints CDL by default;</li>
+<li><b>NCO 4.6.8</b>:
+<tt>ncap2</tt> full chunking options;
+<tt>ncclimo --seasons</tt> custom season support;
+<tt>ncks --dt_fmt</tt> put the &ldquo;T&rdquo; in time;
+<tt>ncremap --msk_[src/dst]=none</tt> mask suppression;
+<tt>ncremap -3,-4,-5,-6,-7</tt> output format;
+<tt>ncwa -d -w -m</tt> hyperslab with mask or weight <a href="#bug_ncwa_hyp_msk_wgt">bugfix</a>;</li>
+<li><b>NCO 4.6.7</b>:
+Multi-argument (MTA) flag parsing;
+<tt>ncap2</tt> in-fill functions simple_fill_miss() + weighted_fill_miss();
+<tt>ncap2</tt> duplicates input variable chunking;
+<tt>ncatted</tt> NC4 bugfix;
+<tt>ncremap -P sgs, alm, clm, cice</tt> sub-gridscale remapping;
+<tt>ncremap</tt> msk_src/dst conversion;
+<tt>ncremap</tt> src/dst_regional hints to ERWG;</li>
+<li><b>NCO 4.6.6</b>:
+<tt>ncks --cdl</tt> prints units when <i>dbg_lvl</i>&nbsp;&ge;&nbsp;1;
+<tt>ncks --cdl</tt> prints braces for compound record variables;
+<tt>ncks</tt> outputs UGRID-format rectangular grids;
+<tt>ncremap/ncclimo no_cll_msr,no_frm_trm,no_ntv_tms,no_stg_grd</tt> switches;
+<tt>ncremap</tt> masks;</li>
+<li><b>NCO 4.6.5</b>:
+<tt>ncks --cal</tt> prints human-legible ISO8601 dates;
+<tt>ncclimo/ncremap --version</tt> switch;
+<tt>ncremap --vrb_lvl</tt> verbosity level;
+<tt>ncremap</tt> refactor dimension inferral, fix POP re-grids;
+Set chunk cache-size with <tt>--cnk_csh</tt>;</li>
+<li><b>NCO 4.6.4</b>: 
+<tt>ncremap</tt> add <tt>w_stag</tt> weights to FV output;
+<tt>ncclimo</tt> timeseries reshaping ("splitting") mode;
+<tt>ncclimo</tt> daily climo mode;
+Extract variables in CF <tt>cell_measures</tt>, <tt>formula_terms</tt> attributes;
+Fix UDUnits calendar bug introduced in 4.6.3;</li>
+<li><b>NCO 4.6.3</b>: 
+CMake build option;
+<tt>ncap2</tt> udunits() function;
+<tt>ncclimo</tt> supports binary climos, annual mode;
+<tt>ncclimo, ncremap</tt> support long-options;
+<tt>ncks --cdl</tt> attribute types as comments;
+<tt>ncks --json</tt> strided brackets for multi-dimensional arrays;</li>
+<li><b>NCO 4.6.2</b>: 
+Improve <tt>ncclimo, ncremap</tt> behavior in <tt>module</tt> environments;
+<tt>ncks --json</tt> for JSON output;
+Multi-argument support for <tt>--gaa</tt>, <tt>--rgr</tt>, <tt>--ppc</tt>, <tt>--trr</tt> options;</li>
+<li><b>NCO 4.6.1</b>:
+<tt>ncclimo</tt> incremental mode;
+<tt>ncflint -N</tt> normalization;</li>
+<li><b>NCO 4.6.0</b>: 
+<tt>ncap2</tt> LHC metadata propagation;
+<tt>ncatted</tt> nappend mode;
+<tt>ncclimo</tt> debut;
+<tt>ncks</tt> reads ENVI bsq/bip/bil images;
+<tt>ncks</tt> Terraref features;
+<tt>ncks -A</tt> append consistency;
+<tt>ncpdq</tt> fix permutation with multiple groups;
+<tt>ncra --cb</tt> climatology bounds
+<tt>ncremap</tt> uses CF to find coordinates;
+<tt>ncremap</tt> uses $TMPDIR;</li>
+<li><b>NCO 4.5.5</b>:
+Initial CDF5 support;
+<tt>ncap2</tt> fix negative dimension indices handling;
+<tt>ncremap -P airs,hirdls,mls,mpas</tt>;
+<tt>nces/ncra</tt> fix <tt>-y mebs</tt> normalization, add <tt>-y tabs</tt>;
+<tt>ncatted/ncrename/ncpdq</tt> fix <tt>--gaa</tt>;</li>
+<li><b>NCO 4.5.4</b>:
+<tt>ncap2</tt> syntax simplification/fixes;
+<tt>ncks -V</tt> bugfix;
+<tt>ncks</tt> XML <tt>_Unsigned</tt> attribute;
+<tt>ncremap</tt> debuts;
+<tt>ncwa</tt> fix whitespace in <tt>coordinates</tt> attribute;</li>
+<li><b>NCO 4.5.3</b>: 
+<tt>ncatted</tt> fix deletion of all attributes;
+<tt>ncecat</tt> fix <tt>gag</tt> mode;
+<tt>ncks</tt> infers rectangular and curvilinear grids;
+<tt>ncks --xtn</tt> specifies extensive variables;
+<tt>ncks</tt> regridder fix multi-level field normalization;</li>
+<li><b>NCO 4.5.2</b>: 
+All operators support <tt>--glb_att_add</tt>;
+<tt>ncks</tt> better support for <tt>fracarea</tt>, <tt>mask</tt>, and displaced-pole grids;
+<tt>ncks</tt> diagnoses <tt>area</tt> for bilinear remapping and when area_b equals 0.0;
+<tt>ncks</tt> <i>generates</i> exact Gaussian and equi-angular, rectangular, and regional gridfiles;
+<tt>ncks</tt> regrid with old, new, and regional TempestRemap mapfiles;
+<tt>ncra -n NINTAP</tt> option understands calendar month counting;
+<tt>ncra -N</tt> avoids normalizing by weights;
+<tt>ncra -w</tt> bugfix with missing value normalization;
+<tt>ncwa</tt> bugfix when weights were not found;</li>
+<li><b>NCO 4.5.1</b>: 
+<tt>cell_method</tt> improvments;
+<tt>ncap2</tt> gets </tt>mibs()/mabs()/mebs()</tt> methods;
+<tt>ncatted</tt> regular expressions in </tt>att_nm</tt>;
+<tt>ncks</tt> regrid using TempestRemap mapfiles;
+<tt>ncra</tt> weights with </tt>--wgt wgt_nm</tt>;</li>
+<li><b>NCO 4.5.0</b>:
+Regridding with <tt>ncks --map</tt>;
+<tt>date/time_written</tt> updates;
+<tt>history</tt> provenance with <tt>-A</tt> (append-mode);
+<tt>ncdismember</tt> uploads to NERC;</li>
+<li><b>NCO 4.4.9</b>: 
+Output chunking map/policy nco/nco = rew/all is default for netCDF3 input;
+Turn-off MM3 workaround for MM3->MM4 copying to speed-up compression-induced chunking;
+LFP chunking uses &ldquo;reasonable defaults&rdquo; when variable smaller than default chunksize;
+Shuffle by default when manually deflating;
+Support CF <tt>climatology</tt> attribute;
+Output chunking defaults to <tt>rew/all</tt> on netCDF3 input;
+Unchunking plays nicely with <tt>shuffle</tt>;
+<tt>ncra</tt> weights with </tt>--wgt 1,2,3</tt>;
+<tt>ncks</tt> suggests <tt>-C</tt> with <tt>-x -v crd</tt>;
+<tt>ncwa</tt> modifies <tt>coordinates</tt> attribute;</li>
+<li><b>NCO 4.4.8</b>:
+Precision-Preserving Compression with <tt>--ppc</tt>;
+Arithmetic operators <tt>-y mabs/mebs/mibs</tt></li>
+<li><b>NCO 4.4.7</b>:
+<tt>cnk_min</tt> minimum chunksize;
+Chunking <tt>cnk_map=rew</tt>;
+Smarter chunking defaults;</li>
+<li><b>NCO 4.4.6</b>: 
+<tt>-0</tt> hyperslabs;
+<tt>configure</tt> DAP correctly;
+HDF4 chunking and deflation;
+netCDF4 stride (NC4_SRD) <a href="#bug_nc4_srd">bugfix</a>;
+<tt>ncap2</tt> command line args with scripts;
+<tt>ncra --dbl</tt> averaging packed variables with missing values <a href="#bug_ncra_dbl_pck_mss">bugfix</a>;
+<tt>ncwa --dbl</tt> minimization/maximization of packed variables <a href="#bug_ncwa_pck_min_max">bugfix</a>;
+<tt>ncks _SOURCE_FORMAT</tt> and <tt>-V</tt>;
+<tt>ncrename</tt> re-write</li>
+<li><b>NCO 4.4.5</b>:
+DAP on <a href="http://nco.sf.net/nco.html#dap">HTTPS</a>;
+<tt>ancillary_variables</tt> for <a href="http://nco.sf.net/nco.html#ncl">CF</a>;
+<tt>ncks --grp_xtr_var_xcl</tt> <a href="http://nco.sf.net/nco.html#gxvx">subsetting</a>
+Chunking <tt>cnk_plc=r1d</tt>;
+Default chunking policy/map is <tt>xst/xst</tt>;
+Fix <tt>ncpdq</tt> dimension-reversal parsing;
+Chunking while hyperslabbing <a href="#bug_cnk_hyp">bugfix</a>;
+Correctly parse MS Windows volume names like <tt>C:\foo</tt></li>
+<li><b>NCO 4.4.4</b>:
+netCDF'ize non-compliant element names;
+<tt>-x var</tt> tolerates non-existence;
+<tt>--rad</tt> <a href="http://nco.sf.net/nco.html#rad">orphan dimensions</a>;
+<tt>ncwa --mask_condition</tt> <a href="#bug_ncwa_mask_condition">bugfix</a></li>
+<li><b>NCO 4.4.3</b>:
+Faster DAP access to strided data;
+<a href="http://nco.sf.net/nco.html#grp_brd">Group broadcasting</a> for ensembles;
+<li><b>NCO 4.4.2</b>:
+CF <tt>cell_methods</tt> support;
+Bugfixes for <tt>nces</tt> memory, LLVM/clang builds, <tt>-X</tt>, RX's with groups, <tt>--cnk_dmn</tt>;</li>
+<li><b>NCO 4.4.1</b>: 
+Group support for <tt>-X</tt> and <tt>--cnk_dmn</tt>;
+Chunk and uncompress simultaneously;
+<tt>ncra/ncea/ncrcat</tt> <a href="#bug_ncra_no_fl_close">bugfix</a></li>
+<li><b>NCO 4.4.0</b>: 
+Optimizations;
+<tt>ncdismember</tt> awesomeness;
+<tt>ncks --hdn</tt>;
+<tt>ncks --fix_rec_dmn=all</tt>;
+<tt>ncks</tt> <a href="http://nco.sf.net/nco.html#autoconv">autoconversion</a>;
+<tt>ncrename</tt> output path;
+<tt>ncra --mro</tt> <a href="#bug_ncra_mro_mss_val">bugfix</a>;
+<tt>ncra/ncrcat</tt> stride bugfix;
+Better <a href="http://nco.sf.net/nco.html#cnk">chunking</a>;
+Group support for <tt>ncwa -w -m</tt>;</li>
+<li><b>NCO 4.3.9</b>:
+New operator <tt>nces</tt>;
+Full XML/NcML compliance;
+<tt>ncatted</tt> NaN bugfix;</li>
+<li><b>NCO 4.3.8</b>:
+<tt>ncatted</tt> group features;</li>
+<li><b>NCO 4.3.7</b>:
+HDF4 <a href="http://nco.sf.net/nco.html#hdf4">support</a>;
+XML/NcML data <a href="http://nco.sf.net/nco.html#xml">support</a>;
+Multiple record dimension <a href="http://nco.sf.net/nco.html#mrd">support</a> with <tt>ncpdq, ncecat --mrd</a></tt>;
+<tt>ncrename</tt> group features;
+<tt>ncap2</tt> file bugfix;
+<tt>ncecat</tt> ID bugfix;
+<tt>ncwa -b</tt> bugfix;</li>
+<li><b>NCO 4.3.6</b>:
+<tt>--flt</tt> default;
+<tt>ncpdq/ncecat</tt> leave only one record dimension;
+<tt>ncwa/nces</tt> bugfixes;
+<tt>ncdismember</tt></li>
+<li><b>NCO 4.3.5</b>: 
+<tt>nces/ncra/ncrcat</tt> groups with <tt>-g -G --unn</tt>;</li>
+<tt>nces/ncra/ncwa</tt> float&rightarrow;double coercion with <tt><a href="http://nco.sf.net/nco.html#dbl">--dbl</a></tt>;</li>
+<tt>ncwa -d</tt> <a href="#bug_ncwa_lmt">bugfix</a>
+<li><b>NCO 4.3.4</b>:
+HDF unpacking <tt>--hdf_upk</tt>;
+<tt>ncpdq</tt> unpacking <a href="#bug_ncpdq_upk">bugfix</a>;
+CDL printing legibility;</li>
+<li><b>NCO 4.3.3</b>:
+CDL printing <tt>ncks --cdl</tt>;
+<tt>ncrename -g</tt>;
+<tt>ncwa</tt> groups with <tt>-g -G --unn</tt>;</li>
+<li><b>NCO 4.3.2</b>:
+<tt>ncflint/ncpdq</tt> groups with </tt>-g -G --unn</tt>;
+<tt>ncks -X</tt> <a href="#bug_ncks_aux">bugfix</a>;</li>
+<li><b>NCO 4.3.1</b>:
+<tt>ncbo</tt> symmetry, group broadcasting;
+<tt>ncbo -G --unn</tt>;
+<tt>ncecat</tt> <a href="http://nco.sf.net/nco.html#rag">RAG</a>;
+<tt>ncbo</tt> CF <a href="#bug_ncbo_ccm_ccsm_cf">bugfix</a>;
+<tt>ncatted</tt> <a href="#bug_ncatted_strcmp">bugfix</a>;
+Windows DAP;</li>
+<li><b>NCO 4.3.0</b>: 
+<tt>ncbo -g</tt> groups;
+<tt>ncatted</tt> NULs;
+<tt>ncap2</tt> rounding;
+<tt>ncks</tt> metadata <a href="#bug_ncks_mtd">bugfix</a></li>
+<li><b>NCO 4.2.6</b>: 
+Record appending with <tt>ncra/ncrcat --rec_apn</tt>;
+<tt>ncflint --fix_rec_crd</tt>;
+RX's in full paths;
+Correct dimension/coordinate scopes;
+<tt>ncks</tt> MM3 workaround;</li>
+<li><b>NCO 4.2.5</b>: 
+<tt>ncks --mk_rec_dmn</tt> <a href="#bug_ncks_mk_rec_dmn">bugfix</a>;
+<tt>ncks</tt> subsetting <a href="#bug_ncks_sbs">bugfix</a></li>
+<li><b>NCO 4.2.4</b>:
+Group <a href="http://nco.sf.net/nco.html#rx">wildcards</a>;
+Group <a href="http://nco.sf.net/nco.html#anchoring">anchoring and recursion</a>;
+Intersection/union <a href="http://nco.sf.net/nco.html#unn">modes</a>;
+<tt>ncrename</tt> global att. handling;
+<tt>nces</tt> <a href="#bug_nces_rec_var">bugfix</a>;
+<tt>ncra</tt> <a href="#bug_ncra_flg_bfr_nrm">bugfix</a></li>
 <li><b>NCO 4.2.3</b>:
 Group Path Editing (GPE);
 <tt>ncecat</tt> <a href="#bug_ncecat_nintap">bugfix</a></li>
@@ -154,7 +392,7 @@ Improve IRIX&nbsp;6.5 support</li>
 <li><b>NCO 3.2.0</b>: More forgiving exclusion list (<tt>-x -v <i>var_nm</i></tt>) <a href="http://nco.sf.net/nco.html#xcl">handling</a>; Fix <tt>rmssdn</tt> normalization; Support Mac OS&nbsp;X on Intel; Documentation bugfixes</li>
 <li><b>NCO 3.1.9</b>: <tt>ncap2</tt> in RPM packages; Quieter output; AIX <tt>configure</tt> supports <tt>ncap2</tt>; Update to DAP for netCDF 3.6.2; Fix <tt>nc[erw]a</tt> for coordinate min/max/ttl; <tt>ncecat</tt> allows files to differ in record dimension size</li>
 <li><b>NCO 3.1.8</b>: Support <tt>_FillValue</tt> with compile-time switch; Debian package synchronized, includes <tt>ncap2</tt></li>
-<li><b>NCO 3.1.7</b>: <tt>ncap2</tt> &ldquo;double-parsing&rdquo;, array initialization, supercedes <tt>ncap</tt></li>
+<li><b>NCO 3.1.7</b>: <tt>ncap2</tt> &ldquo;double-parsing&rdquo;, array initialization, supersedes <tt>ncap</tt></li>
 <li><b>NCO 3.1.6</b>: Support <a href="http://nco.sf.net/nco.html#srd">stride</a> in all hyperslabbing operators; change more WARNINGs to INFOs</li>
 <li><b>NCO 3.1.5</b>: New <tt>ncap2</tt> array and hyperslab features; change some WARNINGs to INFOs, add Pathscale and update PGI and Intel compiler support</li>
 <li><b>NCO 3.1.4</b>: Fix <tt>ncbo</tt> memory problem; report timer results</li>

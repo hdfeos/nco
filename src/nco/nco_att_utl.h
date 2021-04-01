@@ -2,10 +2,10 @@
 
 /* Purpose: Attribute utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_att_utl.h" *//* Attribute utilities */
@@ -18,6 +18,7 @@
 #endif /* !HAVE_CONFIG_H */
 
 /* Standard header files */
+#include <math.h> /* sin cos cos sin 3.14159 isfinite isinf isnan */
 #include <stdio.h> /* stderr, FILE, NULL, printf */
 #include <string.h> /* strcmp() */
 #ifdef HAVE_STRINGS_H
@@ -35,6 +36,7 @@
 #include "nco_ctl.h" /* Program flow control functions */
 #include "nco_lst_utl.h" /* List utilities */
 #include "nco_mmr.h" /* Memory management */
+#include "nco_mta.h" /* Multi-argument parsing */
 #include "nco_mss_val.h" /* Missing value utilities */
 #ifdef _MSC_VER
 # include "nco_rth_flt.h" /* Float-precision arithmetic, MSVC macros */
@@ -52,7 +54,7 @@ nco_aed_prc_wrp /* [fnc] Expand regular expressions then pass attribute edits to
  const int var_id, /* I [id] ID of variable on which to perform attribute editing */
  const aed_sct aed); /* I [sct] Attribute-edit information */
 
-  nco_bool /* [flg] Attribute was altered */
+nco_bool /* [flg] Attribute was altered */
 nco_aed_prc /* [fnc] Process single attribute edit for single variable */
 (const int nc_id, /* I [id] Input netCDF file ID */
  const int var_id, /* I [id] ID of variable on which to perform attribute editing */
@@ -74,6 +76,7 @@ nco_bool /* [flg] Attribute was changed */
 nco_aed_prc_var_all /* [fnc] Process attributes in all variables */
 (const int nc_id, /* I [id] netCDF file ID */
  const aed_sct aed, /* I [sct] Attribute-edit information */
+ const nco_bool flg_typ_mch, /* I [flg] Type-match attribute edits */
  const trv_tbl_sct * const trv_tbl); /* I [lst] Traversal table */ 
 
 nco_bool /* [flg] Attribute was changed */
@@ -183,6 +186,19 @@ nco_xcp_prc /* [fnc] Perform exception processing on this variable */
  const nc_type var_typ, /* I [enm] netCDF type of operand */
  const long var_sz, /* I [nbr] Size (in elements) of operand */
  char * const var_val); /* I/O [sng] Values of operand */
+
+char * /* O [sng] Attribute value */
+nco_char_att_get /* [fnc] Get a character string attribute from an open file */
+(const int in_id, /* I [id] netCDF input-file ID */
+ const int var_id, /* I [id] netCDF variable ID */
+ const char * const att_nm); /* [sng] Attribute name */
+
+int /* O [rcd] Return code */
+nco_char_att_put /* [fnc] Get a character string attribute from an open file */
+(const int out_id, /* I [id] netCDF output-file ID */
+ const char * const var_nm_sng, /* [sng] Variable name */
+ const char * const att_nm_sng, /* [sng] Attribute name */
+ const char * const att_val_sng); /* [sng] Attribute value */
 
 #ifdef __cplusplus
 } /* end extern "C" */

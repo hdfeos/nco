@@ -2,10 +2,10 @@
 
 /* Purpose: OpenMP utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_omp.h" *//* OpenMP utilities */
@@ -31,6 +31,20 @@
 /* Personal headers */
 #include "nco.h" /* netCDF Operator (NCO) definitions */
 #include "nco_ctl.h" /* Program flow control functions */
+
+#ifdef _OPENMP
+# ifndef OPENMP_LEGACY
+#  ifndef OPENMP_TARGET
+/* Unless OPENMP_LEGACY is defined, assume OpenMP library supports target offloading... */
+#   define OPENMP_TARGET
+#  endif /* !OPENMP_TARGET */
+# else /* !OPENMP_LEGACY */
+/* ...otherwise assume OpenMP library supports only SMP on host... */
+#  ifndef OPENMP_HOST
+#   define OPENMP_HOST
+#  endif /* !OPENMP_HOST */
+# endif /* !OPENMP_LEGACY */
+#endif /* !_OPENMP */
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,6 +74,12 @@ int /* O [enm] Return code */
 nco_var_prc_crr_prn /* [fnc] Print name of current variable */
 (const int idx, /* I [idx] Index of current variable */
  const char * const var_nm); /* I [sng] Variable name */
+
+void
+nco_omp_chk(const char *smsg);
+
+void
+nco_omp_for_chk(const char *smsg);
 
 #ifdef __cplusplus
 } /* end extern "C" */

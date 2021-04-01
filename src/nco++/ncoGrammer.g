@@ -3,10 +3,10 @@ header {
 
 /* Purpose: ANTLR Grammar and support files for ncap2 */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
     // C Standard Headers
     #include <assert.h>
@@ -24,9 +24,12 @@ header {
     #include <fstream>
     #include <string>
   
+    // custom exception -used for "exit" function
+    #include "ExitException.hpp" 
     // Custom Headers
     #include "prs_cls.hh"
     #include "ncap2_utl.hh"
+    #include "ncap2_att.hh"
     #include "fmc_cls.hh"
     #include "NcapVar.hh"
     #include "NcapVarVector.hh"
@@ -58,6 +61,7 @@ tokens {
     BLOCK;
     ARG_LIST;
     DMN_LIST;
+    DMN_LIST_P;
     DMN_ARG_LIST;
     LMT_LIST;
     VALUE_LIST;
@@ -99,7 +103,7 @@ statement:
             #statement = #(#[EXPR,"EXPR"],#statement); 
         }
         
-        // Define DEFDIM statment 
+        // Define DEFDIM statement 
         // DEFDIMA (regular call - limited or unlimited ) DEFDIM(1)
         // DEFDIMU (explicitly unlimited)                 DEFDIM(0)
         | (def1:DEFDIMA^ |def2:DEFDIMU^  ) LPAREN! NSTRING COMMA! expr (COMMA! expr)?  RPAREN! SEMI! { 
@@ -107,6 +111,8 @@ statement:
              if( #def2 ){  #def2->setType(DEFDIM);#def2->setText("0");}
  
         }
+        //exit statement 
+        | EXIT^ LPAREN! expr RPAREN! SEMI!
         // while loop
         | WHILE^ LPAREN! expr RPAREN! statement 
         // for statement
@@ -116,7 +122,7 @@ statement:
         | CONTINUE SEMI!        
         //deal with empty statement
         | SEMI! { #statement = #([ NULL_NODE, "null_stmt"]); } 
-
+         
         // if statement
         | IF^ LPAREN! expr RPAREN! statement 
          ( //standard if-else ambiguity
@@ -127,8 +133,6 @@ statement:
          ( //standard if-else ambiguity
          options {warnWhenFollowAmbig = false;} 
         : ELSEWHERE! statement )?
-        // print statement
-        | PRINT^ LPAREN! (VAR_ID|ATT_ID|NSTRING) (COMMA! NSTRING)?  RPAREN! SEMI! 
         // Code block
         | block
    ;        
@@ -159,8 +163,13 @@ lmt_list: LPAREN! lmt (COMMA! lmt)*  RPAREN!
 // Use vars in dimension list so dims in [] can
 // be used with or with out $ prefix. ie "$lon" or "lon" 
 // So parser is compatible with ncap1
+dmn_list_p:
+   LSQUARE! (VAR_ID|DIM_ID)? (COMMA! (VAR_ID|DIM_ID))* RSQUARE!
+      { #dmn_list_p = #( [DMN_LIST_P, "dmn_list_p"], #dmn_list_p ); }
+    ;
+
 dmn_list:
-   LSQUARE! (VAR_ID|DIM_ID) (COMMA! (VAR_ID|DIM_ID))* RSQUARE!
+   LPAREN! (DIM_ID) (COMMA! DIM_ID)* RPAREN!
       { #dmn_list = #( [DMN_LIST, "dmn_list"], #dmn_list ); }
     ;
 
@@ -182,7 +191,7 @@ func_arg:  LPAREN! (arg_list)? (COMMA! arg_list)*   RPAREN!
       { #func_arg = #( [FUNC_ARG, "func_arg"], #func_arg ); }
      ;   
 
-hyper_slb: (VAR_ID^ |ATT_ID ^) (lmt_list|dmn_list)?
+hyper_slb: (VAR_ID^ |ATT_ID ^) (lmt_list|dmn_list|dmn_list_p)?
      ;
 
 // call by reference - prefix &
@@ -190,8 +199,12 @@ call_ref: CALL_REF^(VAR_ID|ATT_ID)
      ;
 
 /*************************************************************/
-/* start  expressions */
-meth_exp: primary_exp (DOT^ FUNC func_arg)*
+
+top_exp: ur:TIMES^ {#ur->setType(UTIMES);#ur->setText("UTIMES");}  top_exp
+             | primary_exp
+     ;  
+             
+meth_exp: top_exp (DOT^ FUNC func_arg)*
      ;
 
 // unary left association   
@@ -204,17 +217,16 @@ unaryleft_exp: meth_exp (
     ;
 
 // unary right association   
-/*
-unary_exp:  ( LNOT^| PLUS^| MINUS^ |INC^ | DEC^ | TIMES^ ) unary_exp
+unary_exp:  ( LNOT^| PLUS^| MINUS^ |INC^ | DEC^ ) unary_exp
             | unaryleft_exp
 	;
-*/
 
+/*
 unary_exp:  ( LNOT^| PLUS^| MINUS^ |INC^ | DEC^ 
              | ur:TIMES^ {#ur->setType(UTIMES);#ur->setText("UTIMES");} ) unary_exp
              | unaryleft_exp
     ;    
-
+*/
 // right association
 pow_exp: unary_exp (CARET^ pow_exp )? 
     ;
@@ -264,18 +276,18 @@ ass_expr: cond_expr ( ( ASSIGN^
 expr:   ass_expr
     ;    
         
-    
+// 20151021 csz Prefixed some tokens with NCO_ to prevent namespace conflicts with MSVC definitions in windef.h    
 primary_exp
-    : FLOAT    
-    | DOUBLE
-    | INT
-    | BYTE
-    | UBYTE    
-    | SHORT
-    | USHORT
-    | UINT
-    | INT64
-    | UINT64
+    : NCAP_FLOAT
+    | NCAP_DOUBLE
+    | NCAP_INT
+    | NCAP_BYTE
+    | NCAP_UBYTE    
+    | NCAP_SHORT
+    | NCAP_USHORT
+    | NCAP_UINT
+    | NCAP_INT64
+    | NCAP_UINT64
     | NSTRING
     | N4STRING    
     | DIM_ID_SIZE
@@ -316,9 +328,9 @@ tokens {
     WHILE="while";    
     FOR="for";
    
-    PRINT="print";  
     DEFDIMA="defdim";
     DEFDIMU="defdimunlim";
+    EXIT="exit";
  
     /*
 
@@ -336,12 +348,22 @@ tokens {
 {
 private:
     prs_cls *prs_arg;
+    std::vector<std::string> paths_vtr;      
+
 public:
 
     // Customized constructor !!
    ncoLexer(ANTLR_USE_NAMESPACE(std)istream& in, prs_cls *prs_in )
    : ANTLR_USE_NAMESPACE(antlr)CharScanner(new ANTLR_USE_NAMESPACE(antlr)CharBuffer(in),true)
-   {
+   {    
+        char *spaths;
+
+        /* a list of include paths delimited by ':' */   
+        /* if nco NCO_PATH then NULL */
+        spaths=getenv("NCO_PATH");  
+        if( spaths &&  strlen(spaths) >0  ) 
+          paths_vtr=ncap_make_include_paths(spaths);
+
         prs_arg=prs_in;
         // This shouldn't really be here 
         // fxm:: should call default constructor
@@ -354,7 +376,10 @@ public:
             // Do not allow EOF until main lexer 
             // Force selector to retry for another token
             parser->inc_vtr.pop_back();
-            std::cout<<"Setting parser(filename)=" <<parser->inc_vtr.back()<<std::endl; 
+
+            if(nco_dbg_lvl_get() >= 1)
+               std::cout<<"Setting parser(filename)=" <<parser->inc_vtr.back()<<std::endl; 
+
             parser->setFilename(parser->inc_vtr.back());
 			selector.pop(); // return to old lexer/stream
 			selector.retry();
@@ -439,11 +464,13 @@ DOT options {paraphrase="dot operator";} : '.';
 
 CALL_REF options {paraphrase="call by reference";} : '&';
 
+
+
 protected DGT:     ('0'..'9');
 protected LPH:     ( 'a'..'z' | 'A'..'Z' | '_' );
 protected LPHDGT:  ( 'a'..'z' | 'A'..'Z' | '_' | '0'..'9');
 protected XPN:     ( 'e' | 'E' ) ( '+' | '-' )? ('0'..'9')+ ;
-protected VAR_NM_QT: (LPHDGT|'-'|'+'|'.'|'('|')'|':' )+  ;      
+protected VAR_NM_QT: (LPHDGT|'-'|'+'|'.'|'('|')'|':'|' ' )+  ;      
 
 protected BLASTOUT: .
          {
@@ -499,37 +526,39 @@ C_COMMENT options {paraphrase="a C-style comment"; }
 // csz: Treat "l" or "L" following decimal point as "long double" as per C++
 NUMBER_DOT options {paraphrase="a floating point number"; } 
     :
-      '.' (DGT)+ (XPN)? { $setType(DOUBLE); }  
-      ( ('D'|'d')!     {  $setType(DOUBLE);}
-       |('F'|'f')!     {  $setType(FLOAT);}
-       |('L'|'l')!     {  $setType(DOUBLE);}
+      '.' (DGT)+ (XPN)? { $setType(NCAP_DOUBLE); }  
+      ( ('D'|'d')!     {  $setType(NCAP_DOUBLE);}
+       |('F'|'f')!     {  $setType(NCAP_FLOAT);}
+       |('L'|'l')!     {  $setType(NCAP_DOUBLE);}
       )?        
     ;
 
 NUMBER:
-	(DGT)+	{ $setType(INT); }
-	( ( '.'  (DGT)* ((XPN)? | ('L'|'l')! )) { $setType(DOUBLE); } // 3.14e0, 3.14L, 3.14l
-       | (XPN)         { $setType(DOUBLE);} // 3e0
-       | ('L'|'l')!    { $setType(INT);   } // 3l, 3L
-       | ('S'|'s')!    { $setType(SHORT); } // 3s, 3S
-       | ('B'|'b')!    { $setType(BYTE);  } // 3b, 3B
-       | ("UB"|"ub")!  { $setType(UBYTE); } // 3ub, 3UB
-       | ("US"|"us")!  { $setType(USHORT); } // 3us, 3US
-       | ('U'|'u'|"UL"|"ul")!    { $setType(UINT); } // 3u, 3U, 3ul, 3UL
-       | ("LL"|"ll")!  { $setType(INT64); } // 3ll, 3LL
-       | ("ULL"|"ull")!  { $setType(UINT64); } // 3ull, 3ULL
+	(DGT)+	{ $setType(NCAP_INT); }
+	( ( '.'  (DGT)* ((XPN)? | ('L'|'l')! )) { $setType(NCAP_DOUBLE); } // 3.14e0, 3.14L, 3.14l
+       | (XPN)         { $setType(NCAP_DOUBLE);} // 3e0
+       | ('L'|'l')!    { $setType(NCAP_INT);   } // 3l, 3L
+       | ('S'|'s')!    { $setType(NCAP_SHORT); } // 3s, 3S
+       | ('B'|'b')!    { $setType(NCAP_BYTE);  } // 3b, 3B
+       | ("UB"|"ub")!  { $setType(NCAP_UBYTE); } // 3ub, 3UB
+       | ("US"|"us")!  { $setType(NCAP_USHORT); } // 3us, 3US
+       | ('U'|'u'|"UL"|"ul")!    { $setType(NCAP_UINT); } // 3u, 3U, 3ul, 3UL
+       | ("LL"|"ll")!  { $setType(NCAP_INT64); } // 3ll, 3LL
+       | ("ULL"|"ull")!  { $setType(NCAP_UINT64); } // 3ull, 3ULL
     )?
-    (    ('F'|'f')!    { $setType(FLOAT); } // 3F, 3f
-       | ('D'|'d')!    { $setType(DOUBLE);} // 3D, 3d
+    (    ('F'|'f')!    { $setType(NCAP_FLOAT); } // 3F, 3f
+       | ('D'|'d')!    { $setType(NCAP_DOUBLE);} // 3D, 3d
     )?        
 ;
+
+
 
 
 // Return var or att (var_nm@att_nm)
 VAR_ATT options {testLiterals=true; paraphrase="variable or function or attribute identifier"; } 
      :  (LPH)(LPH|DGT)*   
             {
-             // try to intelligently guess the type to avoid un-necessary function search  
+             // try to intelligently guess the type to avoid un-necessary function search    
             bool bDoSearch;
             switch( LA(1) ){
                case ' ': 
@@ -542,6 +571,10 @@ VAR_ATT options {testLiterals=true; paraphrase="variable or function or attribut
                  bDoSearch=false;
                  $setType(ATT_ID);
                  break;    
+               case '[':
+                 bDoSearch=false;
+                 $setType(VAR_ID); 
+                 break;   
                default: 
                  bDoSearch=false;
                  $setType(VAR_ID);
@@ -571,6 +604,17 @@ VAR_ATT_QT :( '\''!)
              ('\''!)
    ;     
 
+// return a STR_ATT_ID
+ATT_ID:  '@'(LPH)(LPH|DGT)* {string an=$getText;$setText("global"+an);$setType(ATT_ID);}
+;
+
+// Return a quoted STR_ATT_ID
+STR_ATT_QT :( '\''!)
+              '@' VAR_NM_QT {$setType(STR_ATT_QT);}
+             ('\''!)
+;     
+
+
 //Return a quoted dim
 DIM_QT: ( '\''!)
            ('$'! VAR_NM_QT {$setType(DIM_ID);})
@@ -585,6 +629,7 @@ DIM_VAL options { paraphrase="dimension identifier"; }
             { $setType(DIM_ID_SIZE);}
          )? 
    ;  
+
 
 // Shorthand for naming dims in method e.g., $0,$1, $2 etc
 DIM_MTD_ID 
@@ -604,11 +649,27 @@ INCLUDE
 		{
 		// ANTLR_USING_NAMESPACE(std)
 		// create lexer to handle include
+        int idx; 
+        int sz=paths_vtr.size(); 
 		std::string f_nm=f->getText();
+
 		std::ifstream* input=new std::ifstream(f_nm.c_str());
+        // if(*input==NULL){ // 20150413: Trips clang 6.0 MACOSX Yosemite warning from -Wnull-arithmetic and subsequent error "invalid operands to binary expression" 
 		if(!(*input)){
-            //		if(*input==NULL){ // 20150413: Trips clang 6.0 MACOSX Yosemite warning from -Wnull-arithmetic and subsequent error "invalid operands to binary expression" 
-            err_prn("Lexer cannot find include file "+f_nm);
+          // only search include paths if f_nm NOT an absolute path  
+          // add include paths and stop if opened ok  
+          if( sz==0 || f_nm[0]=='/')  
+              err_prn("Lexer cannot find include file \""+f_nm+"\""); 
+             
+          for(idx=0;idx<sz;idx++)
+          {   
+              input=new std::ifstream( (paths_vtr[idx] + f_nm).c_str()); 
+              if(*input)
+                break;  
+          }
+          if(idx==sz) 
+             err_prn("Lexer cannot find the include file \""+f_nm+ "\" in the locations specified in the env-var \"NCO_PATH\""); 
+
 		}
 		ncoLexer* sublexer = new ncoLexer(*input,prs_arg);
 		// make sure errors are reported in right file
@@ -685,7 +746,8 @@ vector<ast_lmt_sct> &ast_lmt_vtr)
       nbr_dmn=lmt_peek(aRef);      
       //nbr_dmn=lRef->getNumberOfChildren();
 
-      for(idx=0 ; idx < nbr_dmn ; idx++){
+      for(idx=0 ; idx < nbr_dmn ; idx++)
+      {
          hyp.ind[0]=ANTLR_USE_NAMESPACE(antlr)nullAST;
          hyp.ind[1]=ANTLR_USE_NAMESPACE(antlr)nullAST;
          hyp.ind[2]=ANTLR_USE_NAMESPACE(antlr)nullAST;
@@ -693,19 +755,22 @@ vector<ast_lmt_sct> &ast_lmt_vtr)
        if(lRef->getType()!=LMT) 
             return 0;
        
-        eRef=lRef->getFirstChild();
-        nbr_cln=0;
+       eRef=lRef->getFirstChild();
+       nbr_cln=0;
         
-       while(eRef) {
-          if(eRef->getType() == COLON){
+       while(eRef) 
+       {
+          if(eRef->getType() == COLON)
+          {
             cRef=eRef;        
             nbr_cln++;
           }
            eRef=eRef->getNextSibling();
         }
       
-      // Initialise  to default markers
-       switch(nbr_cln) {
+       // Initialise  to default markers
+       switch(nbr_cln) 
+       {
           case 0: 
              break;
                 
@@ -723,9 +788,11 @@ vector<ast_lmt_sct> &ast_lmt_vtr)
         }
 
        eRef=lRef->getFirstChild();
+
        // point inidices to any expressions that exist
-        nbr_cln=0;
-       while(eRef) {
+       nbr_cln=0;
+       while(eRef) 
+       {
           if(eRef->getType() == COLON) 
              nbr_cln++; 
            else   
@@ -735,101 +802,216 @@ vector<ast_lmt_sct> &ast_lmt_vtr)
        }
        // save indices 
        ast_lmt_vtr.push_back(hyp);
-
        lRef=lRef->getNextSibling();
-     }
+
+      }
+
      return nbr_dmn;
 } 
 
-int 
+bool
+lmt_var_mk(
+int nbr_dmn,
+RefAST lmt,
+NcapVector<lmt_sct*> &lmt_vtr ) 
+{
+	long idx;
+	long jdx;
+	long sz;   
+    long dmn_sz;     
+	var_sct *var;
+	std::string fnc_nm="lmt_var_mk"; 
+	
+	
+	// calculate variables
+	var=out(lmt->getFirstChild()->getFirstChild());
+	// convert result to type int
+	var=nco_var_cnf_typ(NC_INT64,var);    
+	(void)cast_void_nctype((nc_type)NC_INT64,&var->val);
+	sz=var->sz;
+	dmn_sz=var->sz / nbr_dmn;
+    
+    if(nco_dbg_lvl_get() >= nco_dbg_scl)
+       dbg_prn("lmt_var_mk","using hyperslab indices from a single var"); 
+
+    // shape of var must be (nbr_dmn) or (nbr_dmn,2) or (nbr_dmn,3) 
+    if( dmn_sz * nbr_dmn != sz )
+	{
+	  var=nco_var_free(var);
+      return false;  
+    }
+
+    
+	
+    for(idx=0; idx<sz;idx+=dmn_sz)
+	 {
+
+		// fill out lmt structure
+		// use same logic as nco_lmt_prs 
+		lmt_sct* lmt_ptr=(lmt_sct*)nco_calloc((size_t)1,sizeof(lmt_sct));
+		lmt_ptr->nm=NULL;
+		//lmt_ptr->lmt_typ=-1;
+		lmt_ptr->is_usr_spc_lmt=True; /* True if any part of limit is user-specified, else False */
+		lmt_ptr->min_sng=NULL;
+		lmt_ptr->max_sng=NULL;
+		lmt_ptr->srd_sng=NULL;
+		lmt_ptr->is_usr_spc_min=False;
+		lmt_ptr->is_usr_spc_max=False;
+		/* rec_skp_ntl_spf is used for record dimension in multi-file operators */
+		lmt_ptr->rec_skp_ntl_spf=0L; /* Number of records skipped in initial superfluous files */
+
+	   
+       for(jdx=0;jdx<dmn_sz;jdx++)
+		{     
+		  
+         nco_int64 ival= var->val.i64p[idx+jdx];
+         switch(jdx){
+           case 0: 
+             lmt_ptr->is_usr_spc_min=True;
+             lmt_ptr->srt=ival;
+             break;
+           case 1: //end
+             lmt_ptr->is_usr_spc_max=True;
+             lmt_ptr->end=ival;             break;
+           case 2: //srd
+             lmt_ptr->srd_sng=strdup("~fill_in");
+             lmt_ptr->srd=ival;
+             break;			
+	       }
+
+		}
+		/* need to deal with situation where only start is defined -- ie picking only a single value */
+		if( lmt_ptr->is_usr_spc_min==True && lmt_ptr->is_usr_spc_max==False && lmt_ptr->srd_sng==NULL)
+		{
+			lmt_ptr->is_usr_spc_max=True;
+			lmt_ptr->end=lmt_ptr->srt; 
+       }    
+
+       lmt_vtr.push_back(lmt_ptr);		
+	}
+	 
+	cast_nctype_void((nc_type)NC_INT64,&var->val);
+	var=nco_var_free(var);  
+	
+   return true;
+
+}
+
+
+
+bool 
 lmt_mk(
+int nbr_dmn,
 RefAST lmt,
 NcapVector<lmt_sct*> &lmt_vtr ) 
 {   
-int nbr_dmn;
+
 int idx;
 int jdx;
+long ldx=0L;
+var_sct *var_out;
 lmt_sct *lmt_ptr;
 RefAST aRef;
-
 vector<ast_lmt_sct> ast_lmt_vtr;
 
+// deal with a single expression containing all indicies
+if(lmt->getNumberOfChildren()==1 && 
+   lmt->getFirstChild()->getNumberOfChildren()==1 &&
+   lmt->getFirstChild()->getFirstChild()->getType() != COLON)
+{
+   return lmt_var_mk(nbr_dmn,lmt,lmt_vtr);   ;            
+}
+
+
 // populate ast_lmt_vtr
-nbr_dmn=lmt_init(lmt,ast_lmt_vtr);
+if(nbr_dmn != lmt_init(lmt,ast_lmt_vtr))
+    return false;	
 
-  for(idx=0 ; idx <nbr_dmn ; idx++){
+for(idx=0;idx<nbr_dmn;idx++){
 
-     // fill out lmt structure
-     // use same logic as nco_lmt_prs 
-     lmt_ptr=(lmt_sct*)nco_calloc((size_t)1,sizeof(lmt_sct));
-     lmt_ptr->nm=NULL;
-     //lmt_ptr->lmt_typ=-1;
-     lmt_ptr->is_usr_spc_lmt=True; /* True if any part of limit is user-specified, else False */
-     lmt_ptr->min_sng=NULL;
-     lmt_ptr->max_sng=NULL;
-     lmt_ptr->srd_sng=NULL;
-     lmt_ptr->is_usr_spc_min=False;
-     lmt_ptr->is_usr_spc_max=False;
-     /* rec_skp_ntl_spf is used for record dimension in multi-file operators */
-     lmt_ptr->rec_skp_ntl_spf=0L; /* Number of records skipped in initial superfluous files */
+    // fill out lmt structure
+    // use same logic as nco_lmt_prs 
+    lmt_ptr=(lmt_sct*)nco_calloc((size_t)1,sizeof(lmt_sct));
+    lmt_ptr->nm=NULL;
+    //lmt_ptr->lmt_typ=-1;
+    lmt_ptr->is_usr_spc_lmt=True; /* True if any part of limit is user-specified, else False */
+    lmt_ptr->min_sng=NULL;
+    lmt_ptr->max_sng=NULL;
+    lmt_ptr->srd_sng=NULL;
+    lmt_ptr->is_usr_spc_min=False;
+    lmt_ptr->is_usr_spc_max=False;
+    /* rec_skp_ntl_spf is used for record dimension in multi-file operators */
+    lmt_ptr->rec_skp_ntl_spf=0L; /* Number of records skipped in initial superfluous files */
 
-    for(jdx=0 ; jdx <3 ; jdx++){
-      long ldx=0L;
-      var_sct *var_out;
+    // for a var limit  with a single index (or var) -(1D or nD) this case is handled by lmt_var_mk
+    //  we are here when  there is a single index for one of an nD specification
+    // a single limit mean a single index -by the parser this is 
+    // guaranteed to be non null  (that is ast_lmt_vtr[idx].ind[0] not null) 
+    if( ast_lmt_vtr[idx].ind[1]==ANTLR_USE_NAMESPACE(antlr)nullAST)
+    {  
+      var_out=out( ast_lmt_vtr[idx].ind[0] );
+      // convert result to type int
+      var_out=nco_var_cnf_typ(NC_INT64,var_out);    
+      (void)cast_void_nctype((nc_type)NC_INT64,&var_out->val);
+      // only interested in the first value.
+      ldx=var_out->val.i64p[0];
+      var_out=nco_var_free(var_out);
+
+      lmt_ptr->is_usr_spc_min=True;
+      lmt_ptr->srt=ldx;
+            
+      lmt_ptr->is_usr_spc_max=True;
+      lmt_ptr->end=ldx; 
+
+    } 
+    else 
+
+    for(jdx=0 ; jdx <3 ; jdx++)
+    {
 
       aRef=ast_lmt_vtr[idx].ind[jdx];
 
-      if(aRef && aRef->getType() != COLON ){
-        // Calculate number using out()
-        var_out=out(aRef);
-        // convert result to type int
-        var_out=nco_var_cnf_typ(NC_INT,var_out);    
-        (void)cast_void_nctype((nc_type)NC_INT,&var_out->val);
+      if(!aRef || aRef->getType() == COLON)
+        continue;
+
+      // Calculate number using out()
+      var_out=out(aRef);
+      // convert result to type int
+      var_out=nco_var_cnf_typ(NC_INT64,var_out);    
+      (void)cast_void_nctype((nc_type)NC_INT64,&var_out->val);
          // only interested in the first value.
-        ldx=var_out->val.ip[0];
-        var_out=nco_var_free(var_out);
-        
-        // switch jdx 0-srt,1-end,2-srd
-        switch(jdx){
+      ldx=var_out->val.i64p[0];
+      var_out=nco_var_free(var_out);
+
+      // switch jdx 0-srt,1-end,2-srd
+      switch(jdx)
+      {
+          //srt
           case 0: 
-             lmt_ptr->is_usr_spc_min=True;
-             lmt_ptr->srt=ldx;
-             break;
-          case 1: //end
-             lmt_ptr->is_usr_spc_max=True;
-             lmt_ptr->end=ldx;
-             break;
-          case 2: //srd
-             lmt_ptr->srd_sng=strdup("~fill_in");
-             lmt_ptr->srd=ldx;         
-             break;
-        }
+              lmt_ptr->is_usr_spc_min=True;
+              lmt_ptr->srt=ldx;
+              break;
+          // end
+          case 1: 
+              lmt_ptr->is_usr_spc_max=True;
+              lmt_ptr->end=ldx;
+              break;
+          //srd 
+          case 2: 
+              lmt_ptr->srd_sng=strdup("~fill_in");
+              lmt_ptr->srd=ldx;         
+              break;
       }
-    }// end jdx
-         
-    /* need to deal with situation where only start is defined -- ie picking only a single value */
-    if( lmt_ptr->is_usr_spc_min==True && lmt_ptr->is_usr_spc_max==False && lmt_ptr->srd_sng==NULL){
-        lmt_ptr->is_usr_spc_max=True;
-        lmt_ptr->end=lmt_ptr->srt; 
-    }    
+
+    }  
 
     lmt_vtr.push_back(lmt_ptr);
   } // end idx
 
-   return nbr_dmn;
+   return true;;
 } /* end lmt_mk */
 
-/* Legacy run -- will remove soon
-public:
-    void run(RefAST tr){
-        while(tr) {
-          (void)statements(tr);   
-          tr=tr->getNextSibling();   
-        }
-    }
-*/
 
-public:
     void run_dbl(RefAST tr,int icnt){
      int idx=0;
      RefAST ntr=tr;
@@ -841,11 +1023,20 @@ public:
      int wlk_nbr);
 
      if(tr== ANTLR_USE_NAMESPACE(antlr)nullAST)
-        err_prn("run_dbl"," REPORTS given a null AST Refrence\n");
+        err_prn("run_dbl"," REPORTS given a null AST Reference\n");
             
      //small list dont bother with double parsing     
-     if(icnt <4) goto small;
-
+     // just do a final parse
+     if(icnt <4){
+       //Final scan
+       prs_arg->ntl_scn=False;
+       while(idx++ < icnt){
+          (void)statements(ntr);   
+          ntr=ntr->getNextSibling();   
+       }
+       return; 
+     }
+     
      //Initial scan
      prs_arg->ntl_scn=True;
      while(idx++ < icnt){
@@ -861,42 +1052,40 @@ public:
     // see if below does anything ? 
     (void)nco_sync(prs_arg->out_id); 
 
-
+    //Final scan
+    if(!prs_arg->NCAP_MPI_SORT)
+    { 
+      idx=0;
+      ntr=tr;
+      prs_arg->ntl_scn=False;
+      while(idx++ < icnt){
+        (void)statements(ntr);   
+        ntr=ntr->getNextSibling();   
+      }
+    }
+    else
+    {  
     // Sort expressions - MPI preparation
-    if(prs_arg->NCAP_MPI_SORT){  
        prs_arg->ntl_scn=False;
       // nb A vector of vectors
       std::vector< std::vector<RefAST> > all_ast_vtr;
       ncoTree **wlk_vtr=(ncoTree**)NULL; 
 
       // Populate and sort  vector 
-      (void)ncap_mpi_srt(tr,icnt,all_ast_vtr,prs_arg);
-       
+      (void)ncap_mpi_srt(tr,icnt,all_ast_vtr,prs_arg);   
       // Evaluate expressions (execute)
       (void)ncap_omp_exe(all_ast_vtr,wlk_vtr,0);  
-      
+
       /*  
       for(unsigned vtr_idx=0 ; vtr_idx<all_ast_vtr.size(); vtr_idx++)
         for(unsigned jdx=0 ; jdx<all_ast_vtr[vtr_idx].size(); jdx++)
 	     (void)statements(all_ast_vtr[vtr_idx][jdx]);
       */
-      
-    goto end;
-    } //end if
+    }
+    return; 
 
-small: 
-     idx=0;
-     ntr=tr;
-     //Final scan
-     prs_arg->ntl_scn=False;
-     while(idx++ < icnt){
-       (void)statements(ntr);   
-       ntr=ntr->getNextSibling();   
-     }
-end: ;
-   }
-
-public:
+    }
+ 
     int run_exe(RefAST tr, int nbr_dpt){
     // number of statements in block
     int nbr_stmt=0;
@@ -929,7 +1118,7 @@ public:
     for(idx=0 ; idx < nbr_stmt; idx++){
       ntyp=ntr->getType();
       // we have hit an IF or a basic block
-      if(ntyp==BLOCK || ntyp==IF ||ntyp==DEFDIM || ntyp==WHILE ||ntyp==FOR || ntyp==FEXPR ||ntyp==WHERE) {
+      if(ntyp==BLOCK || ntyp==IF ||ntyp==DEFDIM || ntyp==WHILE ||ntyp==FOR || ntyp==FEXPR ||ntyp==WHERE || ntyp==EXIT) {
       //  if(ntyp != EXPR ){ 
         if(icnt>0) 
          (void)run_dbl(etr,icnt);
@@ -955,12 +1144,11 @@ exit: return iret;
 
     } // end run_exe
 
-public:
 RefAST nco_dupList(RefAST tr){
       RefAST otr;  
       // nb astFactory is protected- must call from within class
       otr=astFactory->dupList(tr);      
-      otr->setNextSibling( ANTLR_USE_NAMESPACE(antlr)nullAST ) ;
+      //otr->setNextSibling( ANTLR_USE_NAMESPACE(antlr)nullAST ) ;
       /*  
       if(otr->getNextSibling()!= ANTLR_USE_NAMESPACE(antlr)ASTNULL )     
         err_prn("nco_dupList", "NON NULL AST SIBLING\n");
@@ -999,26 +1187,23 @@ static std::vector<std::string> lpp_vtr;
             
                 }
 
-    | #(exp:EXPR ass:.) {
-       RefAST tr;
-       RefAST ntr;  
+    | #(exp:EXPR ass:.) 
+     {
+       int aType; 
        
-       if(ass->getType()==ASSIGN && prs_arg->ntl_scn ){
-         ntr=ass->getFirstChild();
-         if(ntr->getType()==UTIMES) 
-           ntr=ntr->getFirstChild();
-        
-         if(ntr->getType() == VAR_ID || ntr->getType() ==ATT_ID){
-            ntr->addChild( astFactory->create(NORET,"no_ret") );
-           // std::cout << "Modified assign "<<exp->toStringTree()<<std::endl;      
-         }
-       } 
+       aType=ass->getType(); 
+
+     
+      
+      if( aType==ASSIGN || aType==POST_INC || aType==POST_DEC || aType==INC || aType==DEC||aType==PLUS_ASSIGN || aType==MINUS_ASSIGN || aType==TIMES_ASSIGN || aType==DIVIDE_ASSIGN )
+            ass->setText("NO_RET"); 
 
        var=out(exp->getFirstChild());
+
        if(var != (var_sct*)NULL)
          var=nco_var_free(var);
        iret=EXPR;
-     }
+    }
 
     // These expressions excute in their own basic blocks
     // Any expressions  which use the utility functions
@@ -1029,6 +1214,8 @@ static std::vector<std::string> lpp_vtr;
        if(var != (var_sct*)NULL)
          var=nco_var_free(var);
        iret=FEXPR;
+
+       dbg_prn(fnc_nm,"executed FEXPR "+ fss->getText());    
      }
 
     | #(IF var=out stmt:. ) {
@@ -1084,7 +1271,7 @@ static std::vector<std::string> lpp_vtr;
         where_assign(stmt3,var);
     
       // deal with else-where
-      if(tr=stmt3->getNextSibling()) {
+      if((tr=stmt3->getNextSibling())!=ANTLR_USE_NAMESPACE(antlr)nullAST) {
 
         //invert mask
         var=ncap_var_var_stc(var,NULL_CEWI,LNOT); 
@@ -1185,6 +1372,23 @@ static std::vector<std::string> lpp_vtr;
         
     } // end  for action
 
+    // throw a custom ExitException 
+    | #(EXIT var=out ) { 
+      int sret;
+      ostringstream os;       
+      
+      // convert to INT   
+      nco_var_cnf_typ(NC_INT,var);  
+      cast_void_nctype(NC_INT,&var->val);
+      sret=var->val.ip[0];
+      cast_nctype_void(NC_INT,&var->val);
+      var=nco_var_free(var); 
+      
+      iret=EXIT; 
+      os<<sret;
+      throw  ANTLR_USE_NAMESPACE(antlr)ExitException(os.str());
+
+    }
     | ELSE { iret=ELSE;}
     | BREAK { iret=BREAK;}
     | CONTINUE {iret=CONTINUE;} 
@@ -1211,8 +1415,7 @@ static std::vector<std::string> lpp_vtr;
           bunlimited =true;
         } else    
         if(dCall==1 && var2){
-           int ityp;
-           // nb var2 is in upper scope - defined at statment action start
+           // nb var2 is in upper scope - defined at statement action start
            var2=nco_var_cnf_typ(NC_INT,var2);
            (void)cast_void_nctype(NC_INT,&var2->val);
            ityp=var2->val.ip[0]; 
@@ -1229,126 +1432,11 @@ static std::vector<std::string> lpp_vtr;
         } 
 
         (void)ncap_def_dim(def->getText(),sz,bunlimited,prs_arg);
-     }
-
-    // All the following functions have iret=0
-    | (#(PRINT VAR_ID))=> #(PRINT pvid:VAR_ID){
-
-          int var_id;
-          int fl_id=-1;
-          char *fmt_sng;
-         
-          std::string va_nm(pvid->getText());
-          NcapVar *Nvar;
-          
-          if(prs_arg->ntl_scn) goto end2;
-          Nvar=prs_arg->var_vtr.find(va_nm);
-
-          if(Nvar && Nvar->flg_mem){   
-            wrn_prn(fnc_nm,"Cannot print out RAM variables at the moment!");
-            goto end2;
-          }
-
-          // check output first -nb can only print out vars that are defined AND written
-          // it is possible to get with the var defined in output but no data
-          // flg_stt==1 mean var defined but no data !!
-          // So we try to use var in input -if it exist their    
-          if(Nvar && Nvar->flg_stt==2){
-             fl_id=prs_arg->out_id;   
-          }else{
-           // Check input file for var   
-           if(NC_NOERR==nco_inq_varid_flg(prs_arg->in_id,va_nm.c_str(),&var_id))
-            fl_id=prs_arg->in_id;
-          }
-
-          if(fl_id==-1) {
-            wrn_prn(fnc_nm,"Print function cannot find var \""+va_nm+"\" in input or output");
-            goto end2;
-          }
-
-          // Grab format string 
-          if(pvid->getNextSibling() && pvid->getNextSibling()->getType()==NSTRING)
-            fmt_sng=strdup(pvid->getNextSibling()->getText().c_str());
-          else 
-            fmt_sng=(char*)NULL; 
-   
-          if( fl_id >=0)
-           (void)nco_prn_var_val_lmt(fl_id,va_nm.c_str(),(lmt_sct*)NULL,0L,fmt_sng,prs_arg->FORTRAN_IDX_CNV,False,False);
-             
-          if(fmt_sng) fmt_sng=(char*)nco_free(fmt_sng); 
-
-        end2: ;
-    }
-    | (#(PRINT ATT_ID))=> #(PRINT patt:ATT_ID){
-
-          int apsn;
-          var_sct *var1;
-          char *fmt_sng;
-          std::string fl_nm;
-          std::string att_nm;
-          std::string var_nm;
-          NcapVar *Nvar;
-          
-          var=NULL_CEWI;
-
-          // print only on second parse
-          if(prs_arg->ntl_scn) goto end3;
-
-          fl_nm=patt->getText();
-          apsn=fl_nm.find("@");
-          var_nm=fl_nm.substr(0,apsn);
-          att_nm=fl_nm.substr(apsn+1);            
-          
-          Nvar=prs_arg->var_vtr.find(var_nm);
-          if( Nvar && att_nm==std::string(nco_mss_val_sng_get()) ){         
-              if(Nvar->var->has_mss_val==True){
-                var1=ncap_sclr_var_mk(fl_nm,Nvar->var->type,true);
-                (void)memcpy(var1->val.vp,Nvar->var->mss_val.vp, nco_typ_lng(Nvar->var->type));
-                var=var1;
-              }else{
-                wrn_prn(fnc_nm,"Cannot print missing value \""+ fl_nm+ "\" for variable \""+ var_nm +"\" as it is undefined");
-                goto end3;    
-              }
-          }else{   
-             Nvar=prs_arg->var_vtr.find(fl_nm);
-             if(Nvar==NULL_CEWI) 
-                var=ncap_att_init(fl_nm,prs_arg);
-             else
-                var=nco_var_dpl(Nvar->var); 
-          }
-
-          if(var==NULL_CEWI ){
-            wrn_prn(fnc_nm,"Cannot print  attribute \"" +fl_nm+ "\". Not present in input or output files.");
-            goto end3;    
-           }
-
-          // Grab format string 
-          if(patt->getNextSibling() && patt->getNextSibling()->getType()==NSTRING)
-            fmt_sng=strdup(patt->getNextSibling()->getText().c_str());
-          else 
-            fmt_sng=(char*)NULL; 
-
-          (void)ncap_att_prn(var,fmt_sng);
-          var=nco_var_free(var); 
-
-          end3:   ;
-    }
-
-    | (#(PRINT NSTRING))=> #(PRINT pstr:NSTRING){
-       char *prn_sng;
-       
-       if(!prs_arg->ntl_scn){
-        prn_sng=strdup(pstr->getText().c_str());
-        (void)sng_ascii_trn(prn_sng);            
-
-        fprintf(stdout,"%s",prn_sng);
-        prn_sng=(char*)nco_free(prn_sng);
-      }    
-    }
+      }
     ;
 
 // Parse assign statement - Initial Scan
-assign_ntl [bool bram] returns [var_sct *var]
+assign_ntl [bool bram,bool bret] returns [var_sct *var]
 {
 const std::string fnc_nm("assign_ntl"); 
 var=NULL_CEWI;
@@ -1362,17 +1450,20 @@ var=NULL_CEWI;
 
                var_nm=vid->getText();
 
-              if(nco_dbg_lvl_get() >= nco_dbg_scl) dbg_prn(fnc_nm,var_nm+"(limits)");
+               if(nco_dbg_lvl_get() >= nco_dbg_scl) dbg_prn(fnc_nm,var_nm+"(limits)");
 
               // evaluate rhs for side effects eg new dims or lvalues 
                var_rhs=out(vid->getNextSibling());         
                var_rhs=nco_var_free(var_rhs);               
 
                var_lhs=prs_arg->ncap_var_init(var_nm,false);
-               if(var_lhs){
+               if(var_lhs)
+               {
                  var=nco_var_dpl(var_lhs);
                  (void)prs_arg->ncap_var_write(var_lhs,bram);
-               } else {
+               } 
+               else 
+               {
                  // set var to udf
                  var_lhs=ncap_var_udf(var_nm.c_str());
                  var=nco_var_dpl(var_lhs);
@@ -1382,7 +1473,7 @@ var=NULL_CEWI;
                }
         }                    
  
-        | (#(VAR_ID DMN_LIST ))=> #(vid1:VAR_ID dmn:DMN_LIST){   
+        | (#(VAR_ID (DMN_LIST|DMN_LIST_P) ))=> #(vid1:VAR_ID dmn:.){   
                                
               int idx;
               std::string var_nm;
@@ -1400,6 +1491,8 @@ var=NULL_CEWI;
               bcst=true;  
               var_cst=NULL_CEWI;
 
+               
+                
               aRef=dmn->getFirstChild();
          
               // pPut dimension names in vector       
@@ -1415,33 +1508,38 @@ var=NULL_CEWI;
                    && prs_arg->dmn_out_vtr.findi(str_vtr[idx]) ==-1)      
                   break;
 
-               // return undef if dim missing 
-               if( idx <str_vtr_sz){
-                  var=NULL_CEWI;
-               } else {
+              // return undef if dim missing 
+              if( idx <str_vtr_sz)
+                 var1=ncap_var_udf(var_nm.c_str());
+              else 
+              {
                  // Cast is applied in VAR_ID action in function out()
                  var_cst=ncap_cst_mk(str_vtr,prs_arg);
-
                  var1=out(vid1->getNextSibling());
-                 if(var1->undefined) {
-                    var=NULL_CEWI;
-                 } else {
+
+                 if(!var1->undefined) 
+                 {
                    var_cst=nco_var_cnf_typ(var1->type,var_cst);
                    var_cst->typ_dsk=var1->type;
-                   var=nco_var_dpl(var_cst);
-                   }
-                 var1=nco_var_free(var1);
+                   var1=nco_var_free(var1); 
+                   var1=nco_var_dpl(var_cst);
+                 }
+
               }
               
-              if(!var){
+              if(var1->undefined)
+              {
+                var1=nco_var_free(var1);   
                 var1=ncap_var_udf(var_nm.c_str());
                 Nvar=new NcapVar(var1);
                 (void)prs_arg->int_vtr.push_ow(Nvar);
                 var=nco_var_dpl(var1);
-              } else{
-                var->nm=(char*)nco_free(var->nm);
-                var->nm=strdup(var_nm.c_str());
-                var1=nco_var_dpl(var);
+              } 
+              else
+              {
+                var1->nm=(char*)nco_free(var1->nm);
+                var1->nm=strdup(var_nm.c_str());
+                var=nco_var_dpl(var1);
                 prs_arg->ncap_var_write(var1,bram);
              }
 
@@ -1452,37 +1550,86 @@ var=NULL_CEWI;
             }
 
           | vid2:VAR_ID {   
-              
+
+              var_sct *var_rhs=NULL_CEWI;
+              var_sct *var_lhs=NULL_CEWI;
+              var_sct *var_ret=NULL_CEWI;
               std::string var_nm;
-              
+              NcapVar *Nvar;
+
+              // Set class wide variables
+              bcst=false;
+              var_cst=NULL_CEWI;
+
               var_nm=vid2->getText();
 
               if(nco_dbg_lvl_get() >= nco_dbg_var) dbg_prn(fnc_nm,var_nm);
 
-               var_sct *var1;
-               
-               // Set class wide variables           
-               bcst=false;
-               var_cst=NULL_CEWI; 
-             
-               // get shape from RHS
-               var1=out(vid2->getNextSibling());
-               (void)nco_free(var1->nm);                
-               var1->nm =strdup(var_nm.c_str());
+              // get shape from RHS
+              var_rhs=out(vid2->getNextSibling());
 
-               //Copy return variable
-               var=nco_var_dpl(var1);
-                
-               // Write var to int_vtr
-               // if var already in int_vtr or var_vtr then write call does nothing
-               (void)prs_arg->ncap_var_write(var1,bram);
-               //(void)ncap_var_write_omp(var1,bram,prs_arg);
-        
-           } // end action
+              // deal with special case where RHS is a NC_CHAR
+              if(var_rhs->type==NC_CHAR)
+              {
+
+                Nvar=prs_arg->int_vtr.find(var_nm);
+                if(!Nvar)
+                   Nvar=prs_arg->var_vtr.find(var_nm);
+
+                // var is unread, is it in Input ?
+                if(!Nvar && prs_arg->ncap_var_init_chk(var_nm)){
+                    var_lhs=prs_arg->ncap_var_init(var_nm,false);
+                    if(var_lhs->type !=NC_CHAR)
+                        var_lhs=nco_var_free(var_lhs);
+                }
+               }
+
+               if(var_lhs)
+               {
+                 var_rhs=(var_sct*)nco_var_free(var_rhs);
+                 var_ret=var_lhs;
+
+               }
+               else if(var_rhs)
+               {
+                  (void)nco_free(var_rhs->nm);
+                  var_rhs->nm =strdup(var_nm.c_str());
+                  var_ret=var_rhs;
+                }
+
+                //Copy return variable
+                if(bret)
+                  var=nco_var_dpl(var_ret);
+                else
+                   var=(var_sct*)NULL;
+
+                (void)prs_arg->ncap_var_write(var_ret,bram);
+
+
+
+        } // end action
        
    |   (#(ATT_ID LMT_LIST))=> #(att:ATT_ID LMT_LIST){
-        ;
-        } 
+
+            //In Initial scan all newly defined atts are flagged as Undefined
+            var_sct *var1;
+            NcapVar *Nvar;
+
+            if(nco_dbg_lvl_get() > nco_dbg_var) dbg_prn(fnc_nm,att->getText());
+            
+            var1=ncap_var_udf(att->getText().c_str());
+
+            Nvar=new NcapVar(var1);
+            prs_arg->int_vtr.push_ow(Nvar);          
+
+            // Copy return variable
+            if(bret)
+              var=nco_var_dpl(var1);    
+            else
+              var=(var_sct*)NULL; 
+
+       } //end action
+
    |   (#(ATT_ID LMT_DMN))=>  #(att1:ATT_ID DMN_LIST){
         ;
         } 
@@ -1500,13 +1647,16 @@ var=NULL_CEWI;
         prs_arg->int_vtr.push_ow(Nvar);          
 
         // Copy return variable
-        var=nco_var_dpl(var1);    
+        if(bret)
+          var=nco_var_dpl(var1);    
+        else
+          var=(var_sct*)NULL;    
 
-       } //end action
+    } //end action
 
     ; // end assign block
 
-assign [bool bram] returns [var_sct *var]
+assign [bool bram,bool bret] returns [var_sct *var]
 {
 const std::string fnc_nm("assign"); 
 var=NULL_CEWI;
@@ -1540,7 +1690,7 @@ var=NULL_CEWI;
                // index in limit -- i.e hyperslab a mult-dimensional var
                // with a single index 
               
-               if(lmt->getNumberOfChildren()==1 && 
+               if(lmt->getNumberOfChildren()==1 &&
                   lmt->getFirstChild()->getNumberOfChildren()==1 &&
                   lmt->getFirstChild()->getFirstChild()->getType() != COLON
                  ){
@@ -1561,11 +1711,11 @@ var=NULL_CEWI;
                   
                  if(Nvar && Nvar->flg_stt==1){
                     var_sct *var_ini;
-                    var_ini=prs_arg->ncap_var_init(var_nm,true);       
+                    var_ini=prs_arg->ncap_var_init(var_nm,true);
                     Nvar->var->val.vp=var_ini->val.vp;
                     var_ini->val.vp=(void*)NULL;
                     var_ini=nco_var_free(var_ini);
-                    Nvar->flg_stt=2; 
+                    Nvar->flg_stt=2;
                  }
 
                  if(Nvar && Nvar->flg_stt==2)
@@ -1577,7 +1727,7 @@ var=NULL_CEWI;
                   nbr_dmn=var_lhs->nbr_dim;
 
                   // Now populate lmt_vtr;
-                  if( lmt_mk(lmt_Ref,lmt_vtr) == 0)
+                  if( lmt_mk(nbr_dmn, lmt_Ref,lmt_vtr) == false)
                     err_prn(fnc_nm,"Invalid hyperslab limits for variable "+ var_nm);
                   
                  if( lmt_vtr.size() != nbr_dmn)
@@ -1590,7 +1740,7 @@ var=NULL_CEWI;
                  slb_sz=1;        
                 // fill out limit structure
                 for(idx=0 ; idx < nbr_dmn ;idx++){
-                   (void)ncap_lmt_evl(prs_arg->out_id,lmt_vtr[idx],prs_arg);
+                   (void)ncap_lmt_evl(prs_arg->out_id,lmt_vtr[idx],-1,prs_arg);
                     // Calculate size
                    slb_sz *= lmt_vtr[idx]->cnt;
                 }
@@ -1606,15 +1756,15 @@ var=NULL_CEWI;
                  // make sure var_lhs and var_rhs are the same size
                  // and that they are the same shape (ie they conform!!)          
                  if(var_rhs->sz != slb_sz){
-                   err_prn(fnc_nm, "Hyperslab for "+var_nm+" - number of elements on LHS(" +nbr2sng(slb_sz) +  ") doesn't equal number of elements on RHS(" +nbr2sng(var_rhs->sz) +  ")");                                       
+                   err_prn(fnc_nm, "Hyperslab for \""+var_nm+"\": LHS number of elements = "+nbr2sng(slb_sz)+" does not equal RHS number of elements = "+nbr2sng(var_rhs->sz));
                  }
-
+                    
                 (void)nco_put_var_mem(var_rhs,var_lhs,lmt_vtr);
                 if(Nvar==NULL)
                    (void)prs_arg->ncap_var_write(var_lhs,true); 
 
               // deal with Regular Vars
-              } else {                 
+              }else{                 
 
               // if var undefined in O or defined but not populated
                if(!Nvar || ( Nvar && Nvar->flg_stt==1)){              
@@ -1627,7 +1777,7 @@ var=NULL_CEWI;
                  (void)ncap_att_cpy(var_nm,var_nm,prs_arg);
                  (void)prs_arg->ncap_var_write(var_lhs,false);
 
-                 wrn_prn(fnc_nm,"Var being read and written in ASSIGN "+ var_nm); 
+                 if(nco_dbg_lvl_get() >= nco_dbg_std) nfo_prn(fnc_nm,"Variable \""+var_nm+"\" being read and written in ASSIGN"); 
                }
  
                // Get "new" var_id   
@@ -1638,7 +1788,7 @@ var=NULL_CEWI;
                nbr_dmn=var_lhs->nbr_dim;
 
                // Now populate lmt_vtr;
-               if( lmt_mk(lmt_Ref,lmt_vtr) == 0)
+               if( lmt_mk(nbr_dmn, lmt_Ref,lmt_vtr) == false)
                   err_prn(fnc_nm,"Invalid hyperslab limits for variable "+ var_nm);
                
                if( lmt_vtr.size() != nbr_dmn)
@@ -1651,7 +1801,7 @@ var=NULL_CEWI;
                 var_lhs->sz=1;        
                 // fill out limit structure
                 for(idx=0 ; idx < nbr_dmn ;idx++){
-                   (void)ncap_lmt_evl(prs_arg->out_id,lmt_vtr[idx],prs_arg);
+                   (void)ncap_lmt_evl(prs_arg->out_id,lmt_vtr[idx],-1,prs_arg);
                     // Calculate size
                    var_lhs->sz *= lmt_vtr[idx]->cnt;
                 }
@@ -1692,24 +1842,25 @@ var=NULL_CEWI;
 
               } // end put block !!
 
-             } // end else if regular var
+              } // end else if regular var
 
-              var_rhs=nco_var_free(var_rhs);
+             var_rhs=nco_var_free(var_rhs);
               
                // Empty and free vector 
               for(idx=0 ; idx < nbr_dmn ; idx++)
                 (void)nco_lmt_free(lmt_vtr[idx]);
 
               // See If we have to return something
-end0:         if(lmt->getNextSibling() && lmt->getNextSibling()->getType()==NORET)
-                var=NULL_CEWI;
-              else 
+end0:         if(bret)
                 var=prs_arg->ncap_var_init(var_nm,true);
+              else 
+                var=NULL_CEWI;
+
                
-        } // end action
+    } // end action
 
         // Deal with LHS casting 
-        | (#(VAR_ID DMN_LIST ))=> #(vid1:VAR_ID dmn:DMN_LIST){   
+        | (#(VAR_ID (DMN_LIST|DMN_LIST_P) ))=> #(vid1:VAR_ID dmn:.){   
 
               var_sct *var1;
               std::vector<std::string> str_vtr;
@@ -1724,22 +1875,38 @@ end0:         if(lmt->getNextSibling() && lmt->getNextSibling()->getType()==NORE
               bcst=true;  
               var_cst=NULL_CEWI;
 
-              //aRef=vid->getFirstChild()->getFirstChild();
-              aRef=dmn->getFirstChild();
-         
-              // pPut dimension names in vector       
-              while(aRef) {
-                str_vtr.push_back(aRef->getText());
-                aRef=aRef->getNextSibling();      
-              }
 
-              // Cast is applied in VAR_ID action in function out()
-              // Note cast is NOT applied to an attribute, an irregular hyperslab
-              // or any entity which has a size of one.
-              var_cst=ncap_cst_mk(str_vtr,prs_arg);     
-              var1=out(vid1->getNextSibling());
 
-              /* NB var_cst->val.vp always now set to null */ 
+              if(dmn)
+              { 
+
+                  aRef=dmn->getFirstChild();                  
+                  // pPut dimension names in vector       
+                  while(aRef) 
+                  {
+                    str_vtr.push_back(aRef->getText());
+                    aRef=aRef->getNextSibling();      
+                  }
+
+                  // Cast is applied in VAR_ID action in function out()
+                  // Note cast is NOT applied to an attribute, an irregular hyperslab
+                  // or any entity which has a size of one.
+                  var_cst=ncap_cst_mk(str_vtr,prs_arg);     
+                  var1=out(vid1->getNextSibling());
+              }  
+              // deal with an empty hyperslab ie casting a scalar
+              else
+              {  
+                 var1=out(vid1->getNextSibling());    
+                 var_cst=ncap_sclr_var_mk("Internally generated template",var1->type,false);   
+              }    
+
+
+
+             // do attribute propagation only  from RHS -if not an att
+             if( !ncap_var_is_att(var1))  
+                 ncap_att_gnrl(var_nm,var1->nm,1,prs_arg);
+
 
 
               // If the RHS has size one or is an attribute or an irregular hyperslab
@@ -1749,24 +1916,27 @@ end0:         if(lmt->getNextSibling() && lmt->getNextSibling()->getType()==NORE
               bool br1=(var_cst->sz >=1 && var1->sz==1);
               bool br2=(var_cst->sz==var1->sz &&  ( ncap_var_is_att(var1) ||var1->has_dpl_dmn==-1 ));
 
+              // NB var_cst->val.vp always now set to null 
               // The code rebuilds var1 with the shape from the casting variable  
               if( br1 || br2){
                 var_sct *var_nw;
-                void *vp_swp;
+
+                if(br1)
+                   (void)ncap_att_stretch(var1,var_cst->sz);
 
                 var_nw=nco_var_dpl(var_cst);
-                var_nw=nco_var_cnf_typ(var1->type,var_nw);
-                if(br1)
-                   (void)ncap_att_stretch(var1,var_nw->sz);
+                (void)nco_var_cnf_typ(var1->type,var_nw);
                  
-                vp_swp=var_nw->val.vp;
                 var_nw->val.vp=var1->val.vp;
-                var1->val.vp=vp_swp;
+                var1->val.vp=(void*)NULL;
 
                 var1=nco_var_free(var1);
                 var1=var_nw;
              }
-               
+             
+
+ 
+
                //blow out if vars not the same size      
              if(var1->sz != var_cst->sz) 
                   err_prn(fnc_nm, "LHS cast for "+var_nm+" - cannot make RHS "+ std::string(var1->nm) + " conform.");          
@@ -1774,10 +1944,10 @@ end0:         if(lmt->getNextSibling() && lmt->getNextSibling()->getType()==NORE
               var1->nm =strdup(var_nm.c_str());
 
               // See If we have to return something
-              if(dmn->getNextSibling() && dmn->getNextSibling()->getType()==NORET)
-                var=NULL_CEWI;
-              else 
+              if(bret)
                 var=nco_var_dpl(var1);     
+              else 
+                var=NULL_CEWI;
 
               //call to nco_var_get() in ncap_var_init() uses this property
               var1->typ_dsk=var1->type;
@@ -1786,66 +1956,295 @@ end0:         if(lmt->getNextSibling() && lmt->getNextSibling()->getType()==NORE
               bcst=false;
               var_cst=nco_var_free(var_cst); 
 
-          } // end action
+    } // end action
            
-          | vid2:VAR_ID {   
+          | vid2:VAR_ID {
+
                // Set class wide variables
-               var_sct *var1;
+               var_sct *var_rhs=NULL_CEWI; ;
+               var_sct *var_shp=NULL_CEWI; ;
                NcapVar *Nvar;
                std::string var_nm;
  
                var_nm=vid2->getText();       
+
 
               if(nco_dbg_lvl_get() >= nco_dbg_var) dbg_prn(fnc_nm,var_nm);
                
                bcst=false;
                var_cst=NULL_CEWI; 
               
-               var1=out(vid2->getNextSibling());
+               var_rhs=out(vid2->getNextSibling());
                
                // Save name 
-               std::string s_var_rhs(var1->nm);
-               (void)nco_free(var1->nm);                
-               var1->nm =strdup(var_nm.c_str());
+               std::string s_var_rhs(var_rhs->nm);
 
                // Do attribute propagation only if
                // var doesn't already exist or is defined but NOT
                // populated
-               Nvar=prs_arg->var_vtr.find(vid2->getText());
-               //rcd=nco_inq_varid_flg(prs_arg->out_id,var1->nm ,&var_id);
+               Nvar=prs_arg->var_vtr.find(var_nm);
+               //rcd=nco_inq_varid_flg(prs_arg->out_id,var_rhs->nm ,&var_id);
 
                if(!Nvar || (Nvar && Nvar->flg_stt==1))
                  (void)ncap_att_cpy(var_nm,s_var_rhs,prs_arg);
                
                 // var is defined and populated &  RHS is scalar -then stretch var to match
-               if(Nvar && Nvar->flg_stt==2) 
-                  if(var1->sz ==1 && Nvar->var->sz >1){
-                    var1=nco_var_cnf_typ(Nvar->var->type,var1);  
-                    (void)ncap_att_stretch(var1,Nvar->var->sz);
+               // if(Nvar && Nvar->flg_stt==2)
+               if(Nvar )
+               {
+                  var_shp=Nvar->cpyVarNoData();
+                  nco_var_cnf_typ(var_shp->type,var_rhs);
+
+                  long n_sz=var_shp->sz;
+
+                  if(var_rhs->sz ==1 && n_sz >1)
+                  {
+                    (void)ncap_att_stretch(var_rhs,n_sz);
                     
                     // this is a special case -- if the RHS scalar has
                     // no missing value then retain LHS missing value
                     // else LHS missing value gets over written by RHS
-                    if(!var1->has_mss_val)
-                      (void)nco_mss_val_cp(Nvar->var,var1);   
+                    //if(!var_rhs->has_mss_val)
+                    // (void)nco_mss_val_cp(Nvar->var,var_rhs);
                   }
- 
+
+                  // deal with NC_CHAR on RHS as special case - if too short then pad out with nulls else trucate
+                  else if(var_rhs->sz>1 &&  n_sz != var_rhs->sz &&  var_shp->type==NC_CHAR  )
+                      ncap_att_char_stretch(var_rhs, n_sz);
+
+                  else if( var_rhs->sz >1 && n_sz >1 && var_rhs->sz != n_sz && n_sz % var_rhs->sz ==0)
+                      ncap_var_cnf_dmn(&Nvar->var,&var_rhs); 
+
+                  if(var_rhs->sz != n_sz)
+                   err_prn(fnc_nm, "size miss-match in simple assign between \""+ var_nm +"\""+ " size="+nbr2sng(Nvar->var->sz) + "var_rhs expr size="+nbr2sng(var_rhs->sz) );
+
+                   var_shp->val.vp=var_rhs->val.vp;
+                   var_rhs->val.vp=(void*)NULL;
+
+                   if(var_rhs->has_mss_val)
+                        (void)nco_mss_val_cp(var_rhs,var_shp);
+
+                   if(var_rhs->has_add_fst)
+                   {
+                     var_shp->has_add_fst=1;  
+                     var_shp->add_fst.vp=var_rhs->add_fst.vp;
+                     var_rhs->has_add_fst=0;
+                     var_rhs->add_fst.vp=(void*)NULL;
+                   }
+
+                   if(var_rhs->has_scl_fct)
+                   {
+                     var_shp->has_scl_fct=1;  
+                     var_shp->scl_fct.vp=var_rhs->scl_fct.vp;
+                     var_rhs->has_scl_fct=0;
+                     var_rhs->scl_fct.vp=(void*)NULL;
+                   }
+                   var_rhs->pck_ram=False;
+                   
+                   if(var_shp->has_add_fst || var_shp->has_scl_fct)
+                       var_shp->pck_ram=True;
+                   else
+                       var_shp->pck_ram=False;
+                                            
+                   var_rhs=nco_var_free(var_rhs);
+                   var_rhs=var_shp;
+
+               }
+               // var is undefined in Output and special treatment of NC_CHAR on RHS
+               else if(!Nvar && var_rhs->type ==NC_CHAR)
+               {
+                 if( prs_arg->ncap_var_init_chk(var_nm))
+                    var_shp=prs_arg->ncap_var_init(var_nm,false);
+
+                 if(var_shp->type==NC_CHAR && var_shp->sz != var_rhs->sz)
+                 {
+                     ncap_att_char_stretch(var_rhs, var_shp->sz);
+                     var_shp->val.vp=var_rhs->val.vp;
+                     var_rhs->val.vp=(void*)NULL;
+                     if(var_rhs->has_mss_val)
+                        (void)nco_mss_val_cp(var_rhs,var_shp);
+
+                     var_rhs=nco_var_free(var_rhs);
+                     var_rhs=var_shp;
+
+                 }
+
+                }
+
+
+               // finally add new name before write  
+               (void)nco_free(var_rhs->nm);                
+               var_rhs->nm =strdup(var_nm.c_str());
+
                // Write var to disk
-               (void)prs_arg->ncap_var_write(var1,bram);
-               //(void)ncap_var_write_omp(var1,bram,prs_arg);
+               (void)prs_arg->ncap_var_write(var_rhs,bram);
+
 
                 // See If we have to return something
-               if(vid2->getFirstChild() && vid2->getFirstChild()->getType()==NORET)
-                 var=NULL_CEWI;
+               if(bret)
+                 var=prs_arg->ncap_var_init(var_nm,true);   
                else 
-                 var=prs_arg->ncap_var_init(var_nm,true);               ;
-                         
-       } // end action
+                 var=NULL_CEWI;
+
+   
+    } // end action
  
-   |   (#(ATT_ID LMT_LIST)) => #(att:ATT_ID LMT_LIST){
-        ;
-        } 
-   |   (#(ATT_ID LMT_DMN))=> #(att1:ATT_ID DMN_LIST){
+   |   (#(ATT_ID LMT_LIST)) => #(att:ATT_ID lmta:LMT_LIST){
+
+            long srt,end,cnt,srd;  
+            std::string att_nm=att->getText();
+            std::string fnc_nm("att_lmt"); 
+            NcapVar *Nvar=NULL;
+            NcapVector<lmt_sct*> lmt_vtr;
+
+            var_sct *var_lhs=NULL_CEWI; 
+            var_sct *var_rhs=NULL_CEWI; 
+            
+            if(prs_arg->ntl_scn)
+            { 
+              // only final scan for this attribute hyperslab 
+              var=ncap_var_udf(att_nm.c_str());
+              // can't return here -- have to use goto
+              goto att_end; 
+            } 
+  
+            Nvar=prs_arg->var_vtr.find(att_nm);
+
+            if(Nvar!=NULL)
+                var_lhs=nco_var_dpl(Nvar->var);
+            else    
+                var_lhs=ncap_att_init(att_nm,prs_arg);
+            
+
+            if(var_lhs==NULL_CEWI )
+                err_prn(fnc_nm,"Unable to locate attribute " +att_nm+ " in input or output files.");
+            
+		    lmt_mk(1L,lmta,lmt_vtr);
+           
+
+            if( lmt_vtr.size() != 1)
+                err_prn(fnc_nm,"Number of hyperslab limits for an attribute "+ att_nm+" must be one ");
+
+
+            lmt_vtr[0]->nm=strdup("zz@attribute");    
+            (void)ncap_lmt_evl(1,lmt_vtr[0],var_lhs->sz,prs_arg); 
+            
+            if(lmt_vtr[0]->cnt==0)
+               err_prn(fnc_nm,"Hyperslab limits for attribute "+ att_nm+" doesn't include any elements");   
+
+            srt=lmt_vtr[0]->srt;
+            cnt=lmt_vtr[0]->cnt;
+            srd=lmt_vtr[0]->srd; 
+            end=lmt_vtr[0]->end; 
+
+            // get rhs can be anything as long as it is of size cnt 
+            var_rhs=out(att->getNextSibling());
+
+
+            
+            if( var_lhs->type==NC_STRING)
+            { 
+              long szn; 
+              long idx; 
+
+              char buffer[NC_MAX_ATTRS];  
+               
+              buffer[0]='\0';
+              cnt=0L;
+              cast_void_nctype(NC_STRING, &var_lhs->val);    
+              cast_void_nctype(var_rhs->type, &var_rhs->val);     
+               
+              if( var_rhs->type==NC_STRING)
+              {
+                // check size
+               if(  var_rhs->sz!=1L &&  var_rhs->sz != cnt)   
+                  err_prn(fnc_nm,"Hyperslab limits for attribute "+att_nm + " on LHS size="+nbr2sng(cnt)+ " doesn't match RHS size=" + nbr2sng(var_rhs->sz));
+
+                   
+                szn=(var_rhs->sz >1 ? 1: 0);     
+                for(idx=srt; idx<=end;idx+=srd)  
+                {
+                   var_lhs->val.sngp[idx]=strdup(var_rhs->val.sngp[cnt]);    
+                   cnt+=szn;
+                }
+
+
+              } 
+                  
+              else if( var_rhs->type==NC_CHAR )
+              { 
+               // if RHS is a char string then it reduces to  single NC_STRING regardless of size  
+                strncpy(buffer, var_rhs->val.cp , var_rhs->sz);   
+                buffer[var_rhs->sz]='\0';  
+
+                for(idx=srt; idx<=end;idx+=srd)  
+                   var_lhs->val.sngp[idx]=strdup(buffer);    
+              }
+              else 
+              { 
+                err_prn(fnc_nm,"To hyperslab into a text NC_STRING The RHS type must alo be a text string of type NC_CHAR or NC_STRING"); 
+              } 
+
+              cast_nctype_void(var_rhs->type, &var_rhs->val);    
+              cast_nctype_void(var_lhs->type, &var_lhs->val);    
+
+  
+
+            }
+            
+
+            // deal with regular types   
+            if(var_lhs->type !=NC_STRING)
+            {  
+               char *cp_in;
+               char *cp_out;  
+               long idx;
+               long szn; 
+
+               size_t slb_sz=nco_typ_lng(var_lhs->type); 
+
+               // check size
+               if(  var_rhs->sz!=1L &&  var_rhs->sz != cnt)   
+                  err_prn(fnc_nm,"Hyperslab limits for attribute "+att_nm + " on LHS size="+nbr2sng(cnt)+ " doesn't match RHS size=" + nbr2sng(var_rhs->sz));
+
+ 
+               nco_var_cnf_typ(var_lhs->type,var_rhs);               
+
+               // if rhs size is one then simply copy across possibly multiple times
+               szn=(var_rhs->sz >1 ? 1: 0);   
+
+               cp_in=(char*)(var_rhs->val.vp); 
+              
+               //cp_out=(char*)var_lhs->val.vp; 
+
+               for(idx=srt; idx<=end;idx+=srd) 
+               { 
+                cp_out=(char*)(var_lhs->val.vp)+slb_sz*idx;     
+                memcpy(cp_out,cp_in,slb_sz);  
+                cp_in+= szn;
+               }
+
+            }
+
+            nco_var_free(var_rhs);  
+            nco_lmt_free(lmt_vtr[0]); 
+                  
+            Nvar=new NcapVar(var_lhs,att_nm);
+
+            prs_arg->var_vtr.push_ow(Nvar);       
+
+               // See If we have to return something
+            if(bret)
+              var=nco_var_dpl(var_lhs);             
+            else 
+              var=NULL_CEWI; 
+
+           att_end: ; 
+
+        
+    }
+
+   |   (#(ATT_ID DMN_LIST))=> #(att1:ATT_ID DMN_LIST){
         ;
         } 
    |  att2:ATT_ID {
@@ -1856,6 +2255,11 @@ end0:         if(lmt->getNextSibling() && lmt->getNextSibling()->getType()==NORE
             if(nco_dbg_lvl_get() >= nco_dbg_var) dbg_prn(fnc_nm,sa);
  
             var1=out(att2->getNextSibling());
+            // we dont need missing values in ATT right !!
+            if(var1->has_mss_val){
+              var1->has_mss_val=False;
+	          var1->mss_val.vp=(void*)nco_free(var1->mss_val.vp);
+            }   
 
             // if RHS is a non scalar variable then loose superfluous dimension data 
             if( var1->nbr_dim >0){
@@ -1875,20 +2279,32 @@ end0:         if(lmt->getNextSibling() && lmt->getNextSibling()->getType()==NORE
             prs_arg->var_vtr.push_ow(Nvar);       
 
                // See If we have to return something
-            if(att2->getFirstChild() && att2->getFirstChild()->getType()==NORET)
-              var=NULL_CEWI;
+            if(bret)
+              var=nco_var_dpl(var1);               
             else 
-              var=nco_var_dpl(var1);               ;
+              var=NULL_CEWI;
+
                   
-       } // end action
+    } // end action
    ;
                
 out returns [var_sct *var]
 {
+    bool bret=true;   
     const std::string fnc_nm("out"); 
 	var_sct *var1;
     var_sct *var2;
     var=NULL_CEWI;
+  
+    // on the following tokens if text is set to NO_RET then make sure out return var=NULL
+    // the check is done in statements / EXPR
+    // out_AST_in declared an inialized  to the first arg of out() (see ncoTree.cpp/out() for actual code )
+    if( out_AST_in != ANTLR_USE_NAMESPACE(antlr)nullAST && out_AST_in->getText()=="NO_RET" )
+    {
+       int aType=out_AST_in->getType();
+       if(aType==ASSIGN ||aType==POST_INC || aType==POST_DEC || aType==INC || aType==DEC||aType==PLUS_ASSIGN || aType==MINUS_ASSIGN || aType==DIVIDE_ASSIGN || aType==TIMES_ASSIGN)
+          bret=false;
+    }      
 }  
     // arithmetic operators 
 
@@ -1896,19 +2312,22 @@ out returns [var_sct *var]
            { var=ncap_var_var_op(var1,var2, PLUS );}
 	|  (#(MINUS out out)) => #( MINUS var1=out var2=out)
             { var=ncap_var_var_op(var1,var2, MINUS );}
-    |  (#(UTIMES #(POST_INC out)))=> #( UTIMES #(POST_INC var1=out_asn)){
-             var=ncap_var_var_inc(var1,NULL_CEWI,POST_INC,true,prs_arg);      
+    |  (#(POST_INC #(UTIMES ATT_ID)))=> #( POST_INC #(UTIMES aposti:ATT_ID)){
+             var1=out(att2var(aposti));     
+             var=ncap_var_var_inc(var1,NULL_CEWI,POST_INC,false,bret,prs_arg);      
        } 
-    |  (#(UTIMES #(POST_DEC out)))=> #( UTIMES #(POST_DEC var1=out_asn)){
-             var=ncap_var_var_inc(var1,NULL_CEWI,POST_DEC,true,prs_arg);      
+    |  (#(POST_DEC #(UTIMES ATT_ID)))=> #( POST_DEC #(UTIMES apostd:ATT_ID)){
+             var1=out(att2var(apostd));     
+             var=ncap_var_var_inc(var1,NULL_CEWI,POST_DEC,false,bret,prs_arg);      
        } 
-    |  (#(UTIMES #(INC out)))=> #( UTIMES #(INC var1=out_asn)){
-             var=ncap_var_var_inc(var1,NULL_CEWI,INC,true,prs_arg);      
+    |  (#(INC #(UTIMES ATT_ID)))=> #( INC #(UTIMES aprei:ATT_ID)){
+             var1=out(att2var(aprei));     
+             var=ncap_var_var_inc(var1,NULL_CEWI,INC,false,bret,prs_arg);      
        } 
-    |  (#(UTIMES #(DEC out)))=> #( UTIMES #(DEC var1=out_asn)){
-             var=ncap_var_var_inc(var1,NULL_CEWI,DEC,true,prs_arg);      
+    |  (#(DEC #(UTIMES ATT_ID)))=> #( DEC #(UTIMES apred:ATT_ID)){
+             var1=out(att2var(apred));     
+             var=ncap_var_var_inc(var1,NULL_CEWI,DEC,false,bret,prs_arg);      
        } 
-
 	|	#(TIMES var1=out var2=out)
             { var=ncap_var_var_op(var1,var2, TIMES );}	
 
@@ -1926,15 +2345,16 @@ out returns [var_sct *var]
     |   #(PLUS var1=out ) // do nothing   
 
     |   #(INC var1=out_asn )      
-            { var=ncap_var_var_inc(var1,NULL_CEWI,INC,false,prs_arg);}
+            { var=ncap_var_var_inc(var1,NULL_CEWI,INC,false,bret,prs_arg);}
+
     |   #(DEC var1=out_asn )      
-            { var=ncap_var_var_inc(var1,NULL_CEWI, DEC,false,prs_arg );}
-    
+            {var=ncap_var_var_inc(var1,NULL_CEWI, DEC,false,bret,prs_arg );}
+
     |   #(POST_INC var1=out_asn ){
-            var=ncap_var_var_inc(var1,NULL_CEWI,POST_INC,false,prs_arg);
+            var=ncap_var_var_inc(var1,NULL_CEWI,POST_INC,false,bret,prs_arg);
         }
     |   #(POST_DEC var1=out_asn ){      
-            var=ncap_var_var_inc(var1,NULL_CEWI,POST_DEC,false,prs_arg);
+            var=ncap_var_var_inc(var1,NULL_CEWI,POST_DEC,false,bret,prs_arg);
         }
     // Logical Operators
     | #(LAND var1=out var2=out)  
@@ -1949,7 +2369,7 @@ out returns [var_sct *var]
     | #(GEQ  var1=out var2=out)   
             { var=ncap_var_var_op(var1,var2, GEQ );}
     | #(LEQ  var1=out var2=out)   
-            { var=ncap_var_var_op(var1,var2, LEQ );}
+             { var=ncap_var_var_op(var1,var2, LEQ );}
     | #(EQ  var1=out var2=out)    
             { var=ncap_var_var_op(var1,var2, EQ );}
     | #(NEQ  var1=out var2=out)   
@@ -1960,62 +2380,147 @@ out returns [var_sct *var]
     | #(FGTHAN  var1=out var2=out) 
             { var=ncap_var_var_op(var1,var2, FGTHAN );}
     // Assign Operators 
-    | #(PLUS_ASSIGN pls_asn:. var2=out) {
-       var1=out_asn(pls_asn);
-       var=ncap_var_var_inc(var1,var2, PLUS_ASSIGN ,(pls_asn->getType()==UTIMES), prs_arg);
-       }
-	| #(MINUS_ASSIGN min_asn:. var2=out){
-       var1=out_asn(min_asn);
-       var=ncap_var_var_inc(var1,var2, MINUS_ASSIGN ,(min_asn->getType()==UTIMES), prs_arg);
-       }
-	| #(TIMES_ASSIGN tim_asn:. var2=out){       
-       var1=out_asn(tim_asn);
-       var=ncap_var_var_inc(var1,var2, TIMES_ASSIGN ,(tim_asn->getType()==UTIMES), prs_arg);
-       }
-	| #(DIVIDE_ASSIGN div_asn:. var2=out){	
-       var1=out_asn(div_asn);
-       var=ncap_var_var_inc(var1,var2, DIVIDE_ASSIGN ,(div_asn->getType()==UTIMES), prs_arg);
+    // | #(PLUS_ASSIGN pls_asn:. var2=out) {
+    //    var1=out_asn(pls_asn);
+    //    var=ncap_var_var_inc(var1,var2, PLUS_ASSIGN ,(pls_asn->getType()==UTIMES), prs_arg);
+    //    }
+    // Assign Operators 
+    
+    | ( #(PLUS_ASSIGN  (VAR_ID|ATT_ID)  var2=out)) => #(PLUS_ASSIGN var1=out  var2=out)  {
+       var=ncap_var_var_inc(var1,var2,PLUS_ASSIGN ,false, bret,prs_arg);
        }
 
-    | #(ASSIGN asn:. ) 
-            {
+    | (#(PLUS_ASSIGN  #(UTIMES VAR_ID) var2=out)) => #(PLUS_ASSIGN  #(UTIMES var1=out)  var2=out)  {
+       var=ncap_var_var_inc(var1,var2, PLUS_ASSIGN ,true, bret,prs_arg);
+       }
+
+    | (#(PLUS_ASSIGN  #(UTIMES ATT_ID) var2=out)) => #(PLUS_ASSIGN  #(UTIMES atp:ATT_ID)  var2=out)  {
+
+       var1=out(att2var(atp));     
+       var=ncap_var_var_inc(var1,var2, PLUS_ASSIGN ,false,bret, prs_arg);
+       }
+
+
+    | ( #(MINUS_ASSIGN  (VAR_ID|ATT_ID)  var2=out)) => #(MINUS_ASSIGN  var1=out  var2=out)  {
+       var=ncap_var_var_inc(var1,var2, MINUS_ASSIGN ,false, bret,prs_arg);
+       }
+
+    | (#(MINUS_ASSIGN #(UTIMES VAR_ID) var2=out)) => #(MINUS_ASSIGN #(UTIMES var1=out)  var2=out)  {
+       var=ncap_var_var_inc(var1,var2, MINUS_ASSIGN ,true, bret,prs_arg);
+       }
+
+    | (#(MINUS_ASSIGN #(UTIMES ATT_ID) var2=out)) => #(MINUS_ASSIGN #(UTIMES atm:ATT_ID)  var2=out)  {
+       var1=out(att2var(atm));     
+       var=ncap_var_var_inc(var1,var2, MINUS_ASSIGN ,false, bret,prs_arg);
+       }
+
+    | (#(TIMES_ASSIGN  (VAR_ID|ATT_ID)  var2=out)) => #(TIMES_ASSIGN  var1=out  var2=out)  {
+       var=ncap_var_var_inc(var1,var2, TIMES_ASSIGN ,false, bret,prs_arg);
+       }
+
+    | (#(TIMES_ASSIGN #(UTIMES VAR_ID) var2=out)) => #(TIMES_ASSIGN #(UTIMES var1=out)  var2=out)  {
+       var=ncap_var_var_inc(var1,var2, TIMES_ASSIGN ,true, bret,prs_arg);
+       }
+
+    | (#(TIMES_ASSIGN #(UTIMES ATT_ID) var2=out)) => #(TIMES_ASSIGN #(UTIMES attm:ATT_ID)  var2=out)  {
+       var1=out(att2var(attm));     
+       var=ncap_var_var_inc(var1,var2, TIMES_ASSIGN ,false, bret,prs_arg);
+       }
+
+    | (#(DIVIDE_ASSIGN  (VAR_ID|ATT_ID)  var2=out)) => #(DIVIDE_ASSIGN  var1=out  var2=out)  {
+       var=ncap_var_var_inc(var1,var2, DIVIDE_ASSIGN ,false, bret,prs_arg);
+       }
+
+    | (#(DIVIDE_ASSIGN #(UTIMES VAR_ID) var2=out)) => #(DIVIDE_ASSIGN #(UTIMES var1=out)  var2=out)  {
+       var=ncap_var_var_inc(var1,var2, DIVIDE_ASSIGN ,true, bret,prs_arg);
+       }
+
+    | (#(DIVIDE_ASSIGN #(UTIMES ATT_ID) var2=out)) => #(DIVIDE_ASSIGN #(UTIMES atd:ATT_ID)  var2=out)  {
+       var1=out(att2var(atd));        
+       var=ncap_var_var_inc(var1,var2, DIVIDE_ASSIGN ,false, bret,prs_arg);
+       }
+
+
+    | (#(ASSIGN (VAR_ID|ATT_ID))) => #(ASSIGN asn:.) {
+             if(prs_arg->ntl_scn)
+               var=assign_ntl(asn,false,bret); 
+             else
+               var=assign(asn,false,bret);
+    }
+
+    // dealing with a variable pointer  
+    | (#(ASSIGN #(UTIMES ATT_ID) )) =>  #(ASSIGN #(atta:UTIMES ATT_ID)) {
+
+             RefAST tr;
+             tr=atta->getFirstChild();
+             tr->setNextSibling(atta->getNextSibling());
+             
+             // remember tr siblings and children are  duplicated here   
+             tr=att2var(tr);   
+
+             if(prs_arg->ntl_scn)
+               var=assign_ntl(tr,false,bret); 
+             else
+               var=assign(tr,false,bret);
+    }  
+    
+    //  memory var - regular and pointer
+    | #(ASSIGN #(asn2:UTIMES (VAR_ID| #(UTIMES  asn2a:ATT_ID)) )) {
               // Check for RAM variable - if present 
               // change tree - for example from:
               //     ( EXPR ( = ( * n1 ) ( + four four ) ) )
               // to  ( EXPR ( = n1 ( + four four ) ) )
+
              RefAST tr;
-             bool bram;
-             NcapVar *Nvar;
+             NcapVar *Nvar;          
 
-             if(asn->getType()==UTIMES){
-               tr=asn->getFirstChild();
-               tr->setNextSibling(asn->getNextSibling());
-               bram=true;
-             } else { 
-               tr=asn; 
-               bram=false;
+             // deal with ATT_ID 
+             if(asn2a)  
+             { 
+               // remember tr and siblings and children are  duplicated here
+               tr=att2var(asn2a);   
+               tr->setNextSibling(asn2->getNextSibling());
+
+             } 
+             // must be VAR_ID 
+             else 
+             { 
+                  
+               tr=asn2->getFirstChild();
+               tr->setNextSibling(asn2->getNextSibling());
+
+               // Die if attempting to create a RAM var 
+               // from an existing disk var   
+                Nvar= prs_arg->var_vtr.find(tr->getText());
+
+                if(Nvar && Nvar->flg_mem==false)
+                {
+                  std::string serr;
+                  serr= "It is impossible to recast disk variable: \"" + tr->getText() +"\" as a RAM variable.";
+                  err_prn(fnc_nm,serr );       
+                
+                }                
              }
-             
-             // Die if attempting to create a RAM var 
-             // from an existing disk var   
-             Nvar= prs_arg->var_vtr.find(tr->getText());
-
-             if(bram && tr->getType()==VAR_ID && Nvar && Nvar->flg_mem==false){
-              std::string serr;
-              serr= "It is impossible to recast disk variable: \"" + tr->getText() +"\" as a RAM variable.";
-              err_prn(fnc_nm,serr );       
-              }                
 
              if(prs_arg->ntl_scn)
-               var=assign_ntl(tr,bram); 
+               var=assign_ntl(tr,true,bret); 
              else
-               var=assign(tr,bram);
+               var=assign(tr, true,bret);
                
-            }  
+        }
+   
+
+
+    | #(UTIMES attz:ATT_ID) {
+          var=out(att2var(attz));    
+    }
+
+
+
      | #(WHERE_ASSIGN wasn:. ) {
 
      }
-
+    
     //ternary Operator
      |   #(QUESTION var1=out qus:.) {
            bool br;
@@ -2098,6 +2603,18 @@ out returns [var_sct *var]
         
      // Variable with argument list 
     | (#(VAR_ID LMT_LIST)) => #( vid:VAR_ID lmt:LMT_LIST) {
+		
+		    // fxm: 4 Oct 2015
+			/*
+			  the following is valid syntx var_nm(array_var)-
+			  array_var now contains all the indices - that is 
+			  srt vectors  
+			  srt & end vectors
+			  srt,end,srd vectors
+			
+			  so for now indexing into a multi-dmensional var using a single index has
+			  temporarily been disabled
+			
            // see if hyperslab limit is a single value
            if(lmt->getNumberOfChildren()==1 && 
               lmt->getFirstChild()->getNumberOfChildren()==1 &&
@@ -2106,30 +2623,155 @@ out returns [var_sct *var]
               var=var_lmt_one(vid);
            else   
                var=var_lmt(vid);
-
+           */
+           var=var_lmt(vid);  
+     
+             
     }
+
+     // attribute with argument list 
+    | (#(ATT_ID LMT_LIST)) => #( attl:ATT_ID lmtl:LMT_LIST) {
+
+            std::string att_nm=attl->getText();
+            std::string fnc_nm("att_lmt"); 
+            NcapVar *Nvar=NULL;
+            NcapVector<lmt_sct*> lmt_vtr;
+
+            var_sct *var_att=NULL_CEWI; 
+
+            
+            if(prs_arg->ntl_scn)
+            { 
+              // only final scan for this attribute hyperslab 
+              var=ncap_var_udf(att_nm.c_str());
+              // can't return here -- have to use goto
+              goto attl_end; 
+            } 
+  
+            Nvar=prs_arg->var_vtr.find(attl->getText());
+
+            if(Nvar!=NULL)
+                var_att=nco_var_dpl(Nvar->var);
+            else    
+                var_att=ncap_att_init(att_nm,prs_arg);
+            
+
+            if(var_att==NULL_CEWI )
+                err_prn(fnc_nm,"Unable to locate attribute " +att_nm+ " in input or output files.");
+            
+		    lmt_mk(1L,lmtl,lmt_vtr);
+           
+
+            if( lmt_vtr.size() != 1)
+                err_prn(fnc_nm,"Number of hyperslab limits for an attribute "+ att_nm+"must be one ");
+
+            // fxm - very soon  
+            lmt_vtr[0]->nm=strdup("zz@attribute");    
+            (void)ncap_lmt_evl(1,lmt_vtr[0],var_att->sz,prs_arg); 
+             
+            // we have something to hyperslab
+            if( lmt_vtr[0]->cnt > 0)
+            {  
+               char *cp_in;
+               char *cp_out;  
+               long idx;
+               long jdx;  
+               long srt=lmt_vtr[0]->srt;
+               long cnt=lmt_vtr[0]->cnt;
+               long srd=lmt_vtr[0]->srd; 
+               long end=lmt_vtr[0]->end; 
+               size_t slb_sz=nco_typ_lng(var_att->type); 
+                
+               /* create output att */
+                 
+               if( var_att->type ==NC_STRING )  
+               {
+                   var=ncap_sclr_var_mk(att_nm,var_att->type,false);                
+                   var->val.vp=(void*)nco_malloc(slb_sz*cnt);  
+                   var->sz=cnt;       
+                   (void)cast_void_nctype((nc_type)NC_STRING,&var->val);                 
+                   (void)cast_void_nctype((nc_type)NC_STRING,&var_att->val);                  
+                   
+                   jdx=0;  
+                   for(idx=srt;idx<=end;idx+=srd)  
+                     var->val.sngp[jdx++]=strdup(var_att->val.sngp[idx]);
+
+                   (void)cast_nctype_void((nc_type)NC_STRING,&var->val); 
+                   (void)cast_nctype_void((nc_type)NC_STRING,&var_att->val); 
+               
+               }
+               else
+               {     
+                   var=ncap_sclr_var_mk(att_nm,var_att->type,true);                 
+                   (void)ncap_att_stretch(var,cnt);     
+
+                   cp_in=(char*)( var_att->val.vp); 
+                   cp_in+= (ptrdiff_t)slb_sz*srt;
+                   cp_out=(char*)var->val.vp; 
+                   
+                   idx=0;
+                   
+                   while(idx++ < cnt )
+                   { 
+                       memcpy(cp_out, cp_in, slb_sz);                   
+                       cp_in+=srd*slb_sz;
+                       cp_out+=slb_sz; 
+                   } 
+
+               }               
+
+            }
+            else
+            {
+              err_prn(fnc_nm,"Hyperslab limits for attribute "+ att_nm+" doesn't include any elements");  
+            }
+
+            nco_lmt_free(lmt_vtr[0]);  
+            nco_var_free(var_att);    
+
+            attl_end: ; 
+        }
+
+
 
     // plain Variable
 	|   v:VAR_ID       
         { 
-
+          //dbg_prn(fnc_nm,"getting regular var in out "+v->getText());
+   
           var=prs_arg->ncap_var_init(v->getText(),true);
-          if(var== NULL){
-               if(prs_arg->ntl_scn){
-                 var=ncap_var_udf(v->getText().c_str());
-                 return var;
-               }else
-                 nco_exit(EXIT_FAILURE);
-          }
 
-          // apply cast only if sz >1 
-          if(bcst && var->sz >1)
-            var=ncap_cst_do(var,var_cst,prs_arg->ntl_scn);
-        } /* end action */
+         // initial scan 
+         if(prs_arg->ntl_scn)  
+         {  
+           if(var==NULL)     
+              var=ncap_var_udf(v->getText().c_str());
+           else if(bcst && var_cst && var->sz >1)      
+              var=ncap_cst_do(var,var_cst,prs_arg->ntl_scn);  
+         } 
+         // final scan  
+         else
+         { 
+           if(var==NULL)
+             err_prn(fnc_nm,"Could not read var "+ v->getText());
+  
+           if(bcst && var_cst && var->sz >1)
+           {    
+             if(var_cst->nbr_dim==var->nbr_dim)     
+               ncap_var_cnf_dmn(&var,&var_cst);
+             else    
+               var=ncap_cst_do(var,var_cst,prs_arg->ntl_scn);
+           }   
+         }
+
+
+    } /* end action */
 
     // PLain attribute
     |   att:ATT_ID { 
-
+   
+            var=att_plain(att);  
+            /*  
             NcapVar *Nvar=NULL;
          
             if(prs_arg->ntl_scn)
@@ -2155,6 +2797,7 @@ out returns [var_sct *var]
             
             if(prs_arg->ntl_scn && var->val.vp !=NULL)
                 var->val.vp=(void*)nco_free(var->val.vp);
+            */
               
         }
 
@@ -2165,9 +2808,11 @@ out returns [var_sct *var]
 
     |   str:NSTRING
         {
+            /* use malloc here rather than strdup(str->getText().c_str()) as this causes 
+               an invalid-read when using GCC compiler */ 
             char *tsng;
-            
-            tsng=strdup(str->getText().c_str());
+            tsng=(char*)nco_malloc(str->getText().size()+1);    
+            strcpy(tsng, str->getText().c_str());
             (void)sng_ascii_trn(tsng);            
             var=(var_sct *)nco_malloc(sizeof(var_sct));
             /* Set defaults */
@@ -2186,11 +2831,14 @@ out returns [var_sct *var]
             tsng=(char*)nco_free(tsng);      
         }
 
+
+
+
     |   str1:N4STRING
         {
             char *tsng;
-
-            tsng=strdup(str1->getText().c_str());
+            tsng=(char*)nco_malloc(str1->getText().size()+1);    
+            strcpy(tsng, str1->getText().c_str());
             (void)sng_ascii_trn(tsng);            
             var=(var_sct *)nco_malloc(sizeof(var_sct));
             /* Set defaults */
@@ -2216,38 +2864,39 @@ out returns [var_sct *var]
         }
 
         // Naked numbers: Cast is not applied to these numbers
-    |   val_float:FLOAT        
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~float"),(nc_type)NC_FLOAT,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~float"),static_cast<float>(std::strtod(val_float->getText().c_str(),(char **)NULL)));} // end FLOAT
-    |   val_double:DOUBLE        
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~double"),(nc_type)NC_DOUBLE,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~double"),strtod(val_double->getText().c_str(),(char **)NULL));} // end DOUBLE
-	|	val_int:INT			
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~int"),(nc_type)NC_INT,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~int"),static_cast<nco_int>(std::strtol(val_int->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end INT
-	|	val_short:SHORT			
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~short"),(nc_type)NC_SHORT,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~short"),static_cast<nco_short>(std::strtol(val_short->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end SHORT
-    |	val_byte:BYTE			
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~byte"),(nc_type)NC_BYTE,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~byte"),static_cast<nco_byte>(std::strtol(val_byte->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end BYTE
+    |   val_float:NCAP_FLOAT  
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~float"),(nc_type)NC_FLOAT,false); else var=ncap_sclr_var_mk(SCS("~float"),static_cast<float>(std::strtod(val_float->getText().c_str(),(char **)NULL)));} // end FLOAT
+    |   val_double:NCAP_DOUBLE        
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~double"),(nc_type)NC_DOUBLE,false); else var=ncap_sclr_var_mk(SCS("~double"),strtod(val_double->getText().c_str(),(char **)NULL));} // end DOUBLE
+	|	val_int:NCAP_INT
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~int"),(nc_type)NC_INT,false); else var=ncap_sclr_var_mk(SCS("~int"),static_cast<nco_int>(std::strtol(val_int->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end INT
+	|	val_short:NCAP_SHORT
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~short"),(nc_type)NC_SHORT,false); else var=ncap_sclr_var_mk(SCS("~short"),static_cast<nco_short>(std::strtol(val_short->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end SHORT
+    |	val_byte:NCAP_BYTE		
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~byte"),(nc_type)NC_BYTE,false); else var=ncap_sclr_var_mk(SCS("~byte"),static_cast<nco_byte>(std::strtol(val_byte->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end BYTE
 // fxm TODO nco851: How to add ENABLE_NETCDF4 #ifdefs to ncoGrammer.g?
 // Workaround (permanent?) is to add stub netCDF4 forward compatibility prototypes to netCDF3 libnco
 // #ifdef ENABLE_NETCDF4
-	|	val_ubyte:UBYTE			
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~ubyte"),(nc_type)NC_UBYTE,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~ubyte"),static_cast<nco_ubyte>(std::strtoul(val_ubyte->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end UBYTE
+	|	val_ubyte:NCAP_UBYTE
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~ubyte"),(nc_type)NC_UBYTE,false); else var=ncap_sclr_var_mk(SCS("~ubyte"),static_cast<nco_ubyte>(std::strtoul(val_ubyte->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end UBYTE
         // NB: sng2nbr converts "255" into nco_ubtye=2. This is not good.
-        //        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~ubyte"),(nc_type)NC_UBYTE,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~ubyte"),sng2nbr(val_ubyte->getText(),nco_ubyte_CEWI));} // end UBYTE
-	|	val_ushort:USHORT			
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~ushort"),(nc_type)NC_USHORT,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~ushort"),static_cast<nco_ushort>(std::strtoul(val_ushort->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end USHORT
-	|	val_uint:UINT			
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~uint"),(nc_type)NC_UINT,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~uint"),static_cast<nco_uint>(std::strtoul(val_uint->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end UINT
-	|	val_int64:INT64			
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~int64"),(nc_type)NC_INT64,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~int64"),sng2nbr(val_int64->getText(),nco_int64_CEWI));} // end INT64
+        //        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~ubyte"),(nc_type)NC_UBYTE,false); else var=ncap_sclr_var_mk(SCS("~ubyte"),sng2nbr(val_ubyte->getText(),nco_ubyte_CEWI));} // end UBYTE
+	|	val_ushort:NCAP_USHORT
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~ushort"),(nc_type)NC_USHORT,false); else var=ncap_sclr_var_mk(SCS("~ushort"),static_cast<nco_ushort>(std::strtoul(val_ushort->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end USHORT
+	|	val_uint:NCAP_UINT	
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~uint"),(nc_type)NC_UINT,false); else var=ncap_sclr_var_mk(SCS("~uint"),static_cast<nco_uint>(std::strtoul(val_uint->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end UINT
+	|	val_int64:NCAP_INT64
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~int64"),(nc_type)NC_INT64,false); else var=ncap_sclr_var_mk(SCS("~int64"),sng2nbr(val_int64->getText(),nco_int64_CEWI));} // end INT64
         // std::strtoll() and std::strtoull() are not (yet) ISO C++ standard
-        //{if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~int64"),(nc_type)NC_INT64,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~int64"),static_cast<nco_int64>(std::strtoll(val_int64->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end INT64
-	|	val_uint64:UINT64
-        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~uint64"),(nc_type)NC_UINT64,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~uint64"),sng2nbr(val_uint64->getText(),nco_uint64_CEWI));} // end UINT64
+        //{if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~int64"),(nc_type)NC_INT64,false); else var=ncap_sclr_var_mk(SCS("~int64"),static_cast<nco_int64>(std::strtoll(val_int64->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end INT64
+	|	val_uint64:NCAP_UINT64
+        {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~uint64"),(nc_type)NC_UINT64,false); else var=ncap_sclr_var_mk(SCS("~uint64"),sng2nbr(val_uint64->getText(),nco_uint64_CEWI));} // end UINT64
         // std::strtoll() and std::strtoull() are not (yet) ISO C++ standard
-        // {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(static_cast<std::string>("~uint64"),(nc_type)NC_UINT64,false); else var=ncap_sclr_var_mk(static_cast<std::string>("~uint64"),static_cast<nco_uint64>(std::strtoull(val_uint64->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end UINT64
+        // {if(prs_arg->ntl_scn) var=ncap_sclr_var_mk(SCS("~uint64"),(nc_type)NC_UINT64,false); else var=ncap_sclr_var_mk(SCS("~uint64"),static_cast<nco_uint64>(std::strtoull(val_uint64->getText().c_str(),(char **)NULL,NCO_SNG_CNV_BASE10)));} // end UINT64
 // #endif /* !ENABLE_NETCDF4 */
 
 ;
+
 
 // Return a var or att WITHOUT applying a cast 
 // and checks that the operand is a valid Lvalue
@@ -2288,11 +2937,13 @@ NcapVar *Nvar;
           //do attribute inheritance
 
           Nvar=prs_arg->var_vtr.find(var_nm_s);
-
           if( !Nvar || Nvar->flg_stt==1 ) 
-               ncap_att_cpy(var_nm_s,var_nm_s,prs_arg);
+             ncap_att_cpy(var_nm_s,var_nm_s,prs_arg);
 
           var=prs_arg->ncap_var_init(var_nm_s,true);
+
+
+
           if(var== NULL_CEWI){
                nco_exit(EXIT_FAILURE);
           }
@@ -2301,12 +2952,14 @@ NcapVar *Nvar;
     // Plain attribute
     |   att:ATT_ID { 
             // check "output"
-            NcapVar *Nvar=NULL;
+
          
             if(att->getFirstChild())
                 err_prn(fnc_nm,"Invalid Lvalue " +att->getText() );
 
+            var=att_plain(att);
 
+            /* 
             if(prs_arg->ntl_scn)
               Nvar=prs_arg->int_vtr.find(att->getText());
 
@@ -2329,11 +2982,254 @@ NcapVar *Nvar;
 
             if(prs_arg->ntl_scn && var->val.vp !=NULL)
                 var->val.vp=(void*)nco_free(var->val.vp);
+            */ 
+              
 
        }// end action    
 ;
 
+
+
+att_plain returns [var_sct *var]
+{
+const std::string fnc_nm("att_plain");
+var=NULL_CEWI; 
+string att_nm; 
+
+   
+}
+
+: att:ATT_ID 
+      { 
+            // check "output"
+            NcapVar *Nvar=NULL;
+             
+            att_nm=att->getText();       
+
+            if(prs_arg->ntl_scn)
+              Nvar=prs_arg->int_vtr.find(att_nm);
+
+            if(Nvar==NULL) 
+              Nvar=prs_arg->var_vtr.find(att_nm);
+
+            var=NULL_CEWI;    
+            if(Nvar !=NULL)
+                var=nco_var_dpl(Nvar->var);
+            else    
+                var=ncap_att_init(att_nm,prs_arg);
+
+            if(prs_arg->ntl_scn==False  && var==NULL_CEWI )
+                err_prn(fnc_nm,"Unable to locate attribute " +att_nm+ " in input or output files.");
+
+            
+            // if att not found return undefined
+            if(prs_arg->ntl_scn && var==NULL_CEWI )
+                var=ncap_var_udf(att_nm.c_str());
+
+            if(prs_arg->ntl_scn && var->val.vp !=NULL)
+                var->val.vp=(void*)nco_free(var->val.vp);
+
+       }// end action    
+;
+
+
+
+
+
+// takes an ATT_ID pointer and converts it to a VAR_ID
+att2var returns [ RefAST tr ]
+{
+  var_sct *var=NULL_CEWI; 
+  NcapVar *Nvar;
+  std::string sn;
+  std::string att_nm;
+  std::string fnc_nm("att2var");
+
+}
+
+: (att:ATT_ID) 
+   {
+    /* sn can be empty on 1st Parse but not 2nd */
+   att_nm=att->getText();
+   
+   if(nco_dbg_lvl_get() >= nco_dbg_scl) 
+      dbg_prn(fnc_nm,"att_nm="+att_nm);
+       
+    sn=ncap_att2var(prs_arg,att_nm); 
+   
+    if(prs_arg->ntl_scn && sn.empty())     
+    {
+       sn="_empty_"+att_nm;   
+       var=ncap_var_udf(sn.c_str());
+       Nvar=new NcapVar(var);
+       prs_arg->int_vtr.push_ow(Nvar);            
+    }
+    
+
+    tr=nco_dupList(att);
+    
+    if(sn.find('@') != std::string::npos)
+      tr->setType(ATT_ID);       
+    else
+      tr->setType(VAR_ID);       
+
+    tr->setText(sn);
+
+    }
+;
+
+
+
+
 value_list returns [var_sct *var]
+{
+const std::string fnc_nm("value_list");
+var=NULL_CEWI; 
+}
+ :(vlst:VALUE_LIST) {
+         char *cp;  
+         int nbr_lst;
+         int idx;
+         int tsz;
+
+         nc_type type=NC_NAT;
+         var_sct *var_ret;                        
+         var_sct *var_int; 
+         RefAST rRef;
+
+         rRef=vlst->getFirstChild();
+
+         nbr_lst=vlst->getNumberOfChildren(); 
+
+         /* get type of first element */ 
+         var_int=out(rRef);       
+
+         /* first element undefined */  
+         if(var_int->undefined)
+          {   
+            var_ret=ncap_var_udf("~zz@value_list");  
+            goto end_val; 
+          } 
+          
+          type=var_int->type;   
+
+          if(type==NC_STRING) 
+          { 
+           var_ret=value_list_string(vlst); 
+           goto end_val; 
+          }
+   
+
+          var_ret=(var_sct *)nco_malloc(sizeof(var_sct));
+          /* Set defaults */
+          (void)var_dfl_set(var_ret); 
+
+          /* Overwrite with attribute expression information */
+          var_ret->nm=strdup("~zz@value_list");
+          var_ret->nbr_dim=0;
+          var_ret->sz=nbr_lst;
+          var_ret->type=type;
+
+          /* deal with initial scan */   
+          if(prs_arg->ntl_scn)
+             goto end_val;
+
+          /* create some space for output */
+          tsz=nco_typ_lng(type);
+          var_ret->val.vp=(void*)nco_malloc(nbr_lst*tsz);
+
+          /* copy first value over */
+          memcpy(var_ret->val.vp, var_int->val.vp, tsz);  
+          var_int=nco_var_free(var_int); 
+          rRef=rRef->getNextSibling();
+
+          /* rest of values */
+          for(idx=1;idx<nbr_lst;idx++) 
+          {
+            var_int=out(rRef);   
+            nco_var_cnf_typ(type,var_int);  
+            cp=(char*)(var_ret->val.vp)+ (ptrdiff_t)(idx*tsz);
+            memcpy(cp,var_int->val.vp,tsz);
+ 
+            var_int=nco_var_free(var_int); 
+            rRef=rRef->getNextSibling();
+          }
+          
+          end_val: if(var_int)
+                      nco_var_free(var_int);  
+          var=var_ret;
+
+    } // end action
+;
+
+
+value_list_string returns [var_sct *var]
+{
+const std::string fnc_nm("value_list");
+var=NULL_CEWI; 
+}
+ :(vlst:VALUE_LIST) {
+
+
+         int nbr_lst;
+         int idx;
+         int tsz;
+
+         nc_type type=NC_NAT;
+         var_sct *var_ret;                        
+         var_sct *var_int; 
+         RefAST rRef;
+         
+         rRef=vlst->getFirstChild();
+
+         nbr_lst=vlst->getNumberOfChildren(); 
+         
+         type=NC_STRING;   
+
+         var_ret=(var_sct *)nco_malloc(sizeof(var_sct));
+         /* Set defaults */
+         (void)var_dfl_set(var_ret); 
+
+         /* Overwrite with attribute expression information */
+         var_ret->nm=strdup("~zz@value_list");
+         var_ret->nbr_dim=0;
+         var_ret->sz=nbr_lst;
+         var_ret->type=type;
+
+         /* deal with initial scan */   
+         if(prs_arg->ntl_scn)
+             goto end_val;
+
+         /* create some space for output */
+         tsz=nco_typ_lng(type);
+         var_ret->val.vp=(void*)nco_malloc(nbr_lst*tsz);
+         (void)cast_void_nctype((nc_type)NC_STRING,&var_ret->val);
+
+         for(idx=0;idx<nbr_lst;idx++) 
+             {
+                 var_int=out(rRef);   
+                 if(var_int->type != NC_STRING)
+                     err_prn(fnc_nm," error processing value list string: to successfully parse value list of strings all elements must be of type NC_STRING");    
+
+                 (void)cast_void_nctype((nc_type)NC_STRING,&var_int->val);
+                 var_ret->val.sngp[idx]=strdup(var_int->val.sngp[0]); 
+                 // cast pointer back
+                 (void)cast_nctype_void((nc_type)NC_STRING,&var_int->val);
+
+                 nco_var_free(var_int);  
+                 rRef=rRef->getNextSibling();
+             }
+         (void)cast_nctype_void((nc_type)NC_STRING,&var_ret->val);
+
+    end_val: var=var_ret;
+
+
+    } // end action
+;
+
+
+
+value_list_old returns [var_sct *var]
 {
 const std::string fnc_nm("value_list");
 var=NULL_CEWI; 
@@ -2357,11 +3253,12 @@ var=NULL_CEWI;
            rRef=rRef->getNextSibling();
          }       
          nbr_lst=exp_vtr.size();
+         
 
          // if any types are NC_STRING then call value_list_string() action 
          for(idx=0;idx <nbr_lst ;idx++)
            if(exp_vtr[idx]->type == NC_STRING){
-             var_ret=value_list_string(rRef,exp_vtr);
+             var_ret=value_list_string_old(rRef,exp_vtr);
              goto end_val;
            }
       
@@ -2427,9 +3324,13 @@ var=NULL_CEWI;
         } // end action
 ;
 
+
+
+
+
 // Deal here with a value list of strings
 // Called only from value_list
-value_list_string[ std::vector<var_sct*> &exp_vtr] returns [var_sct *var]
+value_list_string_old[ std::vector<var_sct*> &exp_vtr] returns [var_sct *var]
 {
 const std::string fnc_nm("value_list_string");
 var=NULL_CEWI; 
@@ -2489,23 +3390,31 @@ var=NULL_CEWI;
 where_assign [var_sct *var_msk] returns [bool bret=false]
 {
 const std::string fnc_nm("where_assign");
+var_sct *var_lhs;
 var_sct *var_rhs;
 
 }
-  :#(EXPR #(ASSIGN vid:VAR_ID var_rhs=out)) {
+  :#(EXPR #(ASSIGN vid:. var_rhs=out)) {
+//:#(EXPR #(ASSIGN var_lhs=out var_rhs=out)) {
     
    bool bfr=false;
    nco_bool DO_CONFORM;
-   std::string var_nm=vid->getText();
-   var_sct *var_lhs;
+   //std::string var_nm=vid->getText();
+   std::string var_nm;
    NcapVar *Nvar;
 
    bret=false;
 
-   var_lhs=prs_arg->ncap_var_init(var_nm,true);
+   if(vid->getType()==VAR_ID &&  vid->getFirstChild()  && vid->getFirstChild()->getType()==LMT_LIST )  
+     err_prn(fnc_nm, "the \"where statement\" cannot handle a variable with limits on the Left-Hand-Side of an assign statement. Please  remove the limts and try again\nThe variable involved is \""+ vid->getText()+"\"");
+                     
+   //var_lhs=prs_arg->ncap_var_init(var_nm,true);
+   var_lhs=out(vid);
    if(var_lhs==NULL_CEWI) 
      nco_exit(EXIT_FAILURE);
             
+   var_nm=std::string(var_lhs->nm); 
+
    var_rhs=nco_var_cnf_typ(var_lhs->type,var_rhs);         
    if(var_rhs->sz >1L && var_rhs->sz != var_lhs->sz) {
      var_sct *var_tmp=NULL_CEWI;
@@ -2546,11 +3455,8 @@ var_sct *var_rhs;
     char *cp_out;
     short *sp;
     long idx;
-    long jdx;
     long sz;
     size_t slb_sz;
-    bool b_vp=false;
-    char *mss_cp;
 
     sz=var_lhs->sz;
     slb_sz=nco_typ_lng(var_lhs->type);
@@ -2562,50 +3468,22 @@ var_sct *var_rhs;
     cp_out=( char*)(var_lhs->val.vp);
     cp_in=( char*)(var_rhs->val.vp);
 
-    if(var_lhs->has_mss_val) {
-       mss_cp=( char*)var_lhs->mss_val.vp;
-       b_vp=true;
-    } else if(var_rhs->has_mss_val){
-       mss_cp=( char*)var_rhs->mss_val.vp;
-       b_vp=true;                 
-    }        
-    // missing values    
-    if(b_vp) {
-      if(var_rhs->sz==1L){ 
 
-        for(idx=0; idx<sz; idx++) {
-         if(sp[idx] && memcmp(cp_out,mss_cp,slb_sz))
-          (void)memcpy(cp_out,cp_in,slb_sz);       
-         cp_out+=slb_sz;
-        } 
-      } else {  
-        for(idx=0; idx<sz; idx++) {
-          if(sp[idx]&& memcmp(cp_out,mss_cp,slb_sz) 
-                    && memcmp(cp_in,mss_cp,slb_sz))
-            (void)memcpy(cp_out,cp_in,slb_sz);      
-          cp_out+=slb_sz;
-         cp_in+=slb_sz;
-        }
-      } 
-     // no missing values                
-     } else { 
-
-      if(var_rhs->sz==1L){ 
-
-        for(idx=0; idx<sz; idx++) {
-         if(sp[ idx])
+    if(var_rhs->sz==1L){ 
+      for(idx=0; idx<sz; idx++) {
+        if(sp[ idx])
           (void)memcpy(cp_out,cp_in,slb_sz);       
         cp_out+=slb_sz;
         } 
-      } else {  
+    }else{  
         for(idx=0; idx<sz; idx++) {
           if(sp[idx])
             (void)memcpy(cp_out,cp_in,slb_sz);      
           cp_out+=slb_sz;
          cp_in+=slb_sz;
         }
-      } 
-    }             
+    } 
+                    
 
    (void)cast_nctype_void(NC_SHORT,&var_msk->val); 
 
@@ -2654,7 +3532,7 @@ var_sct *var_nbr;
               int fl_id;
               int nbr_dim=var_rhs->nbr_dim;
               long srt; 
-              long srt1[NC_MAX_DIMS];   
+              long srt1[NC_MAX_VAR_DIMS];   
               long sz_dim=1;
               NcapVar *Nvar;
 
@@ -2674,7 +3552,7 @@ var_sct *var_nbr;
               if(prs_arg->FORTRAN_IDX_CNV)
                 srt--;
               else if ( srt<0) 
-                srt+=var_rhs->sz-1; // deal with negative index 
+                srt+=var_rhs->sz; // deal with negative index 
  
               // do some bounds checking
               if(srt >= var_rhs->sz || srt<0 )
@@ -2737,6 +3615,7 @@ end0:       var_nbr=nco_var_free(var_nbr);
 
 //Calculate scalar LHS hyperslab where there is a single limit for a possibly
 // multi-dimensional variable
+
 var_lmt_one_lhs[bool bram] returns [var_sct *var]
 {
 const std::string fnc_nm("var_lmt_one_lhs");
@@ -2745,7 +3624,6 @@ var_sct *var_nbr;
 }
   :#(vid:VAR_ID #(LMT_LIST #(LMT var_nbr=out))) {
                int idx; 
-               int var_id; 
                int slb_sz;
                long srt;
 
@@ -2790,12 +3668,12 @@ var_sct *var_nbr;
 
                  }else{
                     var_lhs=prs_arg->ncap_var_init(var_nm,true);       
-               }
+                 }
                   
                // fortran index convention   
                if(prs_arg->FORTRAN_IDX_CNV)
                 srt--;
-               else if(srt<0) srt+=var_lhs->sz-1; //deal with negative index convention 
+               else if(srt<0) srt+=var_lhs->sz; //deal with negative index convention 
                  
                  // do some bounds checking on single limits
                  if(srt >= var_lhs->sz || srt<0 )
@@ -2813,7 +3691,11 @@ var_sct *var_nbr;
                  var_rhs=nco_var_cnf_typ(var_lhs->type,var_rhs);             
                
                  slb_sz=nco_typ_lng(var_lhs->type);     
-                 (void)memcpy((char*)var_lhs->val.vp+(ptrdiff_t)(srt*slb_sz),var_rhs->val.vp,slb_sz);    
+                 (void)memcpy((char*)var_lhs->val.vp+(ptrdiff_t)(srt*slb_sz),var_rhs->val.vp,slb_sz);
+                 
+                 if(var_lhs->type==NC_STRING)
+                    (void)ncap_sngcpy((char*)var_lhs->val.vp+(ptrdiff_t)(srt*slb_sz),slb_sz);
+
 
                  if(!Nvar)
                    (void)prs_arg->ncap_var_write(var_lhs,true); 
@@ -2832,11 +3714,12 @@ var_sct *var_nbr;
                 }
  
                 var_lhs=prs_arg->ncap_var_init(var_nm,false);
+
                     
                // fortran index convention   
                if(prs_arg->FORTRAN_IDX_CNV)
                 srt--;
-               else if(srt<0) srt+=var_lhs->sz-1; //deal with negative index convention 
+               else if(srt<0) srt+=var_lhs->sz; //deal with negative index convention 
               
                 // do some bounds checking on single limits
                 if(srt >= var_lhs->sz || srt<0 )
@@ -2859,9 +3742,10 @@ var_sct *var_nbr;
                 // write block
                 { 
                  int nbr_dim=var_lhs->nbr_dim;
-                 long srt1[NC_MAX_DIMS];   
+                 long srt1[NC_MAX_VAR_DIMS];   
                  long sz_dim=1; 
 
+                 var_lhs->sz=1;
                  // convert srt into multiple indices  
                  for(idx=0;idx<nbr_dim;idx++)
                    sz_dim*= var_lhs->cnt[idx]; 
@@ -2883,11 +3767,12 @@ var_sct *var_nbr;
                  (void)prs_arg->ncap_var_write_slb(var_lhs);     
 
                 }//end write block 
-            }     
+              }     
                    var_rhs=nco_var_free(var_rhs); 
                    var_nbr=nco_var_free(var_nbr); 
 }
 ;
+
 
 //Calculate var with limits
 var_lmt returns [var_sct *var]
@@ -2935,11 +3820,11 @@ var=NULL_CEWI;
             }
             // Temporarily change mode 
             prs_arg->ntl_scn=False;
-            lmt_mk(lRef,lmt_vtr);
+            lmt_mk(nbr_dmn,lRef,lmt_vtr);
             prs_arg->ntl_scn=True; 
 
           }else{
-            lmt_mk(lRef,lmt_vtr);
+            lmt_mk(nbr_dmn,lRef,lmt_vtr);
            }
 
          if( lmt_vtr.size() != nbr_dmn)
@@ -2951,7 +3836,7 @@ var=NULL_CEWI;
                         
           // fill out limit structure
            for(idx=0 ; idx < nbr_dmn ;idx++)
-            (void)ncap_lmt_evl(var_rhs->nc_id,lmt_vtr[idx],prs_arg);
+            (void)ncap_lmt_evl(var_rhs->nc_id,lmt_vtr[idx],-1,prs_arg);
 
           // See if var can be normalized
            for(idx=0; idx<nbr_dmn ; idx++){
@@ -2978,7 +3863,7 @@ var=NULL_CEWI;
                var=nco_var_cnf_typ(var_rhs->type,var);
                 
                // apply LHS cast if necessary 
-               if(var->sz>1 && bcst) 
+               if(var->sz>1 && bcst && var_cst) 
                  var=ncap_cst_do(var,var_cst,prs_arg->ntl_scn);
               }else{
                 var=ncap_var_udf("~rhs_undefined");             
@@ -2990,7 +3875,7 @@ var=NULL_CEWI;
            // copy lmt_sct to dmn_sct;
            for(idx=0 ;idx <nbr_dmn ; idx++){
               dmn_sct *dmn_nw;
-              dmn_nw=(dmn_sct*)nco_malloc(sizeof(dmn_sct));
+              dmn_nw=(dmn_sct*)nco_calloc(1,sizeof(dmn_sct));
               dmn_nw->nm=strdup(lmt_vtr[idx]->nm);
 
               // Fudge -if the variable is from input then nco_lmt_evl
@@ -3063,7 +3948,19 @@ var=NULL_CEWI;
            if(var->sz ==1) {
               
              var1=ncap_sclr_var_mk(var_nm,var->type,true);
+             
              (void)memcpy( (void*)var1->val.vp,var->val.vp,nco_typ_lng(var1->type));
+             if(var1->type==NC_STRING)
+                 (void)ncap_sngcpy((char*)var1->val.vp, nco_typ_lng(var1->type) );
+             /*
+             if(var->type==NC_STRING){
+                 cast_void_nctype(NC_STRING, &var->val); 
+                 var1->val.sngp[0]=(nco_string)strdup(var->val.sngp[0]);
+                 cast_nctype_void(NC_STRING, &var->val); 
+             }else{
+             
+           }
+           */  
              
              // copy missing value if any from var_rhs to var1
              nco_mss_val_cp(var_rhs,var1);
@@ -3095,10 +3992,12 @@ var=NULL_CEWI;
               // free var  
               (void)nco_var_free(var);    
                 
-              /* Casting a hyperslab --this makes my brain  hurt!!! */
-              if(bcst)
-                var1=ncap_cst_do(var1,var_cst,prs_arg->ntl_scn);
-
+              /* Casting a hyperslab --this makes my brain  hurt!!! 
+              if the var is already the correct size then do nothing 
+               what not even dimension reordering ?  */  
+              if(bcst && var_cst &&  var1->sz != var_cst->sz)
+                 var1=ncap_cst_do(var1,var_cst,prs_arg->ntl_scn);
+              
               var=var1;
                 
            }else{
@@ -3134,3 +4033,8 @@ var=NULL_CEWI;
           end2: var_rhs=nco_var_free(var_rhs); 
     }
 ;
+
+
+
+
+

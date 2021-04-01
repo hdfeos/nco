@@ -9,7 +9,7 @@ Volatile files are created automatically (e.g., by invoking
 Top-level files:
 AUTHORS		Whom to praise and blame
 CITATION	How and why to cite NCO in your work
-COPYING		GNU General Public License GPL3
+COPYING		3-Clause BSD License
 COPYRIGHT	Copyright information
 INSTALL		Boilerplate instructions for ./configure
 LICENSE		License details
@@ -106,20 +106,26 @@ nco/data/in_rec_zero.cdl 	CDL file to test zero-record files
 nco/data/mdl_1.cdl 	CDL file to test ensemble operations
 nco/data/mdl_2.cdl 	CDL file to test ensemble operations
 nco/data/mrd.cdl 	CDL file to test multiple record dimensions
-nco/data/ncap.in	Sample ncap input script
-nco/data/ncap.in2	ncap script to demonstrate #include capabilities
+nco/data/ncap.in	Sample ncap2 input script
+nco/data/ncap.in2	ncap2 script to demonstrate #include capabilities
 nco/data/ncap2.in	Sample ncap2 input script
 nco/data/ncap2_tst.nco  ncap2 self-printing test script
 nco/data/ncl.ncl	NCL script to compare to NCO scripts for speed
 nco/data/nco_bnch.sh	Old (deprecated) NCO benchmark script
+nco/data/ncclimo	ncclimo operator
+nco/data/ncremap	ncremap operator
 nco/data/netcdf4.nco	Sample input script for netCDF4-enabled ncap2
 nco/data/obs.cdl 	CDL file to test group broadcasting
 nco/data/psd.nco	Sample ncap2 script that computes particle size distributions
 nco/data/psd_wrf.nco	Sample ncap2 script that computes WRF particle size distributions
+nco/data/sld_nco.sh	NCO script to process (regrid) Swath-Like Data (SLD)
 nco/data/swamp.sh	Demonstrate SWAMP usage
-nco/data/tst.nco	Sample ncap script that computes geophysical quantities
+nco/data/tst.nco	Sample ncap2 script that computes geophysical quantities
+nco/data/tpr_brt.nco	ESS 138 Lab 3: Retrieve brightness temperatures and SST from GOES16 L1b radiances
 nco/data/udunits.dat	UDUnits database for Debian compatibility
 nco/data/xmp_500mb_hgt.nco ncap2 script to compute 500 mb height field
+nco/data/xmp_flx_spc.nco ncap2 example processing spectral/broadband flux data
+nco/data/xmp_wnd_msk.nco ncap2 example compute wind speed power statistics
 
 Documentation directory:
 nco/doc/ANNOUNCE	Announcement to accompany release notifications
@@ -140,23 +146,24 @@ nco/doc/doe.jpg		DOE logo (JPG format)
 nco/doc/endorsements.txt Statements of support for NCO
 nco/doc/help.txt	Advertisement for help with NCO (outdated---from 2000)
 nco/doc/highlights_old.shtml Short summaries of old releases
-nco/doc/index.shtml	NCO website homepage
-nco/doc/logo_srl.png	NCO spiral logo PNG raster format
-nco/doc/logo_srl.svg	NCO spiral logo Scalable Vector Graphic format
-nco/doc/logo_srl.xcf	NCO spiral logo GIMP format
+nco/doc/index.shtml	Website homepage
+nco/doc/logo_srl.png	Spiral logo PNG raster format
+nco/doc/logo_srl.svg	Spiral logo Scalable Vector Graphic format
+nco/doc/logo_srl.xcf	Spiral logo GIMP format
 nco/doc/milestones_old.shtml Milestones in old releases
 nco/doc/mpi.txt		MPI Environments for NCO
 nco/doc/my-bib-macros.texi TeXInfo bibliography macros for nco.texi
 nco/doc/nasa.png	NASA logo (PNG format)
 nco/doc/ncap.txt	Description of the ncap operator (not yet used)
-nco/doc/nco.dvi(v)	NCO User's Guide: DVI format
-nco/doc/nco.html(v)	NCO User's Guide: HTML format
-nco/doc/nco.info(v)	NCO User's Guide: Info format
-nco/doc/nco.pdf(v)	NCO User's Guide: Portable Document Format
-nco/doc/nco.png		NCO Webpage icon (PNG format)
-nco/doc/nco.ps(v)	NCO User's Guide: Postscript format
-nco/doc/nco.texi	NCO User's Guide: TeXInfo format
-nco/doc/nco_news.shtml	NCO news archive
+nco/doc/nco.dvi(v)	Users Guide: DVI format
+nco/doc/nco.html(v)	Users Guide: HTML format
+nco/doc/nco.info(v)	Users Guide: Info format
+nco/doc/nco.pdf(v)	Users Guide: Portable Document Format
+nco/doc/nco.png		Webpage icon (PNG format)
+nco/doc/nco.ps(v)	Users Guide: Postscript format
+nco/doc/nco.texi	Users Guide: TeXInfo format
+nco/doc/nco_news.shtml	News archive
+nco/doc/nco_rfr_crd.pdf(v) Quick Reference Card
 nco/doc/netcdf.h.3.6.3	Version 3.6.X of netcdf.h for backward compatibility
 nco/doc/netcdf4.sh	Install latest netcdf4 and HDF libraries for NCO
 nco/doc/nsf.png		NSF logo (PNG format)
@@ -170,10 +177,10 @@ Man-page Directory:
 nco/man/Makefile(v)	Autotools-generated Makefile
 nco/man/Makefile.am	Automake instructions
 nco/man/Makefile.in(v)	Autotools-generated Makefile
-nco/man/ncap.1		ncap man page
+nco/man/ncap2.1		ncap2 man page
 nco/man/ncatted.1	ncatted man page
 nco/man/ncbo.1		ncbo man page
-nco/man/ncdiff.1	ncdiff man page
+nco/man/ncclimo.1	ncclimo man page
 nco/man/nces.1		nces man page
 nco/man/ncecat.1	ncecat man page
 nco/man/ncflint.1	ncflint man page
@@ -182,6 +189,7 @@ nco/man/nco.1		NCO man page
 nco/man/ncpdq.1		ncpdq man page
 nco/man/ncra.1		ncra man page
 nco/man/ncrcat.1	ncrcat man page
+nco/man/ncremap.1	ncremap man page
 nco/man/ncrename.1	ncrename man page
 nco/man/ncwa.1		ncwa man page
 
@@ -214,12 +222,10 @@ nco/src/nco/mpncpdq.c		mpncpdq main() MPI-enabled
 nco/src/nco/mpncra.c		mpncra/mpnces/mpncrcat main() MPI-enabled
 nco/src/nco/mpncwa.c		mpncwa main() MPI-enabled
 nco/src/nco/ncap.c		ncap main() MPI-enabled
-nco/src/nco/ncap.h
 nco/src/nco/ncap_lex.c(v)	Generated by ncap_lex.l
 nco/src/nco/ncap_lex.l
 nco/src/nco/ncap_utl.c
-nco/src/nco/ncap_yacc.c(v)	Generated by ncap_yacc.y
-nco/src/nco/ncap_yacc.y
+nco/src/nco/ncap_utl.h
 nco/src/nco/ncatted.c		ncatted main()
 nco/src/nco/ncbo.c		ncbo main()
 nco/src/nco/ncecat.c		ncecat main()
@@ -238,12 +244,14 @@ nco/src/nco/nco_cnf_dmn.c
 nco/src/nco/nco_cnf_dmn.h
 nco/src/nco/nco_cnf_typ.c
 nco/src/nco/nco_cnf_typ.h
-nco/src/nco/nco_cnk.h
 nco/src/nco/nco_cnk.c
+nco/src/nco/nco_cnk.h
 nco/src/nco/nco_cnv_arm.c
 nco/src/nco/nco_cnv_arm.h
 nco/src/nco/nco_cnv_csm.c
 nco/src/nco/nco_cnv_csm.h
+nco/src/nco/nco_crt.c
+nco/src/nco/nco_crt.h
 nco/src/nco/nco_ctl.c
 nco/src/nco/nco_ctl.h
 nco/src/nco/nco_dbg.c
@@ -252,18 +260,24 @@ nco/src/nco/nco_dmn_utl.c
 nco/src/nco/nco_dmn_utl.h
 nco/src/nco/nco_fl_utl.c
 nco/src/nco/nco_fl_utl.h
+nco/src/nco/nco_flt.c
+nco/src/nco/nco_flt.h
 nco/src/nco/nco_getopt.c
 nco/src/nco/nco_getopt.h
 nco/src/nco/nco_grp_trv.c
 nco/src/nco/nco_grp_trv.h
 nco/src/nco/nco_grp_utl.c
 nco/src/nco/nco_grp_utl.h
+nco/src/nco/nco_kd.c
+nco/src/nco/nco_kd.h
 nco/src/nco/nco_lmt.c
 nco/src/nco/nco_lmt.h
 nco/src/nco/nco_lst_utl.c
 nco/src/nco/nco_lst_utl.h
-nco/src/nco/nco_md5.h
+nco/src/nco/nco_map.c
+nco/src/nco/nco_map.h
 nco/src/nco/nco_md5.c
+nco/src/nco/nco_md5.h
 nco/src/nco/nco_mmr.c
 nco/src/nco/nco_mmr.h
 nco/src/nco/nco_mpi.h
@@ -271,12 +285,18 @@ nco/src/nco/nco_msa.c
 nco/src/nco/nco_msa.h
 nco/src/nco/nco_mss_val.c
 nco/src/nco/nco_mss_val.h
+nco/src/nco/nco_mta.c
+nco/src/nco/nco_mta.h
 nco/src/nco/nco_netcdf.c	NCO-independent C wrappers for libnetcdf
 nco/src/nco/nco_netcdf.h	NCO-independent C wrappers for libnetcdf
 nco/src/nco/nco_omp.c
 nco/src/nco/nco_omp.h
 nco/src/nco/nco_pck.c
 nco/src/nco/nco_pck.h
+nco/src/nco/nco_ply.c
+nco/src/nco/nco_ply.h
+nco/src/nco/nco_ply_lst.c
+nco/src/nco/nco_ply_lst.h
 nco/src/nco/nco_ppc.c
 nco/src/nco/nco_ppc.h
 nco/src/nco/nco_prn.c
@@ -297,8 +317,12 @@ nco/src/nco/nco_sld.c
 nco/src/nco/nco_sld.h
 nco/src/nco/nco_sng_utl.c
 nco/src/nco/nco_sng_utl.h
+nco/src/nco/nco_sph.c
+nco/src/nco/nco_sph.h
 nco/src/nco/nco_srm.c
 nco/src/nco/nco_srm.h
+nco/src/nco/nco_srs.c
+nco/src/nco/nco_srs.h
 nco/src/nco/nco_typ.h
 nco/src/nco/nco_uthash.h
 nco/src/nco/nco_var_avg.c

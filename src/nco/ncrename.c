@@ -4,20 +4,19 @@
 
 /* Purpose: Rename dimensions, variables, and attributes of a netCDF file */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3.
-   As a special exception to the terms of the GPL, you are permitted 
-   to link the NCO source code with the HDF, netCDF, OPeNDAP, and UDUnits
+   3-Clause BSD License.
+   You are permitted to link NCO with the HDF, netCDF, OPeNDAP, and UDUnits
    libraries and to distribute the resulting executables under the terms 
-   of the GPL, but in addition obeying the extra stipulations of the 
+   of the BSD, but in addition obeying the extra stipulations of the 
    HDF, netCDF, OPeNDAP, and UDUnits licenses.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
-   See the GNU General Public License for more details.
+   See the 3-Clause BSD License for more details.
    
    The original author of this software, Charlie Zender, seeks to improve
    it with your suggestions, contributions, bug-reports, and patches.
@@ -129,6 +128,7 @@ main(int argc,char **argv)
   int mch_nbr_var=0; /* [nbr] Number of renamed variables */
   int mch_nbr_grp=0; /* [nbr] Number of renamed groups */
   int mch_nbr_dmn=0; /* [nbr] Number of renamed dimensions */
+  int log_lvl=0; /* [enm] netCDF library debugging verbosity [0..5] */
   int md_open; /* [enm] Mode flag for nc_open() call */
   int nbr_att_rnm=0; /* Option a. NB: nbr_att_rnm gets incremented */
   int nbr_dmn_rnm=0; /* Option d. NB: nbr_dmn_rnm gets incremented */
@@ -144,10 +144,12 @@ main(int argc,char **argv)
   nco_bool FORCE_APPEND=False; /* Option A */
   nco_bool FORCE_OVERWRITE=False; /* Option O */
   nco_bool HISTORY_APPEND=True; /* Option h */
+  nco_bool HPSS_TRY=False; /* [flg] Search HPSS for unfound files */
   nco_bool FL_OUT_NEW=False;
   nco_bool RAM_OPEN=False; /* [flg] Open (netCDF3-only) file(s) in RAM */
+  nco_bool SHARE_OPEN=False; /* [flg] Open (netCDF3-only) file(s) with unbuffered I/O */
   nco_bool RM_RMT_FL_PST_PRC=True; /* Option R */
-  nco_bool flg_cln=False; /* [flg] Clean memory prior to exit */
+  nco_bool flg_mmr_cln=False; /* [flg] Clean memory prior to exit */
 
   rnm_sct *var_rnm_lst=NULL_CEWI;
   rnm_sct *dmn_rnm_lst=NULL_CEWI;
@@ -166,20 +168,23 @@ main(int argc,char **argv)
   int prc_nbr=0; /* [nbr] Number of MPI processes */
 #endif /* !ENABLE_MPI */
   
-  static struct option opt_lng[] =
-  { /* Structure ordered by short option key if possible */
+  static struct option opt_lng[]={ /* Structure ordered by short option key if possible */
     /* Long options with no argument, no short option counterpart */
-    {"cln",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"clean",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"mmr_cln",no_argument,0,0}, /* [flg] Clean memory prior to exit */
     {"drt",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
     {"dirty",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
     {"mmr_drt",no_argument,0,0}, /* [flg] Allow dirty memory on exit */
     {"hdf4",no_argument,0,0}, /* [flg] Treat file as HDF4 */
-    {"ram_all",no_argument,0,0}, /* [flg] Open (netCDF3) and create file(s) in RAM */
+    {"ram_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) in RAM */
     {"create_ram",no_argument,0,0}, /* [flg] Create file in RAM */
     {"open_ram",no_argument,0,0}, /* [flg] Open (netCDF3) file(s) in RAM */
-    {"diskless_all",no_argument,0,0}, /* [flg] Open (netCDF3) and create file(s) in RAM */
+    {"diskless_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) in RAM */
+    {"share_all",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
+    {"create_share",no_argument,0,0}, /* [flg] Create (netCDF3) file(s) with unbuffered I/O */
+    {"open_share",no_argument,0,0}, /* [flg] Open (netCDF3) file(s) with unbuffered I/O */
+    {"unbuffered_io",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
+    {"uio",no_argument,0,0}, /* [flg] Open and create (netCDF3) file(s) with unbuffered I/O */
     {"version",no_argument,0,0},
     {"vrs",no_argument,0,0},
     /* Long options with argument, no short option counterpart */
@@ -189,8 +194,11 @@ main(int argc,char **argv)
     {"glb_att_add",required_argument,0,0}, /* [sng] Global attribute add */
     {"hdr_pad",required_argument,0,0},
     {"header_pad",required_argument,0,0},
+    {"log_lvl",required_argument,0,0}, /* [enm] netCDF library debugging verbosity [0..5] */
+    {"log_level",required_argument,0,0}, /* [enm] netCDF library debugging verbosity [0..5] */
     /* Long options with short counterparts */
     {"attribute",required_argument,0,'a'},
+    {"dbg_lvl",required_argument,0,'D'},
     {"debug",required_argument,0,'D'},
     {"nco_dbg_lvl",required_argument,0,'D'},
     {"dimension",required_argument,0,'d'},
@@ -213,7 +221,7 @@ main(int argc,char **argv)
     {0,0,0,0}
   };
   int opt_idx=0;  /* Index of current long option into opt_lng array */
-
+  
   /* Start timer and save command line */ 
   ddra_info.tmr_flg=nco_tmr_srt;
   rcd+=nco_ddra((char *)NULL,(char *)NULL,&ddra_info);
@@ -245,8 +253,8 @@ main(int argc,char **argv)
         bfr_sz_hnt=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
       } /* endif cnk */
-      if(!strcmp(opt_crr,"cln") || !strcmp(opt_crr,"mmr_cln") || !strcmp(opt_crr,"clean")) flg_cln=True; /* [flg] Clean memory prior to exit */
-      if(!strcmp(opt_crr,"drt") || !strcmp(opt_crr,"mmr_drt") || !strcmp(opt_crr,"dirty")) flg_cln=False; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"mmr_cln") || !strcmp(opt_crr,"clean")) flg_mmr_cln=True; /* [flg] Clean memory prior to exit */
+      if(!strcmp(opt_crr,"drt") || !strcmp(opt_crr,"mmr_drt") || !strcmp(opt_crr,"dirty")) flg_mmr_cln=False; /* [flg] Clean memory prior to exit */
       if(!strcmp(opt_crr,"gaa") || !strcmp(opt_crr,"glb_att_add")){
         gaa_arg=(char **)nco_realloc(gaa_arg,(gaa_nbr+1)*sizeof(char *));
         gaa_arg[gaa_nbr++]=(char *)strdup(optarg);
@@ -256,7 +264,13 @@ main(int argc,char **argv)
         hdr_pad=strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
         if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
       } /* endif "hdr_pad" */
-      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"open_ram") || !strcmp(opt_crr,"diskless_all")) RAM_OPEN=True; /* [flg] Create file in RAM */
+      if(!strcmp(opt_crr,"log_lvl") || !strcmp(opt_crr,"log_level")){
+	log_lvl=(int)strtol(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+	if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtol",sng_cnv_rcd);
+	nc_set_log_level(log_lvl);
+      } /* !log_lvl */
+      if(!strcmp(opt_crr,"ram_all") || !strcmp(opt_crr,"open_ram") || !strcmp(opt_crr,"diskless_all")) RAM_OPEN=True; /* [flg] Open (netCDF3) file(s) in RAM */
+      if(!strcmp(opt_crr,"share_all") || !strcmp(opt_crr,"unbuffered_io") || !strcmp(opt_crr,"uio") || !strcmp(opt_crr,"open_share")) SHARE_OPEN=True; /* [flg] Open (netCDF3) file(s) with unbuffered I/O */
       if(!strcmp(opt_crr,"vrs") || !strcmp(opt_crr,"version")){
         (void)nco_vrs_prn(CVS_Id,CVS_Revision);
         nco_exit(EXIT_SUCCESS);
@@ -276,7 +290,6 @@ main(int argc,char **argv)
     case 'D': /* Debugging level. Default is 0. */
       nco_dbg_lvl=(unsigned short int)strtoul(optarg,&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
       if(*sng_cnv_rcd) nco_sng_cnv_err(optarg,"strtoul",sng_cnv_rcd);
-      nc_set_log_level(nco_dbg_lvl);
       break;
     case 'd': /* Copy argument for later processing */
       dmn_rnm_arg[nbr_dmn_rnm]=(char *)strdup(optarg);
@@ -331,8 +344,8 @@ main(int argc,char **argv)
     if(opt_crr) opt_crr=(char *)nco_free(opt_crr);
   } /* end while loop */
 
-  /* Process positional arguments and fill in filenames */
-  fl_lst_in=nco_fl_lst_mk(argv,argc,optind,&fl_nbr,&fl_out,&FL_LST_IN_FROM_STDIN);
+  /* Process positional arguments and fill-in filenames */
+  fl_lst_in=nco_fl_lst_mk(argv,argc,optind,&fl_nbr,&fl_out,&FL_LST_IN_FROM_STDIN,FORCE_OVERWRITE);
   if(fl_out) FL_OUT_NEW=True; else fl_out=(char *)strdup(fl_lst_in[0]);
 
   if(!nbr_var_rnm && !nbr_att_rnm && !nbr_grp_rnm && !nbr_dmn_rnm){
@@ -352,7 +365,7 @@ main(int argc,char **argv)
   /* Parse filename */
   fl_in=nco_fl_nm_prs(fl_in,0,&fl_nbr,fl_lst_in,abb_arg_nbr,fl_lst_abb,fl_pth);
   /* Make sure file is on local system and is readable or die trying */
-  fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,&FL_RTR_RMT_LCN);
+  fl_in=nco_fl_mk_lcl(fl_in,fl_pth_lcl,HPSS_TRY,&FL_RTR_RMT_LCN);
 
   if(FL_OUT_NEW){
     /* Obtain user consent, if needed, to overwrite output file (or die trying) */
@@ -369,6 +382,7 @@ main(int argc,char **argv)
 
   /* Open file enabled for writing. Place file in define mode for renaming. */
   if(RAM_OPEN) md_open=NC_WRITE|NC_DISKLESS; else md_open=NC_WRITE;
+  if(SHARE_OPEN) md_open=md_open|NC_SHARE;
   rcd+=nco_fl_open(fl_out,md_open,&bfr_sz_hnt,&nc_id);
 
   /* 20141010: Avoid nc_rename_var/dim() bug */
@@ -383,7 +397,7 @@ main(int argc,char **argv)
   trv_tbl_init(&trv_tbl); 
 
   /* Construct GTT (Group Traversal Table), check -v and -g input names and create extraction list */
-  (void)nco_bld_trv_tbl(nc_id,trv_pth,(int)0,NULL,(int)0,NULL,False,False,NULL,(int)0,NULL,(int)0,False,False,False,False,True,nco_pck_plc_nil,NULL,trv_tbl);
+  (void)nco_bld_trv_tbl(nc_id,trv_pth,(int)0,NULL,(int)0,NULL,False,False,NULL,(int)0,NULL,(int)0,False,False,False,False,True,False,False,nco_pck_plc_nil,NULL,trv_tbl);
 
   /* Rename variables */
   for(int idx_var=0;idx_var<nbr_var_rnm;idx_var++){
@@ -409,12 +423,12 @@ main(int argc,char **argv)
 	} /* endif */
 
     if(mch_nbr == 0 && !is_opt){
-      (void)fprintf(stdout,"%s: ERROR Required variable \'%s\' is not present in input file. HINT: If presence is intended to be optional, then prefix old variable name with the period character \'%c\', i.e., \'%s -v %c%s,%s\'. With this syntax %s would succeed even if no such variable is in the file.\n",nco_prg_nm_get(),var_rnm_lst[idx_var].old_nm,opt_chr,nco_prg_nm_get(),opt_chr,var_rnm_lst[idx_var].old_nm,var_rnm_lst[idx_var].new_nm,nco_prg_nm_get());
+      (void)fprintf(stdout,"%s: ERROR Required variable \'%s\' is not present in input file. HINT: If presence is intended to be optional, then prefix old variable name with the period character \'%c\', i.e., \'%s -v %c%s,%s\'. With this syntax %s would succeed even when no such variable is in the file.\n",nco_prg_nm_get(),var_rnm_lst[idx_var].old_nm,opt_chr,nco_prg_nm_get(),opt_chr,var_rnm_lst[idx_var].old_nm,var_rnm_lst[idx_var].new_nm,nco_prg_nm_get());
       nco_exit(EXIT_FAILURE);
     }else if(mch_nbr == 0 && is_opt){
       (void)fprintf(stdout,"%s: INFO Optional variable \'%s\' not present in %s, skipping it\n",nco_prg_nm,var_rnm_lst[idx_var].old_nm+1L,fl_in);
     }else{
-      if(nco_dbg_lvl >= nco_dbg_std) (void)fprintf(stdout,"%s: Renamed %d variable%s from \'%s\' to \'%s\'\n",nco_prg_nm,mch_nbr,mch_nbr != 1 ? "s" : "",var_rnm_lst[idx_var].old_nm,var_rnm_lst[idx_var].new_nm);
+      if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stdout,"%s: Renamed %d variable%s from \'%s\' to \'%s\'\n",nco_prg_nm,mch_nbr,mch_nbr != 1 ? "s" : "",var_rnm_lst[idx_var].old_nm,var_rnm_lst[idx_var].new_nm);
     } /* end else */
 
     mch_nbr_var+=mch_nbr;
@@ -444,12 +458,12 @@ main(int argc,char **argv)
 	} /* endif */
 
     if(mch_nbr == 0 && !is_opt){
-      (void)fprintf(stdout,"%s: ERROR Required group \'%s\' is not present in input file. HINT: If presence is intended to be optional, then prefix old group name with the period character \'%c\', i.e., \'%s -g %c%s,%s\'. With this syntax %s would succeed even if no such group is in the file.\n",nco_prg_nm_get(),grp_rnm_lst[idx_grp].old_nm,opt_chr,nco_prg_nm_get(),opt_chr,grp_rnm_lst[idx_grp].old_nm,grp_rnm_lst[idx_grp].new_nm,nco_prg_nm_get());
+      (void)fprintf(stdout,"%s: ERROR Required group \'%s\' is not present in input file. HINT: If presence is intended to be optional, then prefix old group name with the period character \'%c\', i.e., \'%s -g %c%s,%s\'. With this syntax %s would succeed even when no such group is in the file.\n",nco_prg_nm_get(),grp_rnm_lst[idx_grp].old_nm,opt_chr,nco_prg_nm_get(),opt_chr,grp_rnm_lst[idx_grp].old_nm,grp_rnm_lst[idx_grp].new_nm,nco_prg_nm_get());
       nco_exit(EXIT_FAILURE);
     }else if(mch_nbr == 0 && is_opt){
       (void)fprintf(stdout,"%s: INFO Optional group \'%s\' not present in %s, skipping it\n",nco_prg_nm,grp_rnm_lst[idx_grp].old_nm+1L,fl_in);
     }else{
-      if(nco_dbg_lvl >= nco_dbg_std) (void)fprintf(stdout,"%s: Renamed %d group%s from \'%s\' to \'%s\'\n",nco_prg_nm,mch_nbr,mch_nbr != 1 ? "s" : "",grp_rnm_lst[idx_grp].old_nm,grp_rnm_lst[idx_grp].new_nm);
+      if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stdout,"%s: Renamed %d group%s from \'%s\' to \'%s\'\n",nco_prg_nm,mch_nbr,mch_nbr != 1 ? "s" : "",grp_rnm_lst[idx_grp].old_nm,grp_rnm_lst[idx_grp].new_nm);
     } /* end else */
 
     mch_nbr_grp+=mch_nbr;
@@ -474,17 +488,18 @@ main(int argc,char **argv)
 	mch_nbr++;
 	(void)nco_inq_grp_full_ncid(nc_id,trv_tbl->lst_dmn[tbl_idx].grp_nm_fll,&grp_id);
 	rcd=nco_inq_dimid(grp_id,trv_tbl->lst_dmn[tbl_idx].nm,&dmn_rnm_lst[idx_dmn].id);
+	if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stdout,"%s: grp_nm_fll= \'%s\', grp_id=%d, dmn_id = %d\n",nco_prg_nm,trv_tbl->lst_dmn[tbl_idx].grp_nm_fll,grp_id,dmn_rnm_lst[idx_dmn].id);
 	(void)nco_rename_dim(grp_id,dmn_rnm_lst[idx_dmn].id,dmn_rnm_lst[idx_dmn].new_nm);
 	if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stdout,"%s: Renamed dimension \'%s\' to \'%s\'\n",nco_prg_nm,trv_tbl->lst_dmn[tbl_idx].nm_fll,dmn_rnm_lst[idx_dmn].new_nm);
       } /* endif */
 
     if(mch_nbr == 0 && !is_opt){
-      (void)fprintf(stdout,"%s: ERROR Required dimension \'%s\' is not present in input file. HINT: If presence is intended to be optional, then prefix old dimension name with the period character \'%c\', i.e., \'%s -d %c%s,%s\'. With this syntax %s would succeed even if no such dimension is in the file.\n",nco_prg_nm_get(),dmn_rnm_lst[idx_dmn].old_nm,opt_chr,nco_prg_nm_get(),opt_chr,dmn_rnm_lst[idx_dmn].old_nm,dmn_rnm_lst[idx_dmn].new_nm,nco_prg_nm_get());
+      (void)fprintf(stdout,"%s: ERROR Required dimension \'%s\' is not present in input file. HINT: If presence is intended to be optional, then prefix old dimension name with the period character \'%c\', i.e., \'%s -d %c%s,%s\'. With this syntax %s would succeed even when no such dimension is in the file.\n",nco_prg_nm_get(),dmn_rnm_lst[idx_dmn].old_nm,opt_chr,nco_prg_nm_get(),opt_chr,dmn_rnm_lst[idx_dmn].old_nm,dmn_rnm_lst[idx_dmn].new_nm,nco_prg_nm_get());
       nco_exit(EXIT_FAILURE);
     }else if(mch_nbr == 0 && is_opt){
       (void)fprintf(stdout,"%s: INFO Optional dimension \'%s\' not present in %s, skipping it\n",nco_prg_nm,dmn_rnm_lst[idx_dmn].old_nm+1L,fl_in);
     }else{
-      if(nco_dbg_lvl >= nco_dbg_std) (void)fprintf(stdout,"%s: Renamed %d dimension%s from \'%s\' to \'%s\'\n",nco_prg_nm,mch_nbr,mch_nbr != 1 ? "s" : "",dmn_rnm_lst[idx_dmn].old_nm,dmn_rnm_lst[idx_dmn].new_nm);
+      if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stdout,"%s: Renamed %d dimension%s from \'%s\' to \'%s\'\n",nco_prg_nm,mch_nbr,mch_nbr != 1 ? "s" : "",dmn_rnm_lst[idx_dmn].old_nm,dmn_rnm_lst[idx_dmn].new_nm);
     } /* end else */
 
     mch_nbr_dmn+=mch_nbr;
@@ -575,7 +590,7 @@ main(int argc,char **argv)
 	  continue;
 	} /* endif optional attribute */
 	if(!att_is_opt && rcd != NC_NOERR){
-	  (void)fprintf(stdout,"%s: ERROR Required attribute \'%s\' not present in %s \'%s\'.\nHINT: If attribute presence is intended to be optional, then prefix attribute name with the period character \'%c\', e.g., %c%s. With this syntax %s would succeed even if no variables or groups contained the attribute. If attribute is intended to be renamed only in a specific variable, then prepend the variable name plus an at-sign \'%c\' to the attribute name, e.g., var_nm%catt_nm. If attribute presence is required only for root group (i.e., a global attribute), then prefix attribute name with \"global\" and an at-sign, e.g., global%catt_nm. If attribute presence is required for all groups, then prefix attribute name with \"group\" and an at-sign, e.g., group%catt_nm.\n",nco_prg_nm_get(),att_rnm_lst[idx_att].old_nm,obj_is_var ? "variable" : "group",trv_tbl->lst[tbl_idx].nm_fll,opt_chr,opt_chr,att_rnm_lst[idx_att].old_nm,nco_prg_nm_get(),dlm_chr,dlm_chr,dlm_chr,dlm_chr);
+	  (void)fprintf(stdout,"%s: ERROR Required attribute \'%s\' not present in %s \'%s\'.\nHINT: If attribute presence is intended to be optional, then prefix attribute name with the period character \'%c\', e.g., %c%s. With this syntax %s would succeed even when no variables or groups contain the attribute. If the attribute is intended to be renamed only in a specific variable, then prepend the variable name plus an at-sign \'%c\' to the attribute name, e.g., var_nm%catt_nm. If attribute presence is required only for root group (i.e., a global attribute), then prefix attribute name with \"global\" and an at-sign, e.g., global%catt_nm. If attribute presence is required for all groups, then prefix attribute name with \"group\" and an at-sign, e.g., group%catt_nm.\n",nco_prg_nm_get(),att_rnm_lst[idx_att].old_nm,obj_is_var ? "variable" : "group",trv_tbl->lst[tbl_idx].nm_fll,opt_chr,opt_chr,att_rnm_lst[idx_att].old_nm,nco_prg_nm_get(),dlm_chr,dlm_chr,dlm_chr,dlm_chr);
 	  nco_err_exit(rcd,"main");
 	} /* endif required attribute */
 
@@ -603,7 +618,7 @@ main(int argc,char **argv)
       } /* !obj_is_opt */
     } /* endif specified object not found */
 
-    if(nco_dbg_lvl >= nco_dbg_std) (void)fprintf(stdout,"%s: Renamed %d attribute%s from \'%s\' to \'%s\'\n",nco_prg_nm,mch_nbr,mch_nbr != 1 ? "s" : "",att_rnm_lst[idx_att].old_nm,att_rnm_lst[idx_att].new_nm);
+    if(nco_dbg_lvl >= nco_dbg_fl) (void)fprintf(stdout,"%s: Renamed %d attribute%s from \'%s\' to \'%s\'\n",nco_prg_nm,mch_nbr,mch_nbr != 1 ? "s" : "",att_rnm_lst[idx_att].old_nm,att_rnm_lst[idx_att].new_nm);
 
     mch_nbr_att+=mch_nbr;
 
@@ -612,14 +627,18 @@ main(int argc,char **argv)
   /* Reset error return code */
   rcd=NC_NOERR;
 
-  (void)fprintf(stdout,"%s: In total renamed ",nco_prg_nm);
-  (void)fprintf(stdout,"%d attribute%s",mch_nbr_att,mch_nbr_att != 1 ? "s" : "");
-  (void)fprintf(stdout,", %d dimension%s",mch_nbr_dmn,mch_nbr_dmn != 1 ? "s" : "");
-  (void)fprintf(stdout,", %d group%s",mch_nbr_grp,mch_nbr_grp != 1 ? "s" : "");
-  (void)fprintf(stdout,", and %d variable%s\n",mch_nbr_var,mch_nbr_var != 1 ? "s" : "");
-
+  if(nco_dbg_lvl >= nco_dbg_std){
+    (void)fprintf(stdout,"%s: In total renamed ",nco_prg_nm);
+    (void)fprintf(stdout,"%d attribute%s",mch_nbr_att,mch_nbr_att != 1 ? "s" : "");
+    (void)fprintf(stdout,", %d dimension%s",mch_nbr_dmn,mch_nbr_dmn != 1 ? "s" : "");
+    (void)fprintf(stdout,", %d group%s",mch_nbr_grp,mch_nbr_grp != 1 ? "s" : "");
+    (void)fprintf(stdout,", and %d variable%s\n",mch_nbr_var,mch_nbr_var != 1 ? "s" : "");
+  } /* !nco_dbg_lvl */
+    
   /* Catenate time-stamped command line to "history" global attribute */
   if(HISTORY_APPEND) (void)nco_hst_att_cat(nc_id,cmd_ln);
+  if(gaa_nbr > 0) (void)nco_glb_att_add(nc_id,gaa_arg,gaa_nbr);
+  if(HISTORY_APPEND) (void)nco_vrs_att_cat(nc_id);
 
 #ifdef _OPENMP
   /* fxm: hack to get libxlsmp library linked in */
@@ -644,7 +663,7 @@ main(int argc,char **argv)
   if(FL_RTR_RMT_LCN && RM_RMT_FL_PST_PRC) (void)nco_fl_rm(fl_in);
 
   /* Clean memory unless dirty memory allowed */
-  if(flg_cln){
+  if(flg_mmr_cln){
     /* ncrename-specific memory */
     for(int idx=0;idx<nbr_att_rnm;idx++) att_rnm_arg[idx]=(char *)nco_free(att_rnm_arg[idx]);
     for(int idx=0;idx<nbr_dmn_rnm;idx++) dmn_rnm_arg[idx]=(char *)nco_free(dmn_rnm_arg[idx]);
@@ -667,8 +686,9 @@ main(int argc,char **argv)
     if(fl_lst_in && fl_lst_abb == NULL) fl_lst_in=nco_sng_lst_free(fl_lst_in,fl_nbr); 
     if(fl_lst_in && fl_lst_abb) fl_lst_in=nco_sng_lst_free(fl_lst_in,1);
     if(fl_lst_abb) fl_lst_abb=nco_sng_lst_free(fl_lst_abb,abb_arg_nbr);
+    if(gaa_nbr > 0) gaa_arg=nco_sng_lst_free(gaa_arg,gaa_nbr);
     (void)trv_tbl_free(trv_tbl);
-  } /* !flg_cln */
+  } /* !flg_mmr_cln */
 
 #ifdef ENABLE_MPI
   MPI_Finalize();

@@ -6,21 +6,34 @@
 .SH NAME
 ncks \- netCDF Kitchen Sink
 .SH SYNTAX
-ncks [\-3] [\-4] [\-5] [\-6] [\-7] [\-A] [\-a] [\-b
+ncks [\-3] [\-4] [\-5] [\-6] [\-7]
+[\-A]
+[\-a]
+[\-\-area_wgt]
+[\-b
 .IR bnr_fl] 
 [\-\-bfr
-.IR sz ] [\-C] [\-c] 
-[\-\-cdl] [\-\-cnk_byt
-.IR sz ] [\-\-cnk_dmn 
-.IR nm,sz ]
+.IR sz_byt ]
+[\-C]
+[\-c] 
+[\-\-cal]
+[\-\-cdl]
+[\-\-chk_map]
+[\-\-chk_nan]
+[\-\-cnk_byt
+.IR sz_byt ]
+[\-\-cnk_csh
+.IR sz_byt ]
+[\-\-cnk_dmn 
+.IR nm,sz_lmn ]
 [\-\-cnk_map 
 .IR map ]
 [\-\-cnk_min
-.IR sz ]
+.IR sz_byt ]
 [\-\-cnk_plc 
 .IR plc ]
 [\-\-cnk_scl 
-.IR sz ] 
+.IR sz_lmn ] 
 [\-D
 dbg_lvl]
 [\-d 
@@ -28,8 +41,12 @@ dbg_lvl]
 .IR min ][,[
 .IR max ]][,[
 .IR stride ]]]
-[\-F] [\-\-fix_rec_dmn
+[\-F]
+[\-\-fl_fmt=fmt]
+[\-\-fix_rec_dmn
 .IR dim ]
+[\-\-fmt_val
+.IR fmt ]
 [\-G
 .IR gpe_dsc ]
 [\-g  
@@ -38,18 +55,31 @@ dbg_lvl]
 .IR att_name=
 .IR att_val ]]
 [\-\-grp_xtr_var_xcl]
-[\-H] [\-h] [\-\-hdn] 
+[\-H]
+[\-h]
+[\-\-hdn] 
 [\-\-hdr_pad
-.IR sz ]
-[\-L 
-.IR dfl_lvl ] 
+.IR sz_byt ]
+[\-\-hpss_try]
+[\-\-json]
+[\-\-jsn_fmt
+.IR lvl ] 
 [\-l 
 .IR path ]
-[\-M] [\-m] [\-\-map
+[\-M]
+[\-m]
+[\-\-map
 .IR map-file ]
-[\-\-md5] [\-\-mk_rec_dmn
+[\-\-md5]
+[\-\-mk_rec_dmn
 .IR dim ]
-[\-\-msa] [\-\-no_blank] [\-\-no_tmp_fl] [\-O] [\-o 
+[\-\-msa]
+[\-\-no_blank]
+[\-\-no_cll_msr]
+[\-\-no_frm_trm]
+[\-\-no_tmp_fl]
+[\-O]
+[\-o 
 .IR output-file ] 
 [\-P] [\-p 
 .IR path ]
@@ -57,19 +87,34 @@ dbg_lvl]
 .IR var1 [,
 .IR var2 [,...]]=
 .IR prc ]]
-[\-Q] [\-q]
-[\-R] [\-r] [\-\-rad] [\-\-ram_all]
+[\-\-prn_fl
+.IR print-file ]
+[\-Q]
+[\-q]
+[\-R]
+[\-r]
+[\-\-rad]
+[\-\-ram_all]
 [\-\-rgr
 .IR key=
-.IR val ]]
+.IR val ]
 [\--rnr
-.IR wgt ] [\-s 
-.IR format ] [\-t
-.IR thr_nbr ] [\-u] [\--unn] [\-V] [\-v 
-.IR var [,...]] 
+.IR wgt ]
+[\-s 
+.IR format ]
+[\-t
+.IR thr_nbr ]
+[\-u]
+[\-\-uio]
+[\-\-unn]
+[\-V] [\-v 
+.IR var [,...]]
+[\-\-vrt_fl
+.IR vrt_crd ]
 [\-X 
 .IR box ] 
-[\-x] [\-\-xml]
+[\-x]
+[\-\-xml]
 .I input-file
 [
 .IR output-file ]
@@ -623,7 +668,7 @@ manual pages written by Charlie Zender and originally formatted by Brian Mays.
 Report bugs to <http://sf.net/bugs/?group_id=3331>.
 
 .SH COPYRIGHT
-Copyright \(co 1995-2015 Charlie Zender
+Copyright \(co 1995-2018 Charlie Zender
 .br
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -632,13 +677,13 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 The full documentation for
 .B NCO
 is maintained as a Texinfo manual called the 
-.B NCO User's Guide.
+.B NCO Users Guide.
 Because 
 .B NCO
 is mathematical in nature, the documentation includes TeX-intensive
 portions not viewable on character-based displays. 
 Hence the only complete and authoritative versions of the 
-.B NCO User's Guide 
+.B NCO Users Guide 
 are the PDF (recommended), DVI, and Postscript versions at
 <http://nco.sf.net/nco.pdf>, <http://nco.sf.net/nco.dvi>,
 and <http://nco.sf.net/nco.ps>, respectively.
@@ -661,7 +706,7 @@ TeX-intensive portions.
 .BR ncap2 (1), 
 .BR ncatted (1), 
 .BR ncbo (1), 
-.BR ncdiff (1), 
+.BR ncclimo (1), 
 .BR nces (1), 
 .BR ncecat (1), 
 .BR ncflint (1), 
@@ -670,6 +715,7 @@ TeX-intensive portions.
 .BR ncpdq (1), 
 .BR ncra (1), 
 .BR ncrcat (1), 
+.BR ncremap (1), 
 .BR ncrename (1), 
 .BR ncwa (1) 
 

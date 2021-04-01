@@ -2,10 +2,10 @@
 
 /* Purpose: Variable list utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_var_lst.h" *//* Variable list utilities */
@@ -69,14 +69,14 @@ nco_var_lst_crd_add /* [fnc] Add all coordinates to extraction list */
  const int nbr_var, /* I [nbr] Number of variables in input file */
  nm_id_sct *xtr_lst, /* I/O [sct] Current extraction list (destroyed) */
  int * const xtr_nbr, /* I/O [nbr] Number of variables in current extraction list */
- const nco_bool CNV_CCM_CCSM_CF); /* I [flg] file obeys CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv); /* I [flg] file obeys CCM/CCSM/CF conventions */
 
 nm_id_sct * /* O [sct] Extraction list */
 nco_var_lst_crd_ass_add /* [fnc] Add to extraction list all coordinates associated with extracted variables */
 (const int nc_id, /* I netCDF file ID */
  nm_id_sct *xtr_lst, /* I/O current extraction list (destroyed) */
  int * const xtr_nbr, /* I/O number of variables in current extraction list */
- const nco_bool CNV_CCM_CCSM_CF); /* I [flg] file obeys CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv); /* I [flg] file obeys CCM/CCSM/CF conventions */
 
 nm_id_sct * /* O [sct] List with coordinate excluded */
 nco_var_lst_crd_xcl /* [fnc] Exclude given coordinates from extraction list */
@@ -110,7 +110,7 @@ nco_var_lst_dvd /* [fnc] Divide input lists into output lists */
 (var_sct * const * const var, /* I [sct] Variable list (input file) */
  var_sct * const * const var_out, /* I [sct] Variable list (output file) */
  const int nbr_var, /* I [nbr] Number of variables */
- const nco_bool CNV_CCM_CCSM_CF, /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv, /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const nco_bool FIX_REC_CRD, /* [flg] Do not interpolate/multiply record coordinate variables (ncflint only) */
  const int nco_pck_map, /* I [enm] Packing map */
  const int nco_pck_plc, /* I [enm] Packing policy */
@@ -132,10 +132,10 @@ nco_var_lst_mrg /* [fnc] Merge two variable lists into same order */
  int * const var_nbr_2); /* I/O [nbr] Number of variables in list 2 */
 
 void
-nco_var_lst_dvd_trv                          /* [fnc] Divide input lists into output lists (ncbo only) */
+nco_var_lst_dvd_ncbo                         /* [fnc] Divide input lists into output lists (ncbo only) */
 (var_sct * const var,                        /* I [sct] Variable list (input file) */
  var_sct * const var_out,                    /* I [sct] Variable list (output file) */
- const nco_bool CNV_CCM_CCSM_CF,             /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
+ const cnv_sct * const cnv,                  /* I [flg] File adheres to NCAR CCM/CCSM/CF conventions */
  const nco_bool FIX_REC_CRD,                 /* I [flg] Do not interpolate/multiply record coordinate variables (ncflint only) */
  const int nco_pck_map,                      /* I [enm] Packing map */
  const int nco_pck_plc,                      /* I [enm] Packing policy */
@@ -144,12 +144,11 @@ nco_var_lst_dvd_trv                          /* [fnc] Divide input lists into ou
  prc_typ_enm *prc);                          /* O [enm] Processing type */
 
 nco_bool
-nco_var_is_fix                               /* [fnc] Variable should be treated as a fixed variable */
-(const char * const var_nm,                  /* I [sng] Variable name */
- const int nco_prg_id,                       /* I [enm] Program key */
- const int nco_pck_plc);                     /* I [enm] Packing policy */
-
-
+nco_var_is_fix /* [fnc] Variable should be treated as a fixed variable */
+(const char * const var_nm, /* I [sng] Variable name */
+ const int nco_prg_id, /* I [enm] Program key */
+ const int nco_pck_plc, /* I [enm] Packing policy */
+ const cnv_sct * const cnv); /* I [sct] Convention structure */
 
 #ifdef __cplusplus
 } /* end extern "C" */

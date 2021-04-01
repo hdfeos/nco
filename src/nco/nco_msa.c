@@ -2,10 +2,10 @@
 
 /* Purpose: Multi-slabbing algorithm */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_msa.h" /* Multi-slabbing algorithm */
 
@@ -38,10 +38,63 @@ nco_msa_rcr_clc /* [fnc] Multi-slab algorithm (recursive routine, returns a sing
 
   /* Multiple hyperslabs */
   if(nbr_slb > 1){
+
+  /* True if wrapped dims or slabs DO NOT overlap or user-specified order */
+  if(lmt_lst[dpt_crr]->WRP || lmt_lst[dpt_crr]->MSA_USR_RDR){
+    long var_sz=1L;
+    long lcnt;
+
+    char *cp_wrp;
+    char *cp_stp;
+    char *slb;
+
+    ptrdiff_t slb_sz;
+    ptrdiff_t cp_inc;
+    ptrdiff_t cp_max;
+    ptrdiff_t cp_fst;
+
+    for(idx=0;idx<dpt_crr_max;idx++)
+       var_sz*=(idx<dpt_crr ? lmt[idx]->cnt : lmt_lst[idx]->dmn_cnt);
+
+    /* Used nco_callloc() for unknown reasons until 20140930 */
+    /*    vp=(void *)nco_calloc((size_t)var_sz,nco_typ_lng(vara->type));*/
+    vp=(void *)nco_malloc(var_sz*nco_typ_lng_udt(vara->nc_id,vara->type));
+
+    lcnt=nco_typ_lng_udt(vara->nc_id,vara->type);
+    for(idx=dpt_crr+1;idx<dpt_crr_max;idx++) 
+       lcnt*=lmt_lst[idx]->dmn_cnt;
+
+    cp_inc=(ptrdiff_t)(lcnt*lmt_lst[dpt_crr]->dmn_cnt);
+    cp_max=(ptrdiff_t)(var_sz*nco_typ_lng_udt(vara->nc_id,vara->type));
+
+    cp_fst=0L;
+
+    for(idx=0;idx<nbr_slb;idx++){
+      lmt[dpt_crr]=lmt_lst[dpt_crr]->lmt_dmn[idx];
+      /* NB: nco_msa_rcr_clc() with same nc_id contains OpenMP critical region */
+      cp_wrp=(char *)nco_msa_rcr_clc(dpt_crr+1,dpt_crr_max,lmt,lmt_lst,vara);
+
+      cp_stp=(char *)vp+cp_fst;
+      slb=cp_wrp;
+      slb_sz=(ptrdiff_t)(lcnt*(lmt_lst[dpt_crr]->lmt_dmn[idx]->cnt));
+      while(cp_stp-(char *)vp < cp_max)
+      {
+	(void)memcpy(cp_stp,slb,(size_t)slb_sz);
+	slb+=slb_sz;
+	cp_stp+=cp_inc;
+      } 
+      cp_fst+=slb_sz;      
+      cp_wrp=(char*)nco_free(cp_wrp); 
+    } 
+    vara->sz=var_sz; 
+  }
+  /* deal with possibly overlapping slabs */
+  else
+  { 
+  
     int slb_idx;
     long var_sz=1L;
     long lcnt;
-    long *cp_sz;
     long *indices;
 
     ptrdiff_t slb_sz;
@@ -55,73 +108,62 @@ nco_msa_rcr_clc /* [fnc] Multi-slab algorithm (recursive routine, returns a sing
     char *slb;
     lmt_sct lmt_ret;
 
-    cp_sz=(long *)nco_malloc(nbr_slb*sizeof(long));
     indices=(long *)nco_malloc(nbr_slb*sizeof(long));
     cp_wrp=(char **)nco_malloc(nbr_slb*sizeof(void *));
 
-    for(idx=0;idx<nbr_slb;idx++){
+    for(idx=0;idx<nbr_slb;idx++)
+    {
       lmt[dpt_crr]=lmt_lst[dpt_crr]->lmt_dmn[idx];
       /* NB: nco_msa_rcr_clc() with same nc_id contains OpenMP critical region */
       cp_wrp[idx]=(char *)nco_msa_rcr_clc(dpt_crr+1,dpt_crr_max,lmt,lmt_lst,vara);
-      cp_sz[idx]=vara->sz;
     } /* end loop over idx */
 
     for(idx=0;idx<dpt_crr_max;idx++) var_sz*=(idx<dpt_crr ? lmt[idx]->cnt : lmt_lst[idx]->dmn_cnt);
 
     /* Used nco_callloc() for unknown reasons until 20140930 */
     /*    vp=(void *)nco_calloc((size_t)var_sz,nco_typ_lng(vara->type));*/
-    vp=(void *)nco_malloc(var_sz*nco_typ_lng(vara->type));
+    vp=(void *)nco_malloc(var_sz*nco_typ_lng_udt(vara->nc_id,vara->type));
 
-    lcnt=nco_typ_lng(vara->type);
+    lcnt=nco_typ_lng_udt(vara->nc_id,vara->type);
     for(idx=dpt_crr+1;idx<dpt_crr_max;idx++) lcnt*=lmt_lst[idx]->dmn_cnt;
 
     cp_inc=(ptrdiff_t)(lcnt*lmt_lst[dpt_crr]->dmn_cnt);
-    cp_max=(ptrdiff_t)(var_sz*nco_typ_lng(vara->type));
+    cp_max=(ptrdiff_t)(var_sz*nco_typ_lng_udt(vara->nc_id,vara->type));
 
     for(idx=0;idx<nbr_slb;idx++) indices[idx]=lmt_lst[dpt_crr]->lmt_dmn[idx]->srt;
 
     cp_fst=0L;
 
-    /* Deal first with wrapped dimensions
-       True if wrapped dims or slabs DO NOT overlap or user-specified order */
-    if(lmt_lst[dpt_crr]->WRP || lmt_lst[dpt_crr]->MSA_USR_RDR){
+    /* Multiple hyper-slabs */
+    while(nco_msa_clc_idx(True,lmt_lst[dpt_crr],&indices[0],&lmt_ret,&slb_idx))
+    {
+      cp_stp=(char *)vp+cp_fst;
+      slb=cp_wrp[slb_idx]+(ptrdiff_t)(lmt_ret.srt*lcnt);
+      slb_stp=(ptrdiff_t)(lcnt*(lmt_lst[dpt_crr]->lmt_dmn[slb_idx]->cnt));
+      slb_sz=(ptrdiff_t)(lmt_ret.cnt*lcnt);
 
-      for(slb_idx=0;slb_idx<nbr_slb;slb_idx++){
-        cp_stp=(char *)vp+cp_fst;
-        slb=cp_wrp[slb_idx];
-        slb_sz=(ptrdiff_t)(lcnt*(lmt_lst[dpt_crr]->lmt_dmn[slb_idx]->cnt));
-        while(cp_stp-(char *)vp < cp_max){
-          (void)memcpy(cp_stp,slb,(size_t)slb_sz);
-          slb+=slb_sz;
-          cp_stp+=cp_inc;
-        } /* end while */
-        cp_fst+=slb_sz;      
-      } /* end loop over two slabs */
-    }else{ 
-      /* Multiple hyper-slabs */
-      while(nco_msa_clc_idx(True,lmt_lst[dpt_crr],&indices[0],&lmt_ret,&slb_idx)){
-        cp_stp=(char *)vp+cp_fst;
-        slb=cp_wrp[slb_idx]+(ptrdiff_t)(lmt_ret.srt*lcnt);
-        slb_stp=(ptrdiff_t)(lcnt*(lmt_lst[dpt_crr]->lmt_dmn[slb_idx]->cnt));
-        slb_sz=(ptrdiff_t)(lmt_ret.cnt*lcnt);
-
-        while(cp_stp-(char *)vp < cp_max){
-          (void)memcpy(cp_stp,slb,(size_t)slb_sz);
-          slb+=slb_stp;
-          cp_stp+=cp_inc;
-        } /* end while */
-        cp_fst+=slb_sz;
+      while(cp_stp-(char *)vp < cp_max)
+      {
+	(void)memcpy(cp_stp,slb,(size_t)slb_sz);
+	slb+=slb_stp;
+	cp_stp+=cp_inc;
       } /* end while */
-    } /* end else */  
+      cp_fst+=slb_sz;
+    } /* end while */
+
+
+    for(idx=0;idx<nbr_slb;idx++) 
+       cp_wrp[idx]=(char *)nco_free(cp_wrp[idx]);
 
     indices=(long *)nco_free(indices);
-    cp_sz=(long *)nco_free(cp_sz);
-    for(idx=0;idx<nbr_slb;idx++) cp_wrp[idx]=(char *)nco_free(cp_wrp[idx]);
     cp_wrp=(char **)nco_free(cp_wrp);
 
     vara->sz=var_sz;
-    return vp;
+
   } /* endif multiple hyperslabs */
+   
+  return vp;
+  } 
 
 read_lbl:
   { 
@@ -145,7 +187,7 @@ read_lbl:
       if(lmt[idx]->srd > 1L) dmn_srd_nbr++;
     } /* end loop over idx */
 
-    vp=(void *)nco_malloc(var_sz*nco_typ_lng(vara->type));
+    vp=(void *)nco_malloc(var_sz*nco_typ_lng_udt(vara->nc_id,vara->type));
 
     /* Block is critical/thread-safe for identical/distinct in_id's */
     { /* begin potential OpenMP critical */
@@ -161,9 +203,11 @@ read_lbl:
 	}else{
 	  /* 20140926: nc_get_vars() performs poorly on netCDF4 files
 	     Long investigation sparked by Parker Norton on 20140718 revealed nc_get_vars() calls nc_get_vara() once 
-	     per element in the strided hyperslab. This quickly become unusable for large hyperslabs.
+	     per element in the strided hyperslab. This quickly becomes unusable for large hyperslabs.
 	     Ultimate fix may be using HDF5 algorithm H5S_set_hyperslab() as described in Jira NCF-301
-	     Until then, should decompose a single-stride request into a loop over contiguous non-stride requests */
+	     Until then, should decompose a single-stride request into a loop over contiguous non-stride requests
+	     20180921: netCDF 4.6.2 appears to have the necessary fix
+	     https://github.com/Unidata/netcdf-c/pull/1001 */
 
 	  int fl_in_fmt; /* [enm] Input file format */
 
@@ -171,13 +215,16 @@ read_lbl:
 
 	  (void)nco_inq_format(vara->nc_id,&fl_in_fmt);
 
-	  if((fl_in_fmt == NC_FORMAT_NETCDF4 || fl_in_fmt == NC_FORMAT_NETCDF4_CLASSIC) && (dmn_srd_nbr == 1))
-	    USE_NC4_SRD_WORKAROUND=True;
+	  /* 20170207: Turn-off USE_NC4_SRD_WORKAROUND unless non-unity stride is only in first dimension
+	     20180921: Allow USE_NC4_SRD_WORKAROUND only for netCDF <= 4.6.1 */
+	  if(NC_LIB_VERSION <= 461 && (fl_in_fmt == NC_FORMAT_NETCDF4 || fl_in_fmt == NC_FORMAT_NETCDF4_CLASSIC) && (dmn_srd_nbr == 1) && (dmn_srd[0] != 1L)) USE_NC4_SRD_WORKAROUND=True;
 
 	  if(!USE_NC4_SRD_WORKAROUND){
 	    if(nco_dbg_lvl_get() >= nco_dbg_var && srd_prd > 1L) (void)fprintf(stderr,"%s: INFO %s reports calling nco_get_vars() for strided hyperslab access. In case of slow response, please ask NCO developers to extend USE_NC4_SRD_WORKAROUND to handle your use-case.\n",nco_prg_nm_get(),fnc_nm);
 	    (void)nco_get_vars(vara->nc_id,vara->id,dmn_srt,dmn_cnt,dmn_srd,vp,vara->type);
 	  }else{
+	    /* 20170207: Original USE_NC4_SRD_WORKAROUND code was broken because it was applied to interior dimensions but did not account for interleaving
+	       20170208: New USE_NC4_SRD_WORKAROUND code only applies to non-unity stride in first dimension */
 	    int srd_nbr; /* [nbr] Number of strides requested in the single strided dimension (not number of strided dimensions) */
 	    int srd_idx; /* [idx] Counter for how many times to call nco_get_var() */
 	    int idx_srd; /* [idx] Index of strided dimension */
@@ -187,12 +234,8 @@ read_lbl:
 
 	    if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stderr,"%s: INFO %s using USE_NC4_SRD_WORKAROUND for faster access to strided hyperslabs in netCDF4 datasets\n",nco_prg_nm_get(),fnc_nm);
 
-	    /* Find strided dimension */
-	    for(dmn_idx=0;dmn_idx<dpt_crr_max;dmn_idx++)
-	      if(dmn_srd[dmn_idx] != 1L) break;
-
-	    assert(dmn_idx != dpt_crr_max);
-	    idx_srd=dmn_idx;
+	    /* Strided dimension must be first dimension */
+	    idx_srd=0;
 
 	    /* Find size of hyperslab of each stride */
 	    for(dmn_idx=0;dmn_idx<dpt_crr_max;dmn_idx++)
@@ -215,7 +258,7 @@ read_lbl:
 	      /* Point start vector to next stride on disk */
 	      if(srd_idx != 0) dmn_srt[idx_srd]+=dmn_srd[idx_srd];
 	      /* Place results in next portion of RAM */
-	      if(srd_idx != 0) cp_srd+=srd_sz*nco_typ_lng(vara->type);
+	      if(srd_idx != 0) cp_srd+=srd_sz*nco_typ_lng_udt(vara->nc_id,vara->type);
 	      (void)nco_get_vara(vara->nc_id,vara->id,dmn_srt,dmn_cnt,(void *)cp_srd,vara->type);
 	    } /* end loop over srd */
 	  } /* endif workaround */
@@ -285,61 +328,62 @@ nco_msa_clc_idx
     crr_idx=nco_msa_min_idx(indices,mnm,size);
 
     crr_slb=-1;
-    for(sz_idx=0;sz_idx<size;sz_idx++)
+    for(sz_idx=0;sz_idx<size;sz_idx++){
       if(mnm[sz_idx]){crr_slb=sz_idx;break;}
-
-      if(crr_slb == -1){
-        if(lmt->srt == -1L){
-          rcd=False;
-          goto cln_and_xit;
-        }else break;
-      } /* endif */
-
-      if(mnm[prv_slb]) crr_slb=prv_slb;
-
-      if(lmt->srt > -1L && crr_slb != prv_slb) break;
-
-      if(lmt->cnt > 1L){
-        (lmt->cnt)++;
-        lmt->end=crr_idx;
-      } /* end if */
-
-      if(lmt->cnt == 1L){
-        lmt->cnt=2L;
-        lmt->srd=crr_idx-prv_idx;
-        lmt->end=crr_idx;
-      } /* end if */
-
+    } /* !sz_idx */
+    
+    if(crr_slb == -1){
       if(lmt->srt == -1L){
-        lmt->srt=crr_idx;
-        lmt->cnt=1L;
-        lmt->end=crr_idx;
-        lmt->srd=1L;
-      } /* end if */
-
-      for(sz_idx=0;sz_idx<size;sz_idx++){
-        if(mnm[sz_idx]){
-          indices[sz_idx]+=lmt_a->lmt_dmn[sz_idx]->srd;
-          if(indices[sz_idx] > lmt_a->lmt_dmn[sz_idx]->end) indices[sz_idx]=-1L;
-        }
-      } /* end loop over sz_idx */
-      prv_idx=crr_idx;
-      prv_slb=crr_slb;
+	rcd=False;
+	goto cln_and_xit;
+      }else break;
+    } /* endif */
+    
+    if(mnm[prv_slb]) crr_slb=prv_slb;
+    
+    if(lmt->srt > -1L && crr_slb != prv_slb) break;
+    
+    if(lmt->cnt > 1L){
+      (lmt->cnt)++;
+      lmt->end=crr_idx;
+    } /* end if */
+    
+    if(lmt->cnt == 1L){
+      lmt->cnt=2L;
+      lmt->srd=crr_idx-prv_idx;
+      lmt->end=crr_idx;
+    } /* end if */
+    
+    if(lmt->srt == -1L){
+      lmt->srt=crr_idx;
+      lmt->cnt=1L;
+      lmt->end=crr_idx;
+      lmt->srd=1L;
+    } /* end if */
+    
+    for(sz_idx=0;sz_idx<size;sz_idx++){
+      if(mnm[sz_idx]){
+	indices[sz_idx]+=lmt_a->lmt_dmn[sz_idx]->srd;
+	if(indices[sz_idx] > lmt_a->lmt_dmn[sz_idx]->end) indices[sz_idx]=-1L;
+      }
+    } /* end loop over sz_idx */
+    prv_idx=crr_idx;
+    prv_slb=crr_slb;
   } /* end while */
-
+  
   *slb=prv_slb;
-
+  
   /* Normalize slab */
   if(NORMALIZE){
     lmt->srt=(lmt->srt-lmt_a->lmt_dmn[*slb]->srt)/(lmt_a->lmt_dmn[*slb]->srd);
     lmt->end=(lmt->end-lmt_a->lmt_dmn[*slb]->srt)/(lmt_a->lmt_dmn[*slb]->srd);
     lmt->srd=1L;
   } /* end if */
-
+  
   rcd=True;
-
+  
   /* Jump here if only one string */
-cln_and_xit:
+ cln_and_xit:
   mnm=(nco_bool *)nco_free(mnm);
 
   return rcd;
@@ -439,7 +483,9 @@ nco_msa_clc_cnt
 
   /* If slabs remain in user-specified order */
   if(lmt_lst->MSA_USR_RDR){
-    for(idx=0;idx<size;idx++) cnt+=lmt_lst->lmt_dmn[idx]->cnt;
+    for(idx=0;idx<size;idx++){
+      cnt+=lmt_lst->lmt_dmn[idx]->cnt;
+     }
     lmt_lst->dmn_cnt=cnt;
   }else{
     indices=(long *)nco_malloc(size*sizeof(long));
@@ -535,7 +581,7 @@ nco_msa_min_idx /* [fnc] Find minimum values in current and return minimum value
 } /* end nco_msa_min_idx() */
 
 void
-nco_msa_var_get    /* [fnc] Get variable data from disk taking account of multihyperslabs */
+nco_msa_var_get    /* [fnc] Get variable data from disk taking account of multi-hyperslabs */
 (const int in_id,  /* I [id] netCDF input file ID */
  var_sct *var_in,
  lmt_msa_sct * const * lmt_lst, /* I [sct] multi-hyperslab limits */
@@ -558,7 +604,7 @@ nco_msa_var_get    /* [fnc] Get variable data from disk taking account of multih
 
   /* Scalars */
   if(nbr_dim == 0){
-    var_in->val.vp=nco_malloc(nco_typ_lng(var_in->typ_dsk));
+    var_in->val.vp=nco_malloc(nco_typ_lng_udt(in_id,var_in->typ_dsk));
     (void)nco_get_var1(in_id,var_in->id,0L,var_in->val.vp,var_in->typ_dsk);
     goto do_upk;
   } /* end if scalar */
@@ -656,12 +702,14 @@ nco_msa_lmt_all_ntl
     lmt_rgl->cnt=dmn_sz;
     lmt_rgl->srd=1L;
     lmt_rgl->ssc=1L;
+    lmt_rgl->ilv=1L;
     lmt_rgl->flg_mro=False;
+    lmt_rgl->flg_ilv=False;
     lmt_rgl->min_sng=NULL;
     lmt_rgl->max_sng=NULL;
     lmt_rgl->srd_sng=NULL;
     lmt_rgl->ssc_sng=NULL;
-    lmt_rgl->mro_sng=NULL;
+    lmt_rgl->ilv_sng=NULL;
     lmt_rgl->rbs_sng=NULL;
     lmt_rgl->origin=0.0;
 
@@ -769,7 +817,7 @@ nco_msa_var_val_cpy /* [fnc] Copy variables data from input to output file */
 
     /* Scalars */
     if(nbr_dim==0){
-      var[idx]->val.vp=nco_malloc(nco_typ_lng(var[idx]->type));
+      var[idx]->val.vp=nco_malloc(nco_typ_lng_udt(in_id,var[idx]->type));
       (void)nco_get_var1(in_id,var[idx]->id,0L,var[idx]->val.vp,var[idx]->type);
     }else{
       lmt_msa_sct **lmt_msa;
@@ -848,7 +896,7 @@ nco_msa_wrp_splt_trv   /* [fnc] Split wrapped dimensions (GTT version) */
 
     if(dmn_trv->lmt_msa.lmt_dmn[idx]->srt > dmn_trv->lmt_msa.lmt_dmn[idx]->end){
 
-      if(nco_dbg_lvl_get() == nco_dbg_old) (void)fprintf(stdout,"%s: INFO %s dimension <%s> has wrapped limits (%li->%li):\n",nco_prg_nm_get(),fnc_nm,dmn_trv->nm_fll,dmn_trv->lmt_msa.lmt_dmn[idx]->srt,dmn_trv->lmt_msa.lmt_dmn[idx]->end);
+      if(nco_dbg_lvl_get() == nco_dbg_dev) (void)fprintf(stdout,"%s: INFO %s dimension <%s> has wrapped limits (%li->%li):\n",nco_prg_nm_get(),fnc_nm,dmn_trv->nm_fll,dmn_trv->lmt_msa.lmt_dmn[idx]->srt,dmn_trv->lmt_msa.lmt_dmn[idx]->end);
 
       lmt_wrp=(lmt_sct *)nco_malloc(2*sizeof(lmt_sct));
 
@@ -891,7 +939,7 @@ nco_msa_wrp_splt_trv   /* [fnc] Split wrapped dimensions (GTT version) */
         lmt_wrp[1].srd=srd;
       } /* end else */
 
-      if(nco_dbg_lvl_get() == nco_dbg_old){
+      if(nco_dbg_lvl_get() == nco_dbg_dev){
         (void)fprintf(stdout,"%s: INFO %s wrapped limits for <%s> found: ",nco_prg_nm_get(),fnc_nm,dmn_trv->nm_fll);
         (void)fprintf(stdout,"%d:\n",dmn_trv->lmt_msa.lmt_dmn_nbr);
       }
@@ -923,8 +971,10 @@ nco_msa_wrp_splt_trv   /* [fnc] Split wrapped dimensions (GTT version) */
       /* Update current index of dimension limits for this table dimension  */
       dmn_trv->lmt_msa.lmt_crr++;
 
-      if(nco_dbg_lvl_get() == nco_dbg_old) (void)fprintf(stdout,"%s: INFO %s dimension <%s> new limits inserted (%li->%li) - (%li->%li):\n",nco_prg_nm_get(),fnc_nm,dmn_trv->nm_fll,dmn_trv->lmt_msa.lmt_dmn[idx]->srt,dmn_trv->lmt_msa.lmt_dmn[idx]->end,dmn_trv->lmt_msa.lmt_dmn[lmt_new_idx]->srt,dmn_trv->lmt_msa.lmt_dmn[lmt_new_idx]->end);
-
+      if (nco_dbg_lvl_get() == nco_dbg_dev){
+        (void)fprintf(stdout, "%s: INFO %s dimension <%s> new limits inserted (%li->%li) - (%li->%li):\n", 
+          nco_prg_nm_get(), fnc_nm, dmn_trv->nm_fll, dmn_trv->lmt_msa.lmt_dmn[idx]->srt, dmn_trv->lmt_msa.lmt_dmn[idx]->end, dmn_trv->lmt_msa.lmt_dmn[lmt_new_idx]->srt, dmn_trv->lmt_msa.lmt_dmn[lmt_new_idx]->end);
+      }
     } /* endif srt > end */
   } /* end loop over size */
 
@@ -954,7 +1004,9 @@ nco_msa_clc_cnt_trv     /* [fnc] Calculate size of  multiple hyperslab (GTT vers
 
   /* If slabs remain in user-specified order */
   if(dmn_trv->lmt_msa.MSA_USR_RDR){
-    for(idx=0;idx<size;idx++) cnt+=dmn_trv->lmt_msa.lmt_dmn[idx]->cnt;
+    for(idx=0;idx<size;idx++){
+      cnt+=dmn_trv->lmt_msa.lmt_dmn[idx]->cnt;
+     }
     dmn_trv->lmt_msa.dmn_cnt=cnt;
   }else{
     indices=(long *)nco_malloc(size*sizeof(long));
@@ -1172,8 +1224,8 @@ nco_msa_wrp_splt_cpy    /* [fnc] Split wrapped dimensions (make deep copy of new
       /* Current number of dimension limits for this table dimension  */
       int lmt_dmn_nbr=lmt_lst->lmt_dmn_nbr;
 
-      /* Index of new limit  */
-      int lmt_new_idx=idx+1;
+      /* Index of new limit  (insert at last index) */
+      int lmt_new_idx=lmt_lst->lmt_crr;
 
       /* Make space for 1 more limit  */
       lmt_lst->lmt_dmn=(lmt_sct **)nco_realloc(lmt_lst->lmt_dmn,(lmt_dmn_nbr+1)*sizeof(lmt_sct *));
@@ -1181,7 +1233,7 @@ nco_msa_wrp_splt_cpy    /* [fnc] Split wrapped dimensions (make deep copy of new
       /* Alloc the extra limit  */
       lmt_lst->lmt_dmn[lmt_new_idx]=(lmt_sct *)nco_malloc(sizeof(lmt_sct));
 
-      /* Initialize the extra limit */
+      /* Initialize the extra limit (insert at last index) */
       (void)nco_lmt_init(lmt_lst->lmt_dmn[lmt_new_idx]);
 
       /* Insert the limits to table (allocated; idx was already there; lmt_new_idx was alloced here)   */
@@ -1259,7 +1311,7 @@ nco_cpy_var_val_mlt_lmt_trv         /* [fnc] Copy variable data from input to ou
   (void)nco_inq_var(in_id,var_in_id,(char *)NULL,&var_typ_in,&nbr_dmn_in,(int *)NULL,(int *)NULL);
   (void)nco_inq_var(out_id,var_out_id,(char *)NULL,&var_typ_out,&nbr_dmn_out,(int *)NULL,(int *)NULL);
   if(nbr_dmn_out != nbr_dmn_in){
-    (void)fprintf(stderr,"%s: ERROR attempt to write %d-dimensional input variable %s to %d-dimensional space in output file\nHINT: When using -A (append) option, all appended variables must be the same rank in the input file as in the output file. The ncwa operator is useful at ridding variables of extraneous (size = 1) dimensions. See how at http://nco.sf.net/nco.html#ncwa\nIf you wish to completely replace the existing output file definition and values of the variable %s by those in the input file, then first remove %s from the output file using, e.g., ncks -x -v %s. See more on subsetting at http://nco.sf.net/nco.html#sbs",nco_prg_nm_get(),nbr_dmn_in,var_nm,nbr_dmn_out,var_nm,var_nm,var_nm);
+    (void)fprintf(stderr,"%s: ERROR attempt to write %d-dimensional input variable %s to %d-dimensional space in output file\nHINT: When using -A (append) option, all appended variables must be the same rank in the input file as in the output file. The ncwa operator is useful at ridding variables of extraneous (size = 1) dimensions. See how at http://nco.sf.net/nco.html#ncwa\nIf you wish to completely replace the existing output file definition and values of the variable %s by those in the input file, then first remove %s from the output file using, e.g., ncks -x -v %s. See more on subsetting at http://nco.sf.net/nco.html#sbs\n",nco_prg_nm_get(),nbr_dmn_in,var_nm,nbr_dmn_out,var_nm,var_nm,var_nm);
     nco_exit(EXIT_FAILURE);
   } /* endif */
   nbr_dim=nbr_dmn_out;
@@ -1274,7 +1326,7 @@ nco_cpy_var_val_mlt_lmt_trv         /* [fnc] Copy variable data from input to ou
   /* Scalar */
   if(nbr_dim == 0){
     var_in.sz=1L;
-    var_in.val.vp=nco_malloc(nco_typ_lng(var_typ_in));
+    var_in.val.vp=nco_malloc(nco_typ_lng_udt(in_id,var_typ_in));
     (void)nco_get_var1(in_id,var_in_id,0L,var_in.val.vp,var_typ_in);
     var_out=var_in;
   } /* !Scalar */
@@ -1303,13 +1355,17 @@ nco_cpy_var_val_mlt_lmt_trv         /* [fnc] Copy variable data from input to ou
     var_out=var_in;
   } /* !Array */
 
-  /* Allow ncks to autoconvert netCDF4 atomic types to netCDF3 output type ... */
+  /* Allow ncks to autoconvert netCDF4 atomic types to netCDF3- or CDF5-supported output type ... */
   if(nco_prg_id_get() == ncks){
     /* File format needed for decision tree and to enable netCDF4 features */
     (void)nco_inq_format(out_id,&fl_fmt);
-    if(fl_fmt != NC_FORMAT_NETCDF4 && !nco_typ_nc3(var_typ_in)){
-      if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stdout,"%s: INFO Autoconverting variable %s from %s of netCDF4 type %s to netCDF3 type %s\n",nco_prg_nm_get(),var_nm,(nbr_dim > 0) ? "array" : "scalar",nco_typ_sng(var_typ_in),nco_typ_sng(nco_typ_nc4_nc3(var_typ_out)));
-      var_typ_out=nco_typ_nc4_nc3(var_typ_in);
+
+    if(fl_fmt == NC_FORMAT_NETCDF4) var_typ_out=var_typ_in;
+    else if(fl_fmt == NC_FORMAT_CLASSIC || fl_fmt == NC_FORMAT_64BIT_OFFSET || fl_fmt == NC_FORMAT_NETCDF4_CLASSIC) var_typ_out=nco_typ_nc4_nc3(var_typ_in);
+    else if(fl_fmt == NC_FORMAT_64BIT_DATA) var_typ_out=nco_typ_nc4_nc5(var_typ_in);
+
+    if(var_typ_out != var_typ_in){
+      if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stdout,"%s: INFO Autoconverting variable %s from %s of type %s to %s-supported type %s\n",nco_prg_nm_get(),var_nm,(nbr_dim > 0) ? "array" : "scalar",nco_typ_sng(var_typ_in),nco_fmt_sng(fl_fmt),nco_typ_sng(var_typ_out));
 
       if(var_typ_in == NC_STRING && var_typ_out == NC_CHAR){
 	/* Special case for string conversion:
@@ -1317,7 +1373,7 @@ nco_cpy_var_val_mlt_lmt_trv         /* [fnc] Copy variable data from input to ou
 	   Too many other limits on string translation to list them all :)
 	   This only handles plain strings */
 	if(var_out.sz > 1L){
-	  (void)fprintf(stdout,"%s: ERROR Unable to autoconvert. %s reports string variable %s is an array of %li strings. Autoconversion of string variables is currently limited to scalar string variables (that contain a single string), and does not work on arrays of strings. Even single strings are currently translated incorrectly because each string is typically a distinct size, meaning a distinct phony dimension would need to be created for every single string and NCO is loathe to do that. Complaints? Let us know.\n",nco_prg_nm_get(),fnc_nm,var_nm,var_out.sz);
+	  (void)fprintf(stdout,"%s: ERROR Unable to autoconvert. %s reports string variable %s is an array of %li strings. Autoconversion of string variables is currently limited to scalar string variables (that contain a single string), and does not work on arrays of strings. Even single strings are currently translated incorrectly because each string is typically a distinct size, meaning a distinct phony dimension would need to be created for every single string and NCO is loathe to do that. Instead, NCO curretly translates single strings to a single character (instead of, say, creating a new string dimension of some arbitrary size). Complaints? Suggestions? Let us know.\n",nco_prg_nm_get(),fnc_nm,var_nm,var_out.sz);
 	  nco_exit(EXIT_FAILURE);
 	} /* endif err */
 
@@ -1363,7 +1419,7 @@ nco_cpy_var_val_mlt_lmt_trv         /* [fnc] Copy variable data from input to ou
   /* Perform MD5 digest of input and output data if requested */
   if(md5)
     if(md5->dgs)
-      (void)nco_md5_chk(md5,var_nm,var_out.sz*nco_typ_lng(var_typ_out),out_id,dmn_map_srt,dmn_map_cnt,var_out.val.vp);
+      (void)nco_md5_chk(md5,var_nm,var_out.sz*nco_typ_lng_udt(out_id,var_typ_out),out_id,dmn_map_srt,dmn_map_cnt,var_out.val.vp);
 
   /* Write unformatted binary data */
   if(fp_bnr) nco_bnr_wrt(fp_bnr,var_nm,var_out.sz,var_typ_in,var_out.val.vp);
@@ -1503,7 +1559,7 @@ nco_cpy_msa_lmt                     /* [fnc] Copy MSA struct from table to local
 } /* nco_cpy_msa_lmt() */
 
 void
-nco_msa_var_get_trv                 /* [fnc] Get variable data from disk taking account of multihyperslabs */
+nco_msa_var_get_trv                 /* [fnc] Define a 'var_sct' hyperslab fields from a GTT variable */
 (const int nc_id,                   /* I [ID] netCDF file ID */
  var_sct *var_in,                   /* I/O [sct] Variable */
  const trv_tbl_sct * const trv_tbl) /* I [sct] GTT (Group Traversal Table) */
@@ -1535,7 +1591,7 @@ nco_msa_var_get_trv                 /* [fnc] Get variable data from disk taking 
   
   /* Scalars */
   if(nbr_dim == 0){
-    var_in->val.vp=nco_malloc(nco_typ_lng(var_in->typ_dsk));
+    var_in->val.vp=nco_malloc(nco_typ_lng_udt(var_in->nc_id,var_in->typ_dsk));
     (void)nco_get_var1(var_in->nc_id,var_in->id,0L,var_in->val.vp,var_in->typ_dsk);
     goto do_upk;
   } /* end if scalar */
@@ -1551,7 +1607,7 @@ nco_msa_var_get_trv                 /* [fnc] Get variable data from disk taking 
     (void)fprintf(stdout,"%s: DEBUG %s reports reading %s\n",nco_prg_nm_get(),fnc_nm,var_trv->nm_fll);
     for(int idx_dmn=0;idx_dmn<var_trv->nbr_dmn;idx_dmn++){
       (void)fprintf(stdout,"%s: DEBUG %s reports dimension %s has dmn_cnt = %ld",nco_prg_nm_get(),fnc_nm,lmt_msa[idx_dmn]->dmn_nm,lmt_msa[idx_dmn]->dmn_cnt);
-	for(int idx_lmt=0;idx_lmt<lmt_msa[idx_dmn]->lmt_dmn_nbr;idx_lmt++) (void)fprintf(stdout," : %ld (%ld->%ld)",lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->cnt,lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->srt,lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->end);
+  for(int idx_lmt=0;idx_lmt<lmt_msa[idx_dmn]->lmt_dmn_nbr;idx_lmt++) (void)fprintf(stdout," : %ld (%ld->%ld)",lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->cnt,lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->srt,lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->end);
       (void)fprintf(stdout,"\n");
     } /* end loop over dimensions */
   } /* endif dbg */
@@ -1596,6 +1652,98 @@ do_upk:
 
   return;
 } /* end nco_msa_var_get_trv() */
+
+void
+nco_msa_var_get_sct                 /* [fnc] Define a 'var_sct' hyperslab fields from a GTT variable ('trv_sct')*/
+(const int nc_id,                   /* I [ID] netCDF file ID */
+  var_sct *var_in,                  /* I/O [sct] Variable */
+  const trv_sct * const var_trv)    /* I [sct] GTT variable */
+{
+  /* Same as nco_msa_var_get_trv() but with input 'var_trv' '
+     TODO Deprecate nco_msa_var_get_trv() and use this function */
+
+  const char fnc_nm[] = "nco_msa_var_get_sct()"; /* [sng] Function name  */
+
+  int nbr_dim;
+  int grp_id;
+
+  lmt_msa_sct **lmt_msa;
+  lmt_sct **lmt;
+
+  nc_type mss_typ_tmp = NC_NAT; /* CEWI */
+
+  /* Obtain group ID */
+  (void)nco_inq_grp_full_ncid(nc_id, var_trv->grp_nm_fll, &grp_id);
+
+  nbr_dim = var_in->nbr_dim;
+  var_in->nc_id = grp_id;
+
+  assert(nbr_dim == var_trv->nbr_dmn);
+  assert(!strcmp(var_in->nm_fll, var_trv->nm_fll));
+
+  /* Scalars */
+  if (nbr_dim == 0) {
+    var_in->val.vp = nco_malloc(nco_typ_lng_udt(var_in->nc_id,var_in->typ_dsk));
+    (void)nco_get_var1(var_in->nc_id, var_in->id, 0L, var_in->val.vp, var_in->typ_dsk);
+    goto do_upk;
+  } /* end if scalar */
+
+    /* Allocate local MSA */
+  lmt_msa = (lmt_msa_sct **)nco_malloc(var_trv->nbr_dmn * sizeof(lmt_msa_sct *));
+  lmt = (lmt_sct **)nco_malloc(var_trv->nbr_dmn * sizeof(lmt_sct *));
+
+  /* Copy from table to local MSA */
+  (void)nco_cpy_msa_lmt(var_trv, &lmt_msa);
+
+  if (nco_dbg_lvl_get() == nco_dbg_old) {
+    (void)fprintf(stdout, "%s: DEBUG %s reports reading %s\n", nco_prg_nm_get(), fnc_nm, var_trv->nm_fll);
+    for (int idx_dmn = 0; idx_dmn < var_trv->nbr_dmn; idx_dmn++) {
+      (void)fprintf(stdout, "%s: DEBUG %s reports dimension %s has dmn_cnt = %ld", nco_prg_nm_get(), fnc_nm, lmt_msa[idx_dmn]->dmn_nm, lmt_msa[idx_dmn]->dmn_cnt);
+      for (int idx_lmt = 0; idx_lmt < lmt_msa[idx_dmn]->lmt_dmn_nbr; idx_lmt++) (void)fprintf(stdout, " : %ld (%ld->%ld)", lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->cnt, lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->srt, lmt_msa[idx_dmn]->lmt_dmn[idx_lmt]->end);
+      (void)fprintf(stdout, "\n");
+    } /* end loop over dimensions */
+  } /* endif dbg */
+
+    /* Call super-dooper recursive routine
+    nco_msa_rcr_clc requires that var_in->type be on-disk type
+    Could replace var->type by var->typ_dsk in nco_msa_rcr_clc() but that seems inelegant
+    Instead, risk putting val and mss_val types briefly out-of-sync by pretending var->type is typ_dsk
+    Save current type of missing value in RAM in temporary variable and conform new variable to that below
+    20140930: This is (too?) confusing and hard-to-follow, a better solution is to add a field mss_val_typ
+    to var_sct and then separately and explicitly track types of both val and mss_val members. */
+  mss_typ_tmp = var_in->type;
+  var_in->type = var_in->typ_dsk;
+  var_in->val.vp = nco_msa_rcr_clc((int)0, nbr_dim, lmt, lmt_msa, var_in);
+  var_in->type = mss_typ_tmp;
+
+  /* Free */
+  (void)nco_lmt_msa_free(var_trv->nbr_dmn, lmt_msa);
+  lmt = (lmt_sct **)nco_free(lmt);
+
+do_upk:
+  /* Missing value type synchronization:
+  Avoid re-reading missing value every ncra record by converting input value to disk type
+  var_in->type still reflects missing value type, not variable value type */
+  if (var_in->pck_dsk && (mss_typ_tmp != var_in->typ_dsk)) var_in = nco_cnv_mss_val_typ(var_in, var_in->typ_dsk);
+  var_in->type = var_in->typ_dsk;
+
+  /* Type of variable and missing value in memory are now same as type on disk */
+
+  /* Packing in RAM is now same as packing on disk pck_dbg
+  fxm: This nco_pck_dsk_inq() call is never necessary for non-packed variables */
+  (void)nco_pck_dsk_inq(grp_id, var_in);
+
+  /* Packing/Unpacking */
+  if(nco_is_rth_opr(nco_prg_id_get())){
+    /* Arithmetic operators must unpack variables before performing arithmetic
+    Otherwise arithmetic will produce garbage results */
+    /* 20050519: Not sure why I originally made nco_var_upk() call SMP-critical
+    20050629: Making this region multi-threaded causes no problems */
+    if(var_in->pck_dsk) var_in=nco_var_upk(var_in);
+  } /* endif arithmetic operator */
+
+  return;
+} /* end nco_msa_var_get_sct() */
 
 void
 nco_lmt_msa_free                    /* [fnc] Free MSA */

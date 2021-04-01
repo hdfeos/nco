@@ -2,17 +2,17 @@
 
 /* Purpose: Conform variable types */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_cnf_typ.h" /* Conform variable types */
 
 void
 cast_void_nctype /* [fnc] Cast generic pointer to netCDF type */
-(const nc_type type, /* I [enm] netCDF type to cast void pointer to*/
- ptr_unn * const ptr) /* I/O [ptr] Pointer to pointer union whose vp element will be cast to type type*/
+(const nc_type type, /* I [enm] netCDF type to cast void pointer to */
+ ptr_unn * const ptr) /* I/O [ptr] Pointer to pointer union whose vp element will be cast to type type */
 {
   /* Purpose: Cast generic pointer in ptr_unn structure from type void to output netCDF type */
   switch(type){
@@ -51,6 +51,18 @@ cast_void_nctype /* [fnc] Cast generic pointer to netCDF type */
     break;
   case NC_STRING:
     ptr->sngp=(nco_string *)ptr->vp;
+    break;
+  case NC_VLEN:
+    ptr->vlnp=(nco_vlen *)ptr->vp;
+    break;
+  case NC_OPAQUE:
+    ptr->opqp=(nco_opaque *)ptr->vp;
+    break;
+  case NC_ENUM:
+    ptr->enmp=(nco_enum *)ptr->vp;
+    break;
+  case NC_COMPOUND:
+    ptr->cpdp=(nco_compound *)ptr->vp;
     break;
   default: nco_dfl_case_nc_type_err(); break;
   } /* end switch */
@@ -98,6 +110,18 @@ cast_nctype_void /* [fnc] Cast generic pointer in ptr_unn structure from type ty
     break;
   case NC_STRING:
     ptr->vp=(void *)ptr->sngp;
+    break;
+  case NC_VLEN:
+    ptr->vp=(void *)ptr->vlnp;
+    break;
+  case NC_OPAQUE:
+    ptr->vp=(void *)ptr->opqp;
+    break;
+  case NC_ENUM:
+    ptr->vp=(void *)ptr->enmp;
+    break;
+  case NC_COMPOUND:
+    ptr->vp=(void *)ptr->cpdp;
     break;
   default: nco_dfl_case_nc_type_err(); break;
   } /* end switch */
@@ -848,6 +872,10 @@ nco_val_cnf_typ /* [fnc] Copy val_in and typecast from typ_in to typ_out */
      val_out must hold enough space (one element of type typ_out) to hold output
      and output type may be larger than input type */
 
+  /* 20180509: Unsure why it is unsafe to return immediately when typ_in == typ_out
+     However, doing so causes dozens of regression failures */
+  //  if(typ_in == typ_out) return;
+
   /* Typecast pointer to values before access */
   (void)cast_void_nctype(typ_in,&val_in);
   (void)cast_void_nctype(typ_out,&val_out);
@@ -872,6 +900,8 @@ nco_val_cnf_typ /* [fnc] Copy val_in and typecast from typ_in to typ_out */
     } break;
   case NC_DOUBLE:
     switch(typ_in){
+      /* 20160114: Unclear whether implicit coercion to promote NaNf to NaN works (needed for chlorophyll variable in MODIS_L2N_20140304T1120.nc) */
+      //    case NC_FLOAT: if(isfinite(*val_in.fp)) *val_out.dp=*val_in.fp; else *val_out.dp=NC_MIN_DOUBLE; break; 
     case NC_FLOAT: *val_out.dp=*val_in.fp; break; 
     case NC_DOUBLE: *val_out.dp=*val_in.dp; break; 
     case NC_INT: *val_out.dp=*val_in.ip; break;
@@ -1053,7 +1083,7 @@ nco_val_cnf_typ /* [fnc] Copy val_in and typecast from typ_in to typ_out */
      value and are thus purely local to this routine. The only thing changed by this
      routine is the contents of the location pointed to by the pointer to the output value. */
   
-} /* end nco_val_cnf_typ */
+} /* end nco_val_cnf_typ() */
 
 int /* O [enm] Dummy return */
 nco_scv_cnf_typ /* [fnc] Convert scalar attribute to typ_new using C implicit coercion */
@@ -1250,7 +1280,36 @@ nco_scv_cnf_typ /* [fnc] Convert scalar attribute to typ_new using C implicit co
   scv_new.type=typ_new;
   *scv_old=scv_new;
   return True;
-} /* end nco_scv_cnf_typ */
+} /* end nco_scv_cnf_typ() */
+
+nco_bool /* O [flg] Input is integer type */
+nco_typ_ntg /* [fnc] Identify integer types */
+(const nc_type typ_in) /* I [enm] Type to check for integer-ness */
+{
+  nco_bool flg_ntg=True; /* CEWI */
+
+  switch(typ_in){
+  case NC_INT: 
+  case NC_SHORT: 
+  case NC_INT64: 
+  case NC_BYTE: 
+  case NC_UINT:
+  case NC_USHORT:
+  case NC_UINT64:
+  case NC_UBYTE: 
+    flg_ntg=True;
+    break;
+  case NC_FLOAT: 
+  case NC_DOUBLE: 
+  case NC_CHAR: 
+  case NC_NAT: 
+  case NC_STRING: 
+    flg_ntg=False;
+    break;
+  default: nco_dfl_case_nc_type_err(); break;
+  } /* end switch */
+  return flg_ntg;
+} /* end nco_typ_ntg() */
 
 nco_bool /* O [flg] Input is signed type */
 nco_typ_sgn /* [fnc] Identify signed types */
@@ -1279,7 +1338,7 @@ nco_typ_sgn /* [fnc] Identify signed types */
   default: nco_dfl_case_nc_type_err(); break;
   } /* end switch */
   return flg_sgn;
-} /* end nco_typ_sgn */
+} /* end nco_typ_sgn() */
 
 nco_bool /* O [flg] Input is netCDF3 atomic type */
 nco_typ_nc3 /* [fnc] Identify netCDF3 atomic types */
@@ -1308,7 +1367,55 @@ nco_typ_nc3 /* [fnc] Identify netCDF3 atomic types */
   default: nco_dfl_case_nc_type_err(); break;
   } /* end switch */
   return flg_nc3;
-} /* end nco_typ_nc3 */
+} /* end nco_typ_nc3() */
+
+nco_bool /* O [flg] Input is CDF5 atomic type */
+nco_typ_nc5 /* [fnc] Identify CDF5 atomic types */
+(nc_type typ_in) /* I [enm] Type to check for CDF5 compliance */
+{
+  nco_bool flg_nc5=True; /* CEWI */
+
+  switch(typ_in){
+  case NC_FLOAT: 
+  case NC_DOUBLE: 
+  case NC_INT: 
+  case NC_SHORT: 
+  case NC_BYTE: 
+  case NC_CHAR: 
+  case NC_INT64: 
+  case NC_UBYTE: 
+  case NC_USHORT:
+  case NC_UINT:
+  case NC_UINT64:
+    flg_nc5=True;
+    break;       
+  case NC_STRING: 
+    flg_nc5=False;
+    break;
+  case NC_NAT: 
+  default: nco_dfl_case_nc_type_err(); break;
+  } /* end switch */
+  return flg_nc5;
+} /* end nco_typ_nc5() */
+
+nc_type /* O [enm] CDF5 atomic type */
+nco_typ_nc4_nc5 /* [fnc] Convert netCDF4 to CDF5 atomic type */
+(const nc_type typ_nc4) /* I [enm] netCDF4 type */
+{
+  /* Purpose: Perform intelligent type conversion from netCDF4->5 type */
+
+  /* Already CDF5 type */
+  if(nco_typ_nc5(typ_nc4)) return typ_nc4;
+
+  switch(typ_nc4){
+  case NC_STRING: 
+    return NC_CHAR;
+    break;
+  case NC_NAT:
+  default: nco_dfl_case_nc_type_err(); break;
+  } /* end switch */
+  return typ_nc4;
+} /* end nco_typ_nc4_nc5() */
 
 nc_type /* O [enm] netCDF3 type */
 nco_typ_nc4_nc3 /* [fnc] Convert netCDF4 to netCDF3 atomic type */
@@ -1336,7 +1443,7 @@ nco_typ_nc4_nc3 /* [fnc] Convert netCDF4 to netCDF3 atomic type */
   default: nco_dfl_case_nc_type_err(); break;
   } /* end switch */
   return typ_nc4;
-} /* end nco_typ_nc4_nc3 */
+} /* end nco_typ_nc4_nc3() */
 
 nc_type /* O [enm] Return Highest type */
 ncap_typ_hgh /* [fnc] Return Highest type */
@@ -1417,7 +1524,7 @@ ncap_typ_hgh /* [fnc] Return Highest type */
   default: nco_dfl_case_nc_type_err(); break;
   } /* end switch */
   return typ_1;
-} /* end ncap_typ_hgh */
+} /* end ncap_typ_hgh() */
 
 nc_type /* O [enm] Higher precision of input variables */
 ncap_var_retype /* [fnc] Promote variable to higher common precision */
@@ -1434,7 +1541,7 @@ ncap_var_retype /* [fnc] Promote variable to higher common precision */
   if(var_2->type != typ_hgh) var_2=nco_var_cnf_typ(typ_hgh,var_2);
 
   return typ_hgh;
-} /* end ncap_var_retype */
+} /* end ncap_var_retype() */
 
 nc_type /* O [enm] Highest precision of arguments */
 ncap_scv_scv_cnf_typ_hgh_prc /* [fnc] Promote arguments to higher precision if necessary */
@@ -1452,7 +1559,7 @@ ncap_scv_scv_cnf_typ_hgh_prc /* [fnc] Promote arguments to higher precision if n
     (void)nco_scv_cnf_typ(scv_2->type,scv_1);
     return scv_2->type;
   } /* endif */
-} /* end ncap_scv_scv_cnf_typ_hgh_prc */
+} /* end ncap_scv_scv_cnf_typ_hgh_prc() */
 
 nc_type /* O [enm] Highest precision of arguments */
 ncap_var_scv_cnf_typ_hgh_prc /* [fnc] Promote arguments to higher precision if necessary */

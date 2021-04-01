@@ -8,11 +8,11 @@ file:///home/zender/nco/doc/index.shtml
 
 Usage:
 /usr/bin/scp ~/nco/doc/index.shtml zender,nco@web.sf.net:/home/project-web/nco/htdocs
-scp -p ~/nco/doc/index.shtml dust.ess.uci.edu:/var/www/html/nco
+scp -p ~/nco/doc/index.shtml dust.ess.uci.edu:Sites/nco
 /usr/bin/scp ~/nco/doc/doe.jpg ~/nco/doc/index.shtml ~/nco/doc/logo_cog.png ~/nco/doc/logo_cog_nmr.png ~/nco/doc/logo_nco_stk.png ~/nco/doc/logo_pch.png ~/nco/doc/logo_srl.png ~/nco/doc/nasa.png ~/nco/doc/nco.png ~/nco/doc/nsf.png zender,nco@web.sf.net:/home/project-web/nco/htdocs
-scp -p ~/nco/doc/index.shtml ~/nco/doc/logo_cog.png ~/nco/doc/logo_cog_nmr.png ~/nco/doc/logo_nco_stk.png ~/nco/doc/logo_pch.png ~/nco/doc/logo_srl.png ~/nco/doc/nasa.png ~/nco/doc/nco.png ~/nco/doc/nsf.png dust.ess.uci.edu:/var/www/html/nco
+scp -p ~/nco/doc/index.shtml ~/nco/doc/logo_cog.png ~/nco/doc/logo_cog_nmr.png ~/nco/doc/logo_nco_stk.png ~/nco/doc/logo_pch.png ~/nco/doc/logo_srl.png ~/nco/doc/nasa.png ~/nco/doc/nco.png ~/nco/doc/nsf.png dust.ess.uci.edu:Sites/nco
 scp -p ~/nco/doc/.htaccess zender,nco@web.sf.net:/home/project-web/nco/htdocs/src
-scp -p ~/nco/doc/.htaccess dust.ess.uci.edu:/var/www/html/nco/src
+scp -p ~/nco/doc/.htaccess dust.ess.uci.edu:Sites/nco/src
 -->
 
 <!--
@@ -51,7 +51,7 @@ Try to disable Spammers' machines:
 <a href="http://sf.net/p/nco/discussion/9830">Help</a> /
 <a href="#RTFM">Manual</a> /
 <a href="http://sf.net/projects/nco">Project</a> /
-<a href="https://github.com/czender/nco/tree/master/src/nco">Source</a> /
+<a href="https://github.com/nco/nco/tree/master/src/nco">Source</a> /
 </td>
 
 <td align="right" valign="top">
@@ -60,17 +60,17 @@ Try to disable Spammers' machines:
 [<a href="http://cfconventions.org/1.6.html">CF</a>] 
 [<a href="https://wiki.earthdata.nasa.gov/display/ESDSWG/Dataset+Interoperability+Working+Group">DIWG</a>] 
 [<a href="http://www.gnu.org/software/gsl">GSL</a>]
-[<a href="http://www.unidata.ucar.edu/packages/netcdf">netCDF</a>] 
+[<a href="http://www.unidata.ucar.edu/software/netcdf">netCDF</a>] 
 [<a href="http://opendap.org">OPeNDAP</a>] 
-[<a href="http://swamp.googlecode.com">SWAMP</a>] 
-[<a href="http://www.unidata.ucar.edu/packages/udunits">UDUnits</a>] 
+[<a href="http://github.com/nco/swamp">SWAMP</a>] 
+[<a href="http://www.unidata.ucar.edu/software/udunits">UDUnits</a>] 
 </td></tr></table>
 
 <p><hr width="100%"></p>
-<p><h1 align="center">Welcome to the netCDF Operator (NCO) Homepage</h1>
+<p><h1 align="center">Bienvenue sur le netCDF Operator (NCO) site</h1>
 
 <p><h2>
-Current NCO version is 4.5.1 last updated on <!--#flastmod file="VERSION"-->
+Current stable NCO version is 4.9.8 released <!--#flastmod file="src/nco-4.9.8.tar.gz"-->
 </h2>
 
 <table border=0 width=100%>
@@ -83,11 +83,11 @@ Current NCO version is 4.5.1 last updated on <!--#flastmod file="VERSION"-->
 <li><a href="#prp_sei">NCO&rarr;SDO Project</a></li>
 <li><a href="#Publications">Publications</a></li>
 <li><a href="#Highlights">Release Highlights</a></li>
-<li><a href="#Binaries">Binaries</a></li>
+<li><a href="#Executables">Executables</a></li>
 <li><a href="#RTFM">Documentation</a></li>
 <li><a href="#FAQ">FAQ</a></li>
 <li><a href="#Support">Help/Support/Contacts</a></li>
-<li><a href="#README/ChangeLog/TODO">README/ChangeLog/TODO</a></li>
+<li><a href="#ANNOUNCE/ChangeLog/README/TODO">ANNOUNCE/ChangeLog/README/TODO</a></li>
 <li><a href="#Source">Source Code</a></li>
 <li><a href="#bld">Compiling</a></li>
 <li><a href="#NCAR">Supercomputers</a></li>
@@ -98,7 +98,8 @@ Current NCO version is 4.5.1 last updated on <!--#flastmod file="VERSION"-->
 </td>
 
 <td>
-<img src="logo_nco_stk.png" height=442 width=722 align=top>
+<img src="logo_nco_stk.png" height=292 width=476 align=top>
+<!-- <img src="logo_nco_stk.png" height=442 width=722 align=top> -->
 <!--
 <img src="nco.png" height=180 width=180 align=top>
 <img src="logo_pch.png" height=321 width=195 align=top>
@@ -117,9 +118,10 @@ Can you improve these or create a better one? Send it in!
 Keep the size &lt;250&times;250 pixels.<br>
 -->
 </td>
+</table>
 
 The NCO toolkit manipulates and analyzes data stored in
-<a href="http://www.unidata.ucar.edu/packages/netcdf">netCDF</a>-accessible
+<a href="http://www.unidata.ucar.edu/netcdf">netCDF</a>-accessible
 formats, including 
 <a href="http://opendap.org">DAP</a>,
 <a href="http://hdfgroup.org/products/hdf4">HDF4</a>, and 
@@ -139,8 +141,8 @@ NCO is
 <a href="http://dust.ess.uci.edu/ppr/ppr_ZeM07.pdf">fast</a>, 
 <a href="http://dust.ess.uci.edu/ppr/ppr_Zen08.pdf">powerful</a>,
 and 
-<a href="http://www.gnu.org/licenses/gpl-3.0.html">free</a>.
-</table>
+<a href="https://opensource.org/licenses/BSD-3-Clause">free</a>.
+<!-- <a href="http://www.gnu.org/licenses/gpl-3.0.html">free</a>. -->
 <hr>
 
 <!-- http://nco.sf.net#news -->
@@ -149,56 +151,43 @@ and
 <h2>Recent Releases &amp; Milestones</h2>
 
 <ul>
-<li>2015 Jul&nbsp;??: 4.5.2 (<i>In progress</i>)
-<li>2015 Jul&nbsp;10: 4.5.1 (Stability)
-<li>2015 Jun&nbsp;11: 4.5.0 (Regridding)
-<li>2015 May&nbsp;21: 4.4.9 (<tt>ncra</tt> weights)
-<li>2015 Feb&nbsp;16: 4.4.8 (Precision-preserving Compression)
-<li>2014 Dec&nbsp;15: DOE ACME <a href="#prp_acme">project</a> commences</li>
-<li>2014 Nov&nbsp;26: 4.4.7 (Chunking features)
-<li>2014 Oct&nbsp;01: 4.4.6 (<tt>ncra, ncwa</tt> packing bugfixes, stride optimization)
-<li>2014 Aug&nbsp;26: 4.4.5 (Stability)
-<li>2014 Jul&nbsp;01: NASA ACCESS 2013 <a href="#prp_axs">project</a> commences</li>
-<li>2014 May&nbsp;29: 4.4.4 (Stability)
-<li>2014 Apr&nbsp;02: 4.4.3 (Stability)
-<li>2014 Mar&nbsp;27: <a href="http://dust.ess.uci.edu/smn/smn_nco_gsfc_201403.pdf">Talk</a> at NASA GSFC, Greenbelt, Maryland</li>
-<li>2014 Mar&nbsp;25: <a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201403.pdf">Poster</a> for NASA ESDSWG, Greenbelt, Maryland</li>
-<li>2014 Feb&nbsp;20: 4.4.2 (Stability)
-<li>2014 Jan&nbsp;29: 4.4.1 (Stability)
-<li>2014 Jan&nbsp;09: 4.4.0 (Stability)
-<li>2013 Dec&nbsp;13: <a href="http://dust.ess.uci.edu/smn/smn_nco_agu_201312.pdf">Talk</a> at Fall AGU, San Francisco, California</li>
-<li>2013 Dec&nbsp;02: 4.3.9 (new operator, <tt>nces</tt>)
-<li>2013 Nov&nbsp;06: 4.3.8 (<tt>ncatted</tt> groups)
-<li>2013 Oct&nbsp;17: 4.3.7 (HDF4, XML, <tt>ncrename</tt> groups)
-<li>2013 Oct&nbsp;02: <a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201310.pdf">Poster</a> for NASA ESDSWG, Greenbelt, Maryland</li>
-<li>2013 Sep&nbsp;27: 4.3.6 (<tt>--dbl</tt> default, <tt>ncdismember</tt>)
-<li>2013 Sep&nbsp;20: 4.3.5 (<tt>nces</tt>, <tt>ncra</tt>, <tt>ncrcat</tt> groups)
-<li>2013 Aug&nbsp;01: 4.3.4 (<tt>ncpdq</tt> bugfix, HDF unpacking)
-<li>2013 Jul&nbsp;24: 4.3.3 (<tt>ncrename</tt>, <tt>ncwa</tt> groups, CDL, XML)
-<li>2013 Jul&nbsp;05: 4.3.2 (<tt>ncflint</tt>, <tt>ncpdq</tt> groups)</li>
-<li>2013 Jun&nbsp;03: Submitted NASA ACCESS 2013 <a href="http://dust.ess.uci.edu/prp/prp_axs/prp_axs.pdf">proposal</a></li>
-<li>2013 May&nbsp;01: 4.3.1 (Group broadcasting)</li>
-<li>2013 Mar&nbsp;28: 4.3.0 (<tt>ncbo</tt> groups)</li>
-<li>2013 Mar&nbsp;19: 4.2.6</li>
-<li>2013 Jan&nbsp;28: 4.2.5</li>
-<li>2013 Jan&nbsp;21: 4.2.4</li>
-<li><a href="./milestones_old.shtml">Milestones from 2003&ndash;2012 (versions 2.8.4&ndash;4.2.3)</a></li>
-<li><a href="./nco_news.shtml">News and Announcements from 1998&ndash;2003 (version 1.1.0&ndash;2.8.3) and earlier</a></li>
+<li>2021 Jun&nbsp;XX: 4.9.9 <i>In Progress...</i>
+<li>2021 Mar&nbsp;21: 4.9.8 Small features/fixes
+<li>2020 Dec&nbsp;27: 4.9.7 Small features/fixes
+<li>2020 Nov&nbsp;30: 4.9.6 Small features/fixes
+<li>2020 Sep&nbsp;23: 4.9.5 A feature and fixes
+<li>2020 Sep&nbsp;04: 4.9.4 High Frequency climos
+<li>2020 May&nbsp;31: 4.9.3 Sundry features/fixes
+<li>2020 Feb&nbsp;14: 4.9.2 BSD License
+<li>2019 Dec&nbsp;19: 4.9.1 Sundry features/fixes
+<li>2019 Dec&nbsp;04: 4.9.0 ncremap lollapalooza
+<li>2019 Jul&nbsp;01: 4.8.1 Sundry features/fixes
+<li>2019 May&nbsp;15; 4.8.0 Vertical interpolation
+<li>2019 Feb&nbsp;20: 4.7.9 Sundry features/fixes
+<li>2018 Nov&nbsp;16: 4.7.8 CMIP6
+<li>2018 Sep&nbsp;21: 4.7.7 Sundry features/fixes
+<li>2018 Aug&nbsp;11: 4.7.6 ncremap RRG, MWF
+<li>2018 Jun&nbsp;10: 4.7.5 Sundry features/fixes
+<li>2018 Apr&nbsp;06: 4.7.4 CF2-Group compliance
+<li>2018 Mar&nbsp;02: 4.7.3 Sundry features/fixes
+<li>2018 Jan&nbsp;25: 4.7.2 Tempest2
+<li><a href="./milestones_old.shtml">Milestones from 200301&ndash;201712 (versions 2.8.4&ndash;4.7.1)</a></li>
+<li><a href="./nco_news.shtml">News and Announcements from 199801&ndash;200212 (version 1.1.0&ndash;2.8.3) and earlier</a></li>
 </ul>
 <hr></p>
 
 <!-- http://nco.sf.net#Definition -->
 <dt><a name="Definition"></a><a name="dfn"></a></dt>
 <h2>What is NCO?</h2>
-<p>The netCDF Operators (NCO) comprise a dozen standalone,
+<p>The netCDF Operators (NCO) comprise about a dozen standalone,
 command-line programs that take 
-<a href="http://www.unidata.ucar.edu/packages/netcdf">netCDF</a>,
+<a href="http://www.unidata.ucar.edu/netcdf">netCDF</a>,
 <a href="http://hdfgroup.org">HDF</a>, and/or
 <a href="http://opendap.org">DAP</a>
-files as input, then operate (e.g., derive new data, compute
-statistics, print, hyperslab, manipulate metadata) and output the
-results to screen or files in text, binary, or netCDF formats.
-NCO aids analysis of gridded scientific data.  
+files as input, then operate (e.g., derive new fields, compute
+statistics, print, hyperslab, manipulate metadata, regrid) and output
+the results to screen or files in text, binary, or netCDF formats.
+NCO aids analysis of gridded and unstructured scientific data.  
 The shell-command style of NCO allows users to manipulate and analyze
 files interactively, or with expressive scripts that avoid some
 overhead of higher-level programming environments.  
@@ -234,6 +223,7 @@ techniques for climate data analysis:
 <li><a href="./nco.html#ncap2"><tt>ncap2</tt></a> netCDF Arithmetic Processor (<a href="./nco.html#xmp_ncap">examples</a>)</li>
 <li><a href="./nco.html#ncatted"><tt>ncatted</tt></a> netCDF ATTribute EDitor (<a href="./nco.html#xmp_ncatted">examples</a>)</li>
 <li><a href="./nco.html#ncbo"><tt>ncbo</tt></a> netCDF Binary Operator (addition, multiplication...) (<a href="./nco.html#xmp_ncbo">examples</a>)</li>
+<li><a href="./nco.html#ncclimo"><tt>ncclimo</tt></a> netCDF CLIMatOlogy Generator (<a href="./nco.html#xmp_ncclimo">examples</a>)</li>
 <li><a href="./nco.html#nces"><tt>nces</tt></a> netCDF Ensemble Statistics (<a href="./nco.html#xmp_nces">examples</a>)</li>
 <li><a href="./nco.html#ncecat"><tt>ncecat</tt></a> netCDF Ensemble conCATenator (<a href="./nco.html#xmp_ncecat">examples</a>)</li>
 <li><a href="./nco.html#ncflint"><tt>ncflint</tt></a> netCDF FiLe INTerpolator (<a href="./nco.html#xmp_ncflint">examples</a>)</li>
@@ -241,6 +231,7 @@ techniques for climate data analysis:
 <li><a href="./nco.html#ncpdq"><tt>ncpdq</tt></a> netCDF Permute Dimensions Quickly, Pack Data Quietly (<a href="./nco.html#xmp_ncpdq">examples</a>)</li>
 <li><a href="./nco.html#ncra"><tt>ncra</tt></a> netCDF Record Averager (<a href="./nco.html#xmp_ncra">examples</a>)</li>
 <li><a href="./nco.html#ncrcat"><tt>ncrcat</tt></a> netCDF Record conCATenator (<a href="./nco.html#xmp_ncrcat">examples</a>)</li>
+<li><a href="./nco.html#ncremap"><tt>ncremap</tt></a> netCDF REMAPer (<a href="./nco.html#xmp_ncremap">examples</a>)</li>
 <li><a href="./nco.html#ncrename"><tt>ncrename</tt></a> netCDF RENAMEer (<a href="./nco.html#xmp_ncrename">examples</a>)</li>
 <li><a href="./nco.html#ncwa"><tt>ncwa</tt></a></td> netCDF Weighted Averager (<a href="./nco.html#xmp_ncwa">examples</a>)</li>
 </ul>
@@ -252,7 +243,7 @@ many non-linear statistics as well, e.g., total, minimum, RMS.
 Moreover, <tt>ncap2</tt> implements a powerful domain language which
 handles arbitrarily complex algebra, calculus, and statistics (using GSL).
 The operators are as general as 
-<a href="http://www.unidata.ucar.edu/packages/netcdf">netCDF</a>
+<a href="http://www.unidata.ucar.edu/netcdf">netCDF</a>
 itself: there are no restrictions on the contents of input file(s).
 NCO's internal routines are completely dynamic and impose no limit on
 the number or sizes of dimensions, variables, and files.
@@ -264,13 +255,16 @@ special cases.
 
 <p><hr width="100%"></p>
 
-<!-- http://nco.sf.net#Contribute -->
-<dt><a name="Contribute"></a></dt>
+<a name="Contribute"></a> <!-- http://nco.sf.net#Contribute -->
+<a name="contribute"></a> <!-- http://nco.sf.net#contribute -->
 <h2>How to Contribute: Volunteer, Endorse, or Donate</h2>
-<p>In March, 2000, NCO became an Open Source project hosted by
-<a href="http://sf.net">SourceForge.net</a>.
-This facilitates collaboration, code contributions, and support.
-<p>In March, 2015, NCO source code moved to <a href="http://github.com">GitHub.com</a>.
+<p>NCO has always (since 1995) been Open Source.
+<a href="http://sf.net">SourceForge.net</a> started hosting NCO 
+in March, 2000.
+This facilitated collaboration, code contributions, and support.
+<p>In March, 2015, NCO development moved to <a href="http://github.com">GitHub.com</a>.
+We continue to use the SourceForge discussion fora for historical
+continuity (seventeen years of searchable Q&amp;A).
 No matter what your programming background there is a task you can help with. 
 From re-organizing the TODO list itself, to improving this cheesy
 webpage, to documentation, to designing and implementing new features
@@ -295,7 +289,7 @@ with Subject: &ldquo;NCO Proposal Endorsement&rdquo;.
 This information is useful advocating for more NCO support.
 &ldquo;What future proposals?&rdquo; you ask, &ldquo;Aren't you already funded?&rdquo;
 Yes, in 2012 NASA funded us to implement netCDF4 groups and HDF support,
-and in 2014 NASA funded us to improve SLD handling.
+and in 2014 NASA funded us to improve regridding.
 These funds are/were primarily for development and maintainance of
 specific features. 
 To realize our grander ambition, i.e., to shift geoscience data
@@ -325,330 +319,209 @@ This may incentivize us to tackle your favorite <a href="./TODO"><tt>TODO</tt></
 Inspired by President Obama's plan to bring more transparency to
 government investment, these homepage donation counters track the
 influence of your monetary donations on NCO development: 
-<dt>Donations received between 20030624 and 20141126: US$144.55. Thank you, donors!</dt>
+<dt>Donations received between 20030624 and 20210121: US$219.77. Thank you, donors!</dt>
 <dt>NCO features &ldquo;incentivized&rdquo; by these donations: More emoticons in the documentation :)</dt>
 <hr></p>
+
+<a name="nsf"></a> <!-- http://nco.sf.net#nsf -->
+<dt><a name="prp_e3"></a></dt> <!-- http://nco.sf.net#prp_e3 -->
+<h2>NSF EarthCube Project</h2>
+<img src="nsf.png" height=180 width=180 align=right>
+<p>
+The National Science Foundation Grant
+<a href="http://www.nsf.gov/awardsearch/showAward.do?AwardNumber=1541031">NSF ICER-1541031</a>
+funded the Unidata-led
+<a href="http://dust.ess.uci.edu/prp/prp_e3/prp_e3.pdf">EarthCube Project</a>,
+&ldquo;EarthCube IA: Collaborative Proposal: Advancing netCDF-CF for the Geoscience Community&rdquo;
+from 20150901&ndash;20170831 as part of the 
+Integrative and Collaborative Education and Research
+(<a href="http://www.nsf.gov/div/index.jsp?org=ICER">ICER</a>)
+program. 
+
+<p>UCI's primary role was to help extend CF to cover hierarchical data structures, aka groups.
+  We developed the Group-Oriented Data Analysis and Distribution
+  (<a href="http://nco.sf.net/nco.html#godad">GODAD</a>) paradigm
+  for geoscience data analysis.
+  We helped convene workshops for interested stakeholders in Boulder in
+  2016 and 2017, at ESIP in 2018, and
+  CF <a href="https://cfconventions.org/cf-conventions/cf-conventions.html#groups">adopted</a>
+  our Groups proposal in 2019 and our extended integer types proposal in 2020.
+<hr></p>
+<!-- End http://nco.sf.net#nsf -->
 
 <a name="doe"></a> <!-- http://nco.sf.net#doe -->
 <a name="DOE"></a> <!-- http://nco.sf.net#DOE -->
 <a name="ACME"></a> <!-- http://nco.sf.net#ACME -->
 <a name="acme"></a> <!-- http://nco.sf.net#acme -->
+<a name="E3SM"></a> <!-- http://nco.sf.net#E3SM -->
+<a name="e3sm"></a> <!-- http://nco.sf.net#e3sm -->
 <dt><a name="prp_acme"></a></dt> <!-- http://nco.sf.net#prp_acme -->
-<h2>DOE ACME Project</h2>
+<dt><a name="prp_e3sm"></a></dt> <!-- http://nco.sf.net#prp_e3sm -->
+<h2>DOE E3SM Project</h2>
 <img src="doe.jpg" height=180 width=180 align=right>
-&ldquo;Lightweight Climate Analysis Tools for ACME&rdquo;
-is a US Department of Energy Cooperative Agreement (CA)
-<a href="http://www.climatemodeling.science.energy.gov/projects/nco">DE-SC0012998</a>
-from 20141215&ndash;20171214 that funds our
-<a href="http://dust.ess.uci.edu/prp/prp_acme/prp_acme.pdf">contribution</a>
-to the Accelerated Climate Modeling for Energy (ACME)
-<a href="https://acme-climate.atlassian.net/wiki/display/ACME/ACME+Home">project</a>,
+The Energy Exascale Earth System Model (E3SM)
+<a href="https://e3sm.org">project</a>,
 a part of DOE's Earth System Modeling (ESM)
-<a href="http://science.energy.gov/ber/research/cesd/earth-system-modeling-program">program</a>.
-The ACME project provides the resources to implement support for
-parallel regridding and workflows in NCO accessible through UV-CDAT.
-Spatially intelligent, parallelized analysis tools are a key component
-of the Group-Oriented Data Analysis and Distribution
-(<a href="http://nco.sf.net/nco.html#godad">GODAD</a>) paradigm we
-are developing for geoscience data analysis.</p>
+<a href="http://science.energy.gov/ber/research/cesd/earth-system-modeling-program">program</a>,
+has since 2015 supported our development of parallel climatology, timeseries
+splitting, and regridding workflows to help analyze E3SM output.
+Most NCO development during these years is a direct result of this DOE support.</p>
 <hr></p>
 
-<a name="nasa"></a> <!-- http://nco.sf.net#nasa -->
-<a name="access"></a> <!-- http://nco.sf.net#access -->
-<dt><a name="prp_axs"></a></dt> <!-- http://nco.sf.net#prp_axs -->
+<!-- 
+<a name="nasa"></a>
+<a name="access"></a>
+<dt><a name="prp_axs"></a></dt>
 <h2>NASA ACCESS 2013 Project</h2>
 <img src="nasa.png" height=180 width=180 align=right>
 <p>
-The National Aeronautics and Space Administration (NASA) Cooperative
-Agreement <a href="NNX14AH55A">NNX14AH55A</a>
-funds our
-<a href="http://dust.ess.uci.edu/prp/prp_axs/prp_axs.pdf">project</a>,
-&ldquo;Easy Access to and Analysis of NASA and Model Swath-like Data&rdquo;
-from 20140701&ndash;20160630 as part of the 
-Advancing Collaborative Connections for Earth System Science 
-(<a href="http://science.nasa.gov/earth-science/earth-science-data/access">ACCESS</a>)
-program. 
-This URL,
-<a href="http://nco.sf.net#prp_axs"><tt>http://nco.sf.net#prp_axs</tt></a>,
-points to the most up-to-date information on the ACCESS 2013 project.</p> 
+  The National Aeronautics and Space Administration (NASA)
+  Advancing Collaborative Connections for Earth System Science 
+  (<a href="http://science.nasa.gov/earth-science/earth-science-data/access">ACCESS 2013</a>)
+  program funded our project &ldquo;Easy Access to and Analysis of NASA and Model Swath-like Data&rdquo;
+  from 20140701&ndash;20160630.
 
-<p>This ACCESS project provides resources to implement support in NCO
-for Swath-like data (SLD), i.e., dataset with non-rectangular and/or
+<p>That ACCESS project supported development of NCO regridding capabilities
+for Swath-like data (SLD), i.e., datasets with non-rectangular and/or
 time-varying spatial grids in which one or more coordinates are multi-dimensional.
 It is often challenging and time-consuming to work with SLD, 
 including all NASA Level&nbsp;2 satellite-retrieved data, non-rectangular 
-subsets of Level&nbsp;3 data, and model data (e.g., CMIP5) that are
+subsets of Level&nbsp;3 data, and model data (e.g., CMIP) that are
 increasingly stored on non-rectangular grids.
 Spatially intelligent software tools is a key component of the
 Group-Oriented Data Analysis and Distribution 
 (<a href="http://nco.sf.net/nco.html#godad">GODAD</a>) paradigm we
-are developing for geoscience data analysis.</p>  
-
-<p>We are currently recruiting a programmer (aka software engineer) 
-or postdoc based at UCI for at least two years, to accomplish our
-ACCESS objectives.
-As described in the proposal, this person will be responsible for 
-incorporating geospatial features and parallelism into NCO. 
-See the ads for more details.
-(<a href="http://dust.ess.uci.edu/hire/prg_anl_06_adv.pdf">PDF</a>, 
- <a href="http://dust.ess.uci.edu/hire/prg_anl_06_adv.txt">TXT</a>).
+developed for geoscience data analysis.</p>  
 <hr></p>
-
-<dt><a name="prp_access"></a></dt> <!-- http://nco.sf.net#prp_access -->
-<h2>NASA ACCESS 2011 Project</h2>
-<img src="nasa.png" height=180 width=180 align=right>
-<p>
-The National Aeronautics and Space Administration (NASA) Cooperative
-Agreement <a href="NNX12AF48A">NNX12AF48A</a>
-funded our
-<a href="http://dust.ess.uci.edu/prp/prp_access/prp_access.pdf">project</a>,
-&ldquo;Simplifying and accelerating model evaluation by NASA satellite data&rdquo;
-from 20120208&ndash;20140207 as part of the 
-Advancing Collaborative Connections for Earth System Science 
-(<a href="http://science.nasa.gov/earth-science/earth-science-data/access">ACCESS</a>)
-program. 
-We appreciate the proposal reviewers for and the staff of the 
-Earth Science Division 
-(<a href="http://science.nasa.gov/researchers/sara/division-corner/earth-science-division-corner">ESD</a>) 
-in the Science Mission Directorate 
-(<a href="http://science.nasa.gov/about-us/organization-and-leadership">SMD</a>)
-Earth Science Data Systems (ESDS) Office.
-NCO development was completely voluntary and without
-institutional support from August, 2008&ndash;February, 2012.
-This NASA support dramatically changed the scale and pace of NCO development. 
-This URL,
-<a href="http://nco.sf.net#prp_access"><tt>http://nco.sf.net#prp_access</tt></a>,
-points to the most up-to-date information on the ACCESS 2011 project.</p> 
-
-<p>This ACCESS project provided human resources to implement support 
-in NCO for hierarchical group features in netCDF4 files and for NCO to
-process HDF files. 
-Groups are a powerful HDF feature that many NASA satellite datasets
-exploit, and that sources of netCDF data (e.g., the CMIP5 archive of
-climate simulations for IPCC AR5) could better exploit.  
-By supporting groups in a generic fashion, NCO helps make possible
-more widespread adoption of hierarchical data analysis, aka 
-Group-Oriented Data Analysis and Distribution 
-(<a href="http://nco.sf.net/nco.html#godad">GODAD</a>).</p>  
-
-<p>We recruited two personnel, a programmer (aka software engineer) 
-and a graduate student (scientific specialist) both based at UCI for
-at least two years, to accomplish our ACCESS objectives. 
-As described in the proposal, the responsibilities of positions are
-roughly segregated as follows: 
-The 
-<a href="http://dust.ess.uci.edu/hire/prg_anl_05_adv.pdf">programmer</a> 
-helped re-factor the code-base to support groups and improved the
-build system so that now we have native Windows builds. 
-The 
-<a href="http://dust.ess.uci.edu/hire/sdn_grd_03_adv.pdf">graduate student researcher</a> 
-is analyzing and intercomparing snow cover and snow albedo datasets
-from NASA MODIS and MISR datasets (in HDF format) and CMIP5
-simulations (in netCDF format).
-Her analysis informs the development of GODAD so that NCO can solve
-the most important problems real-world researchers encounter in
-evaluating GCMs against satellite data.</p>  
-</ul>
-<hr></p>
-
-<a name="nsf"></a> <!-- http://nco.sf.net#nsf -->
-<a name="sdo"></a> <!-- http://nco.sf.net#sdo -->
-<a name="sei"></a> <!-- http://nco.sf.net#sei -->
-<dt><a name="prp_sei"></a></dt> <!-- http://nco.sf.net#prp_sei -->
-<h2>NSF SEI Project</h2>
-<img src="nsf.png" height=180 width=180 align=right>
-<p>
-The National Science Foundation Grant
-<a href="http://www.nsf.gov/awardsearch/showAward.do?AwardNumber=0431203">NSF IIS-0431203</a>
-funded our
-<a href="http://dust.ess.uci.edu/prp/prp_sei/prp_sei.pdf">SEI Project</a>,
-&ldquo;SEI(GEO): Scientific Data Operators Optimized for Efficient Distributed Interactive and Batch Analysis of Tera-Scale Geophysical Data&rdquo;
-from 20040901&ndash;20080831 as part of the 
-Science and Engineering Informatics 
-(<a href="http://www.cise.nsf.gov/funding/pgm_display.cfm?pub_id=9473&div=iis">SEI</a>)
-program. 
-We appreciate the proposal reviewers for and staff of the Divisions of
-Information and Intelligent Systems
-(<a href="http://www.cise.nsf.gov/div/index.cfm?div=iis">IIS</a>) 
-and
-Shared Cyberinfrastructure
-(<a href="http://www.cise.nsf.gov/div/index.cfm?div=sci">SC</a>) in the 
-Directorate for Computer and Information Science and Engineering
-(<a href="http://www.nsf.gov/home/cise">CISE</a>).
-Until September 2004, NCO development was completely voluntary and without institutional support.
-This NSF support dramatically changed the scale and pace of NCO development.
-This URL,
-<a href="http://nco.sf.net#prp_sei"><tt>http://nco.sf.net#prp_sei</tt></a>,
-points to the most up-to-date information on the NCO SEI proposal.</p> 
-
-<p>The NSF project provided the human and technical resources to analyze,  
-design, and implement novel advanced methods for distributed 
-data analysis and reduction (DDRA) of geophysical data.
-The efficacy of these powerful methods were demonstrated by analyses
-of distributed climate prediction and observation datasets.
-On the human side, we recruited full-time help for specific areas of
-NCO, alongside our current and future volunteers. 
-We hired a
-<a href="http://dust.ess.uci.edu/hire/prg_anl_03_adv.pdf">programmer</a> 
-to help design, implement, and release major code changes.
-We hired a
-<a href="http://dust.ess.uci.edu/hire/sdn_grd_02_adv.pdf">graduate student researcher</a> 
-to pursue innovative Ph.D. research using 
-<a href="http://www3.niu.edu/mpi">&ldquo;grid-aware&rdquo;</a>
-<a href="http://www.mpi-forum.org">distributed memory</a>, 
-<a href="http://www.openmp.org">shared memory</a>, and 
-<a href="http://opendap.org">client-server</a> software
-technologies to improve DDRA of climate datasets.
-Another graduate student helped us design, implement, and release major
-code changes.</p>
-
-<p>On the institutional and hardware side, this project connected the
-Earth System Modeling Facility
-(<a href="http://www.ess.uci.edu/esmf">ESMF</a>) to the
-California Institute for Telecommunications and Information Technology
-(<a href="http://www.calit2.net">Cal-IT2</a>)
-<a href="http://www.optiputer.net">OptIPuter</a> at the
-San Diego Supercomputer Center
-(<a href="http://sdsc.ucsd.edu">SDSC</a>).
-These supercomputers dedicated a TB of storage each to
-<a href="http://www.opendap.org">OPeNDAP</a>-served climate simulation
-datasets for DDRA.
-After the proof-of-concept NCO DDRA was complete, we attempted a DDRA 
-intercomparison of the internationally distributed
-CMIP3 global climate change simulations that reside on the 
-Earth System Grid
-(<a href="http://www.earthsystemgrid.org">ESG</a>).
-Our techniques tremendously accelerated the analysis of different
-climate prediction scenarios for the same model, and among different
-climate models (see <a href="#pub">publications</a>).</p> 
-</ul>
-<hr></p>
+-->
 
 <!-- http://nco.sf.net#pub -->
 <!-- http://nco.sf.net#pubs -->
 <!-- http://nco.sf.net#Publications -->
 <dt><a name="Publications"></a><a name="pub"></a><a name="pubs"></a></dt>
-<h2>Publications and Presentations</h2>
+<h2>NCO-Related Publications and Presentations</h2>
 <ul>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Jelenak,&nbsp;A., P.&nbsp;Leonard, and C.&nbsp;S. Zender (2019):
+NASA Dataset Interoperability Recommendations for Earth Science,
+Presented by A.&nbsp;Jelenak to the Earth Science Information Partners (ESIP) 2019 Winter Meeting,
+Bethesda,&nbsp;MD, January&nbsp;15&ndash;17, 2019. 
+<a href="http://dust.ess.uci.edu/smn/smn_diwg_esip_201901.pdf">PDF</a></li>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Zender, C.&nbsp;S. (2018):
+NCO-JSON: A Flexible, Complete JavaScript Object Notation for netCDF,
+Presented to the American Geophysical Union Fall Meeting,
+Washington,&nbsp;DC, December&nbsp;10&ndash;14, 2018. 
+<i>Eos Trans. AGU</i>, <b>98</b>(54), Fall Meet. Suppl., Abstract IN31B-30.
+<a href="https://agu2018fallmeeting-agu.ipostersessions.com/default.aspx?s=5F-D1-48-71-CF-02-B2-DA-F3-CE-43-6C-02-2E-AB-0E&guestview=true">iPoster</a> <a href="http://dust.ess.uci.edu/smn/pst_nco_agu_201812.pdf">PDF</a></li>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Zender, C.&nbsp;S. (2018),
+NCO-JSON: JavaScript Object Notation (JSON) for netCDF.
+Presented to the Earth Science Information Partners (ESIP) 2018 Summer Meeting,
+Tucson,&nbsp;AZ, July&nbsp;17&ndash;20, 2018. 
+<a href="http://dust.ess.uci.edu/smn/smn_json_esip_201807.pdf">PDF</a></li>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Zender, C.&nbsp;S. and D.&nbsp;Lee (2018),
+CF-2 Group Proposal.
+Presented to the Earth Science Information Partners (ESIP) 2018 Summer Meeting,
+Tucson,&nbsp;AZ, July&nbsp;17&ndash;20, 2018. 
+<a href="http://dust.ess.uci.edu/smn/smn_json_esip_201807.pdf">PDF</a></li>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Lee,&nbsp;D. and Zender, C.&nbsp;S. (2018),
+CF-2 Group Proposal.
+Presented by D.&nbsp;Lee to the 2018 netCDF-CF Workshop,
+National Centre for Atmospheric Science (NCAS), University of Reading,
+Reading,&nbsp;UK, June&nbsp;19&ndash;20, 2018. 
+<a href="http://dust.ess.uci.edu/smn/smn_json_esip_201807.pdf">PDF</a></li>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Zender, C.&nbsp;S. and J.&nbsp;D. Silver (2017),
+Bit-Grooming: Shave Your Bits with Razor-sharp Precision.
+Presented to the American Geophysical Union Fall Meeting,
+New Orleans,&nbsp;LA, December&nbsp;11&ndash;15, 2017.
+<i>Eos Trans. AGU</i>, <b>97</b>(54), Fall Meet. Suppl., Abstract IN11B-0037.
+<a href="http://dust.ess.uci.edu/smn/pst_ppc_agu_201712.pdf">PDF</a></li>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Zender, C.&nbsp;S. (2017):
+CF2-Group: Draft Climate/Forecast Conventions for Hierarchical Data+Metadata.
+Presented to the Earth Science Data Systems Working Group (ESDSWG)
+Dataset Interoperability Working Group (DIWG).
+Online meeting, September&nbsp;20, 2017.
+<a href="http://dust.ess.uci.edu/smn/smn_cf2_diwg_201709.pdf">PDF</a></li>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Zender, C.&nbsp;S. (2017),
+New Methods to Generate, Regrid, and Split Climate Data.
+Presented to the DOE Accelerated Climate Modeling for Energy (ACME) All-Hands Meeting,
+Potomac,&nbsp;MD, June&nbsp;5&ndash;7, 2017.
+<a href="http://dust.ess.uci.edu/smn/pst_nco_acme_201706.pdf">PDF</a></li>
+
+<li><!-- SiZ17 --> <a name="SiZ17"></a> <!--http://www.ess.uci.edu/~zender#SiZ17 -->
+Silver, J.&nbsp;D. and C.&nbsp;S. Zender (2017), The compression-error trade-off for large gridded data sets, <i>Geosci. Model Dev.</i>, <b>10</b>, 413&ndash;423, doi:10.5194/gmd-10-413-2017.
+<a href="http://dust.ess.uci.edu/ppr/ppr_SiZ17.pdf">PDF</a></li>
+
+<li><!-- ZenXX --> <a name="ZenXX"></a> <!--http://www.ess.uci.edu/~zender#ZenXX -->
+Zender, C.&nbsp;S. and J.&nbsp;D. Silver (2016),
+Bit Grooming: Put Climate Data on a Diet with Precision-Preserving Lossy Compression.
+Presented to the DOE Accelerated Climate Modeling for Energy (ACME) PI Meeting,
+Denver,&nbsp;CO, November&nbsp;9&ndash;11, 2016.
+<a href="http://dust.ess.uci.edu/smn/pst_ppc_acme_201611.pdf">PDF</a></li>
+
+<li><!-- Zen16 --> <a name="Zen16"></a> <!--http://www.ess.uci.edu/~zender#Zen16 -->
+Zender, C.&nbsp; S. (2016), Bit Grooming: Statistically accurate precision-preserving quantization with compression, evaluated in the netCDF Operators (NCO, v4.4.8+), <i>Geosci. Model Dev.</i>, <b>9</b>, 3199&ndash;3211, doi:10.5194/gmd-9-3199-2016.
+<a href="http://dust.ess.uci.edu/ppr/ppr_Zen16.pdf">PDF</a></li>
+  
+<li><!-- Zen16 --> <a name="Zen16"></a> <!--http://www.ess.uci.edu/~zender#Zen16 -->
+Zender, C. S. (2016): Regrid Curvilinear, Rectangular, and Unstructured Data (CRUD) with ncremap, a new netCDF Operator. Presented to the Earth Science Data Systems Working Group (ESDSWG) Meeting, Greenbelt, MD, April 6--8, 2016.
+<a href="http://dust.ess.uci.edu/smn/pst_nco_agu_201604.pdf">PDF</a></li>
+
+<li><!-- Zen16 --> <a name="Zen16"></a> <!--http://www.ess.uci.edu/~zender#Zen16 -->
+Zender, C. S. (2016): Regridding Swath, Curvilinear, Rectangular, and Unstructured Data (SCRUD). Presented to the NASA Goddard Earth Sciences (GES) Data and Information Services Center (DISC), Goddard Space Flight Center, Greenbelt, MD, April 5, 2016.
+<a href="http://dust.ess.uci.edu/smn/smn_nco_gsfc_201604.pdf">PDF</a></li>
+
+<li><!-- Zen15 --> <a name="Zen15"></a> <!--http://www.ess.uci.edu/~zender#Zen15 -->
+Zender, C. S. (2015): Regrid Curvilinear, Rectangular, and Unstructured Data (CRUD) with ncremap, a new netCDF Operator. Presented to the American Geophysical Union Fall Meeting, San Francisco, CA, December 14--18, 2015. <i>Eos Trans. AGU</i>, <b>95</b>(54), Fall Meet. Suppl., Abstract IN31A-1744.
+<a href="http://dust.ess.uci.edu/smn/pst_nco_agu_201512.pdf">PDF</a></li>
+
+<li><!-- Zen15 --> <a name="Zen15"></a> <!--http://www.ess.uci.edu/~zender#Zen15 -->
+Zender, C. S. (2015): Optimizing Intrinsic Parallelism to generate climatologies with netCDF Operators (NCO). Presented to the DOE Accelerated Climate Modeling for Energy (ACME) PI Meeting, Albuquerque, NM, November 2--4, 2015.
+<a href="http://dust.ess.uci.edu/smn/smn_nco_acme_201511.pdf">PDF</a></li>
+
+<li><!-- ZVW15 --> <a name="ZVW15"></a> <!--http://www.ess.uci.edu/~zender#ZVW15 -->
+Zender, C. S., P. Vicente, and W. Wang (2015): Use netCDF Operators (NCO) to Improve Data Interoperability and Usability. Presented to the Earth Science Data Systems Working Group (ESDSWG) Meeting, Greenbelt, MD, March 24--26, 2015.
+<a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201503.pdf">PDF</a></li>
+
+<li><!-- ZVW14 --> <a name="ZVW14"></a> <!--http://www.ess.uci.edu/~zender#ZVW14 -->
+Zender, C. S., P. Vicente, and W. Wang (2014): Simplifying and accelerating model evaluation by NASA satellite data. Presented to the Earth Science Data Systems Working Group (ESDSWG) Meeting, Greenbelt, MD, March 24--26, 2014.
+<a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201403.pdf">PDF</a></li>
+
 <li><!-- Zen14 --> <a name="Zen14"></a> <!--http://www.ess.uci.edu/~zender#Zen14 -->
 Zender, C.&nbsp;S. (2014): <i>Use Hierarchical Storage and Analysis to Exploit Intrinsic Parallelism</i>. Presented to the NASA Goddard Earth Sciences (GES) Data and Information Services Center (DISC), Goddard Space Flight Center, Greenbelt, MD, March&nbsp;27, 2014.
-<a href="http://dust.ess.uci.edu/smn/smn_nco_gsfc_201403.pdf">PDF</a> (&copy;&nbsp;2014 by me)</a></li>
+<a href="http://dust.ess.uci.edu/smn/smn_nco_gsfc_201403.pdf">PDF</a></li>
 
 <li><!-- ZVW13 --> <a name="ZVW13"></a> <!--http://www.ess.uci.edu/~zender#ZVW13 -->
 Zender, C.&nbsp;S., P.&nbsp;Vicente and W.&nbsp;Wang (2013): <i>Use Hierarchical Storage and Analysis to Exploit Intrinsic Parallelism</i>. Presented at the Fall Meeting of the American Geophysical Union, San Francisco,&nbsp;CA, December 9&ndash;13, 2013. <i>Eos Trans. AGU</i>, <b>93</b>(53), Fall Meet. Suppl., Abstract IN52A-06.
-<a href="http://dust.ess.uci.edu/smn/smn_nco_agu_201312.pdf">PDF</a> (&copy;&nbsp;2013 by me)</a></li>
+<a href="http://dust.ess.uci.edu/smn/smn_nco_agu_201312.pdf">PDF</a></li>
 
 <li><!-- ZVW13 --> <a name="ZVW13"></a> <!--http://www.ess.uci.edu/~zender#ZVW13 -->
-Zender, C.&nbsp;S., P.&nbsp;Vicente and W.&nbsp;Wang (2013): <i>The Future of Model Evaluation</i>. Presented to the Chapman University Symposium on Big Data and Analytics: 44th Symposium on the Interface of Computing Science and Statistics, Chapman University, Orange,&nbsp;CA, April 4&ndash;6, 2013. <a href="http://dust.ess.uci.edu/smn/smn_nco_chapman_201304.pdf">PDF</a> (&copy;&nbsp;2013 by me)</a></li>
+Zender, C.&nbsp;S., P.&nbsp;Vicente and W.&nbsp;Wang (2013): <i>The Future of Model Evaluation</i>. Presented to the Chapman University Symposium on Big Data and Analytics: 44th Symposium on the Interface of Computing Science and Statistics, Chapman University, Orange,&nbsp;CA, April 4&ndash;6, 2013. <a href="http://dust.ess.uci.edu/smn/smn_nco_chapman_201304.pdf">PDF</a></li>
 
 <li><!-- ZVW12 --> <a name="ZVW12"></a> <!--http://www.ess.uci.edu/~zender#ZVW12 -->
 Zender, C.&nbsp;S., P.&nbsp;Vicente and W.&nbsp;Wang (2012): <i>NCO: Simpler and faster model evaluation by NASA satellite data via unified file-level netCDF and HDF-EOS data post-processing tools.</i>. Presented at the Fall Meeting of the American Geophysical Union, San Francisco,&nbsp;CA, December 3&ndash;7, 2012. <i>Eos Trans. AGU</i>, <b>93</b>(53), Fall Meet. Suppl., Abstract IN34A-07.
-<a href="http://dust.ess.uci.edu/smn/smn_nco_agu_201212.pdf">PDF</a> (&copy;&nbsp;2012 by me)</a></li>
+<a href="http://dust.ess.uci.edu/smn/smn_nco_agu_201212.pdf">PDF</a></li>
 
 <li><!-- ZVW12 --> <a name="ZVW12"></a> <!--http://www.ess.uci.edu/~zender#ZVW12 -->
 Zender, C.&nbsp;S., P.&nbsp;Vicente and W.&nbsp;Wang (2012): <i>Simplifying and accelerating model evaluation by NASA satellite data.</i>. Presented to the Earth Science Data Systems Working Group (ESDSWG) Meeting, Annapolis&nbsp;MD, November 13&ndash;15, 2012.
-<a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201211.pdf">PDF</a> (&copy;&nbsp;2012 by me)</a></li>
+<a href="http://dust.ess.uci.edu/smn/pst_nco_esds_201211.pdf">PDF</a></li>
 
-<li><!-- WZJ083 --> <a name="WZJ083"></a> <!--http://www.ess.uci.edu/~zender#WZJ083 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender, and S.&nbsp;F. Jenks (2008), Compiling the uncompilable: A&nbsp;case for shell script compilation, <i>Submitted to ACM Trans. Softw. Engin. Method.</i>.
-<a href="http://dust.ess.uci.edu/ppr/ppr_WZJ083.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/ppr_WZJ083.pdf">PDF</a> (&copy;&nbsp;2008 by ACM)</a></li>
+<li><a href="./prs_pbl_old.shtml">Presentation and Publications from 2006&ndash;2011</a></li>
 
-<li><!-- WZJ091 --> <a name="WZJ091"></a> <!--http://www.ess.uci.edu/~zender#WZJ091 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender, and S.&nbsp;F. Jenks (2009), Efficient Clustered Server-side Data Analysis Workflows using SWAMP, <i>Earth Sci. Inform.</i>, <b>2</b>(3), 141&ndash;155, doi:10.1007/s12145-009-0021-z.
-<a href="http://dust.ess.uci.edu/ppr/ppr_WZJ091.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/ppr_WZJ091.pdf">PDF</a> (&copy;&nbsp;2009 by ESI)</a></li>
-
-<li><!-- WZJ081 --> <a name="WZJ081"></a> <!--http://www.ess.uci.edu/~zender#WZJ081 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender, and S.&nbsp;F. Jenks: Cluster Workflow Execution of Retargeted Data Analysis Scripts, in <i>Cluster Computing and the Grid, 2008. CCGRID&nbsp;'08. 8th&nbsp;IEEE International Symposium on</i>. Lyons, France, 19&nbsp;22 May, 2008. IEEE Computer Society, 449&ndash;458, doi:10.1109/CCGRID.2008.69.
-<a href="http://dust.ess.uci.edu/ppr/ppr_WZJ081.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/ppr_WZJ081.pdf">PDF</a> (&copy;&nbsp;2008 by IEEE)</a></li>
-
-<li><!-- Zen08 --> <a name="Zen08"></a> <!--http://www.ess.uci.edu/~zender#Zen08 -->
-Zender, C.&nbsp;S. (2008), Analysis of Self-describing Gridded Geoscience Data with netCDF Operators (NCO), <i>Environ. Modell. Softw.</i>, <b>23</b>(10), 1338&ndash;1342, doi:10.1016/j.envsoft.2008.03.004.
-<a href="http://dust.ess.uci.edu/ppr/ppr_Zen08.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/ppr_Zen08_csz.pdf">PDF (CSZ)</a>
-<a href="http://dust.ess.uci.edu/ppr/ppr_Zen08.pdf">PDF (EMS)</a> (&copy;&nbsp;2008 by Elsevier Ltd.)</a></li>
-
-<li> <!-- WZJ074 --> <a name="WZJ074"></a> <!--http://www.ess.uci.edu/~zender#WZJ074 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender and S.&nbsp;F. Jenks (2007): <i>A System for Scripted Data Analysis at Remote Data Centers</i>. Presented at the Fall Meeting of the American Geophysical Union, San Francisco,&nbsp;CA, December 10&ndash;14, 2007. <i>Eos Trans. AGU</i>, <b>88</b>(52), Fall Meet. Suppl., Abstract IN11B-0469.
-<a href="http://dust.ess.uci.edu/ppr/pst_WZJ074.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/pst_WZJ074.pdf">PDF (DLW)</a>
-</li>
-
-<li> <!-- WZJ073 --> <a name="WZJ073"></a> <!--http://www.ess.uci.edu/~zender#WZJ073 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender, and S.&nbsp;F. Jenks (2007), Server-side parallel data reduction and analysis, in <i>Advances in Grid and Pervasive Computing, Second International Conference, GPC 2007</i>, Paris, France, May 2&ndash;4, 2007, Proceedings. IEEE Lecture Notes in Computer Science, vol. 4459, edited by C.&nbsp;C&eacute;rin and K.-C. Li, pp. 744&ndash;750, Springer-Verlag, Berlin/Heidelberg.
-<a href="http://dust.ess.uci.edu/ppr/ppr_WZJ073.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/ppr_WZJ073.pdf">PDF (DLW)</a>
-</li>
-
-<li><!-- WZJ07 --> <a name="WZJ07"></a> <!--http://www.ess.uci.edu/~zender#WZJ07 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender, and S.&nbsp;F. Jenks (2007), 
-<i>Server-side Parallel Data Reduction and Analysis</i>.
-Presented by D.&nbsp;Wang to the International Conference on Grid and
-Pervasive Computing (GPC),
-Paris, France, May 2&ndash;4, 2007. 
-<a href="http://dust.ess.uci.edu/smn/smn_WZJ07_gpc_200705.pdf">PDF</a></li>
-
-<li><!-- ZeM07 --> <a name="ZeM07"></a> <!--http://www.ess.uci.edu/~zender#ZeM07 -->
-Zender, C.&nbsp;S., and H.&nbsp;J. Mangalam (2007), Scaling Properties of Common Statistical Operators for Gridded Datasets, <i>Int.&nbsp;J.&nbsp;High Perform. Comput. Appl, <b>21</b>(4), 485&ndash;498, doi:10.1177/1094342007083802</i>.
-<a href="http://dust.ess.uci.edu/ppr/ppr_ZeM07.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/ppr_ZeM07_csz.pdf">PDF (CSZ)</a>
-<a href="http://dust.ess.uci.edu/ppr/ppr_ZeM07.pdf">PDF (IJHPCA) (&copy;&nbsp;2007 by SAGE Publications)</a></li>
-
-<li><!-- WZJ07 --> <a name="WZJ07"></a> <!--http://www.ess.uci.edu/~zender#WZJ07 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender, and S.&nbsp;F. Jenks (2007), 
-<i>Server-side Data Reduction and Analysis with Script Workflow Analysis for Multi-Processing</i>.
-Presented by D.&nbsp;Wang to the OPeNDAP Developer's Workshop,
-Boulder, CO, February 21&ndash;23, 2007.
-<a href="http://dust.ess.uci.edu/smn/smn_WZJ07_opendap_200702.pdf">PDF</a></li>
-
-<li><!-- WZJ07 --> <a name="WZJ07"></a> <!--http://www.ess.uci.edu/~zender#WZJ07 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender, and S.&nbsp;F. Jenks (2007), 
-<i>Server-side Data Reduction and Analysis with Script Workflow Analysis for Multi-Processing</i>.
-Presented by D.&nbsp;Wang to the 23rd AMS Conference on Interactive Information and
-Processing Systems (IIPS) for Meteorology, Oceanography, and Hydrology,
-San Antonio, TX, January 14&ndash;18, 2007.
-<a href="http://dust.ess.uci.edu/smn/smn_WZJ07_ams_200701.pdf">PDF</a></li>
-
-<li><!-- WZJ07 --> <a name="WZJ07"></a> <!--http://www.ess.uci.edu/~zender#WZJ07 -->
-Wang, D.&nbsp;L., C.&nbsp;S. Zender, and S.&nbsp;F. Jenks (2007), 
-DAP-enabled Server-side Data Reduction and Analysis, 
-<i>Proceedings of the 23rd AMS Conference on Interactive Information and Processing Systems (IIPS) for Meteorology, Oceanography, and Hydrology</i>, 
-Paper 3B.2., January 14&ndash;18, San Antonio,&nbsp;TX. American Meteorological Society, AMS Press, Boston,&nbsp;MA.
-<a href="http://dust.ess.uci.edu/ppr/abs_xtn_WZJ07.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/abs_xtn_WZJ07.pdf">PDF</a></li>
-
-<li><!-- ZeW07 --> <a name="ZeW07"></a> <!--http://www.ess.uci.edu/~zender#ZeW07 -->
-Zender, C.&nbsp;S., and D.&nbsp;L. Wang (2007), 
-<i>High performance distributed data reduction and analysis with the netCDF Operators (NCO)</i>. 
-Presented to the 23rd AMS Conference on Interactive Information and Processing Systems (IIPS) for Meteorology, Oceanography, and Hydrology, January 14&ndash;18, 
-San Antonio,&nbsp;TX, January 14&ndash;18, 2007.
-<a href="http://dust.ess.uci.edu/smn/smn_nco_ams_200701.pdf">PDF</a></li>
-
-<li><!-- ZeW07 --> <a name="ZeW07"></a> <!--http://www.ess.uci.edu/~zender#ZeW07 -->
-Zender, C.&nbsp;S., and D.&nbsp;L. Wang (2007), 
-High performance distributed data reduction and analysis with the netCDF Operators (NCO), 
-<i>Proceedings of the 23rd AMS Conference on Interactive Information and Processing Systems (IIPS) for Meteorology, Oceanography, and Hydrology</i>, 
-Paper 3B.4., January 14&ndash;18, San Antonio,&nbsp;TX. American Meteorological Society, AMS Press, Boston,&nbsp;MA.
-<a href="http://dust.ess.uci.edu/ppr/abs_xtn_ZeW07.bib">BibTeX</a>
-<a href="http://dust.ess.uci.edu/ppr/abs_xtn_ZeW07.pdf">PDF</a></li>
-
-<li><!-- WZJ06 --> <a name="WZJ06"></a> <!-- http://dust.ess.uci.edu/ppr/pst_WZJ06.pdf -->
-Wang, D.&nbsp, Zender, C.&nbsp;S., and S.&nbsp;F. Jenks (2006): 
-<i>Server-side netCDF Data Reduction and Analysis</i>.
-Presented by D.&nbsp;Wang to the Fall Meeting of the American Geophysical Union, 
-San Francisco,&nbsp;CA, December 5&ndash;9, 2006.
-<i>Eos Trans. AGU</i>, <b>87</b>(52), Fall Meet. Suppl., Abstract IN53B-0826.
-<a href="http://dust.ess.uci.edu/ppr/pst_WZJ06.pdf">PDF</a>
-
-<li><!-- ZMW06 --> <a name="ZMW06"></a> <!-- http://dust.ess.uci.edu/ppr/pst_ZMW06.pdf -->
-Zender, C.&nbsp;S., H.&nbsp;J. Mangalam, and D.&nbsp;L. Wang (2006):
-<i>Improving Scaling Properties of Common Statistical Operators for Gridded Geoscience Datasets</i>.
-Presented to the Fall Meeting of the American Geophysical Union, 
-San Francisco,&nbsp;CA, December 5&ndash;9, 2006.
-<i>Eos Trans. AGU</i>, <b>87</b>(52), Fall Meet. Suppl., Abstract IN53B-0827.
-<a href="http://dust.ess.uci.edu/ppr/pst_ZMW06.pdf">PDF</a>
 </ul>
 <hr></p>
 
@@ -656,156 +529,135 @@ San Francisco,&nbsp;CA, December 5&ndash;9, 2006.
 <!-- http://nco.sf.net#hgh -->
 <dt><a name="Highlights"></a><a name="hgh"></a></dt>
 <h2>Release Highlights</h2>
-Stable releases receive unique tags and their tarballs are stored  
-<a href="http://nco.sf.net/src">here</a> on SourceForge and
-<a href="https://github.com/czender/nco/releases">here</a> at GitHub.
-You may also retrieve the source of tagged versions directly
-<a name="#Source">with <tt>git clone -b 4.5.1 http://github.com/czender/nco.git nco-4.5.1</tt></a>.
+Stable releases receive unique tags and their tarballs are created and stored  
+<a href="https://github.com/nco/nco/releases">here</a> at GitHub.
+Identical copies of those tarballs are also stored
+<a href="http://nco.sf.net/src">here</a> on SourceForge for historical
+continuity.
+You may retrieve the source of tagged versions directly with, e.g.,
+<tt>git clone -b 4.9.8 http://github.com/nco/nco.git nco-4.9.8</tt></a>.
 <ul>
-<li><b>NCO 4.5.3</b>: (<i>Future</i>) 
-<tt>ncks</tt> prints human-legible ISO8601 dates;
-<a href="http://nco.sf.net/nco.html#cnk">Chunking</a> bytes not elements, caching;
-extensive hashing?;
-netCDF4 compound types?;
-Optimize diskless files?;</li>
-<li><b>NCO 4.5.2</b>: (<i>In Progress, features completed or being worked on include</i>)
-<li><b>NCO 4.5.1</b>: (<i>Current Stable Release</i>)
-<tt>cell_method</tt> improvments;
-<tt>ncap2</tt> gets </tt>mibs()/mabs()/mebs()</tt> methods;
-<tt>ncatted</tt> regular expressions in </tt>att_nm</tt>;
-<tt>ncks</tt> regrid using TempestRemap mapfiles;
-<tt>ncra</tt> weights with </tt>--wgt wgt_nm</tt>;</li>
-<li><b>NCO 4.5.0</b>:
-Regridding with <tt>ncks --map</tt>;
-<tt>date/time_written</tt> updates;
-<tt>history</tt> provenance with <tt>-A</tt> (append-mode);
-<tt>ncdismember</tt> uploads to NERC;</li>
-<li><b>NCO 4.4.9</b>: 
-Output chunking map/policy nco/nco = rew/all is default for netCDF3 input;
-Turn-off MM3 workaround for MM3->MM4 copying to speed-up compression-induced chunking;
-LFP chunking uses &ldquo;reasonable defaults&rdquo; when variable smaller than default chunksize;
-Shuffle by default when manually deflating;
-Support CF <tt>climatology</tt> attribute;
-Output chunking defaults to <tt>rew/all</tt> on netCDF3 input;
-Unchunking plays nicely with <tt>shuffle</tt>;
-<tt>ncra</tt> weights with </tt>--wgt 1,2,3</tt>;
-<tt>ncks</tt> suggests <tt>-C</tt> with <tt>-x -v crd</tt>;
-<tt>ncwa</tt> modifies <tt>coordinates</tt> attribute;</li>
-<li><b>NCO 4.4.8</b>:
-Precision-Preserving Compression with <tt>--ppc</tt>;
-Arithmetic operators <tt>-y mabs/mebs/mibs</tt></li>
-<li><b>NCO 4.4.7</b>:
-<tt>cnk_min</tt> minimum chunksize;
-Chunking <tt>cnk_map=rew</tt>;
-Smarter chunking defaults;</li>
-<li><b>NCO 4.4.6</b>: 
-<tt>-0</tt> hyperslabs;
-<tt>configure</tt> DAP correctly;
-HDF4 chunking and deflation;
-netCDF4 stride (NC4_SRD) <a href="#bug_nc4_srd">bugfix</a>;
-<tt>ncap2</tt> command line args with scripts;
-<tt>ncra --dbl</tt> averaging packed variables with missing values <a href="#bug_ncra_dbl_pck_mss">bugfix</a>;
-<tt>ncwa --dbl</tt> minimization/maximization of packed variables <a href="#bug_ncwa_pck_min_max">bugfix</a>;
-<tt>ncks _SOURCE_FORMAT</tt> and <tt>-V</tt>;
-<tt>ncrename</tt> re-write</li>
-<li><b>NCO 4.4.5</b>:
-DAP on <a href="http://nco.sf.net/nco.html#dap">HTTPS</a>;
-<tt>ancillary_variables</tt> for <a href="http://nco.sf.net/nco.html#ncl">CF</a>;
-<tt>ncks --grp_xtr_var_xcl</tt> <a href="http://nco.sf.net/nco.html#gxvx">subsetting</a>
-Chunking <tt>cnk_plc=r1d</tt>;
-Default chunking policy/map is <tt>xst/xst</tt>;
-Fix <tt>ncpdq</tt> dimension-reversal parsing;
-Chunking while hyperslabbing <a href="#bug_cnk_hyp">bugfix</a>;
-Correctly parse MS Windows volume names like <tt>C:\foo</tt></li>
-<li><b>NCO 4.4.4</b>:
-netCDF'ize non-compliant element names;
-<tt>-x var</tt> tolerates non-existence;
-<tt>--rad</tt> <a href="http://nco.sf.net/nco.html#rad">orphan dimensions</a>;
-<tt>ncwa --mask_condition</tt> <a href="#bug_ncwa_mask_condition">bugfix</a></li>
-<li><b>NCO 4.4.3</b>:
-Faster DAP access to strided data;
-<a href="http://nco.sf.net/nco.html#grp_brd">Group broadcasting</a> for ensembles;
-<li><b>NCO 4.4.2</b>:
-CF <tt>cell_methods</tt> support;
-Bugfixes for <tt>nces</tt> memory, LLVM/clang builds, <tt>-X</tt>, RX's with groups, <tt>--cnk_dmn</tt>;</li>
-<li><b>NCO 4.4.1</b>: 
-Group support for <tt>-X</tt> and <tt>--cnk_dmn</tt>;
-Chunk and uncompress simultaneously;
-<tt>ncra/ncea/ncrcat</tt> <a href="#bug_ncra_no_fl_close">bugfix</a></li>
-<li><b>NCO 4.4.0</b>: 
-Optimizations;
-<tt>ncdismember</tt> awesomeness;
-<tt>ncks --hdn</tt>;
-<tt>ncks --fix_rec_dmn=all</tt>;
-<tt>ncks</tt> <a href="http://nco.sf.net/nco.html#autoconv">autoconversion</a>;
-<tt>ncrename</tt> output path;
-<tt>ncra --mro</tt> <a href="#bug_ncra_mro_mss_val">bugfix</a>;
-<tt>ncra/ncrcat</tt> stride bugfix;
-Better <a href="http://nco.sf.net/nco.html#cnk">chunking</a>;
-Group support for <tt>ncwa -w -m</tt>;</li>
-<li><b>NCO 4.3.9</b>:
-New operator <tt>nces</tt>;
-Full XML/NcML compliance;
-<tt>ncatted</tt> NaN bugfix;</li>
-<li><b>NCO 4.3.8</b>:
-<tt>ncatted</tt> group features;</li>
-<li><b>NCO 4.3.7</b>:
-HDF4 <a href="http://nco.sf.net/nco.html#hdf4">support</a>;
-XML/NcML data <a href="http://nco.sf.net/nco.html#xml">support</a>;
-Multiple record dimension <a href="http://nco.sf.net/nco.html#mrd">support</a> with <tt>ncpdq, ncecat --mrd</a></tt>;
-<tt>ncrename</tt> group features;
-<tt>ncap2</tt> file bugfix;
-<tt>ncecat</tt> ID bugfix;
-<tt>ncwa -b</tt> bugfix;</li>
-<li><b>NCO 4.3.6</b>:
-<tt>--flt</tt> default;
-<tt>ncpdq/ncecat</tt> leave only one record dimension;
-<tt>ncwa/nces</tt> bugfixes;
-<tt>ncdismember</tt></li>
-<li><b>NCO 4.3.5</b>: 
-<tt>nces/ncra/ncrcat</tt> groups with <tt>-g -G --unn</tt>;</li>
-<tt>nces/ncra/ncwa</tt> float&rightarrow;double coercion with <tt><a href="http://nco.sf.net/nco.html#dbl">--dbl</a></tt>;</li>
-<tt>ncwa -d</tt> <a href="#bug_ncwa_lmt">bugfix</a>
-<li><b>NCO 4.3.4</b>:
-HDF unpacking <tt>--hdf_upk</tt>;
-<tt>ncpdq</tt> unpacking <a href="#bug_ncpdq_upk">bugfix</a>;
-CDL printing legibility;</li>
-<li><b>NCO 4.3.3</b>:
-CDL printing <tt>ncks --cdl</tt>;
-<tt>ncrename -g</tt>;
-<tt>ncwa</tt> groups with <tt>-g -G --unn</tt>;</li>
-<li><b>NCO 4.3.2</b>:
-<tt>ncflint/ncpdq</tt> groups with </tt>-g -G --unn</tt>;
-<tt>ncks -X</tt> <a href="#bug_ncks_aux">bugfix</a>;</li>
-<li><b>NCO 4.3.1</b>:
-<tt>ncbo</tt> symmetry, group broadcasting;
-<tt>ncbo -G --unn</tt>;
-<tt>ncecat</tt> <a href="http://nco.sf.net/nco.html#rag">RAG</a>;
-<tt>ncbo</tt> CF <a href="#bug_ncbo_ccm_ccsm_cf">bugfix</a>;
-<tt>ncatted</tt> <a href="#bug_ncatted_strcmp">bugfix</a>;
-Windows DAP;</li>
-<li><b>NCO 4.3.0</b>: 
-<tt>ncbo -g</tt> groups;
-<tt>ncatted</tt> NULs;
-<tt>ncap2</tt> rounding;
-<tt>ncks</tt> metadata <a href="#bug_ncks_mtd">bugfix</a></li>
-<li><b>NCO 4.2.6</b>: 
-Record appending with <tt>ncra/ncrcat --rec_apn</tt>;
-<tt>ncflint --fix_rec_crd</tt>;
-RX's in full paths;
-Correct dimension/coordinate scopes;
-<tt>ncks</tt> MM3 workaround;</li>
-<li><b>NCO 4.2.5</b>: 
-<tt>ncks --mk_rec_dmn</tt> <a href="#bug_ncks_mk_rec_dmn">bugfix</a>;
-<tt>ncks</tt> subsetting <a href="#bug_ncks_sbs">bugfix</a></li>
-<li><b>NCO 4.2.4</b>:
-Group <a href="http://nco.sf.net/nco.html#rx">wildcards</a>;
-Group <a href="http://nco.sf.net/nco.html#anchoring">anchoring and recursion</a>;
-Intersection/union <a href="http://nco.sf.net/nco.html#unn">modes</a>;
-<tt>ncrename</tt> global att. handling;
-<tt>nces</tt> <a href="#bug_nces_rec_var">bugfix</a>;
-<tt>ncra</tt> <a href="#bug_ncra_flg_bfr_nrm">bugfix</a></li>
-<li><a href="./highlights_old.shtml">Release Highlights from 2000&ndash;2012 (versions 1.1.47&ndash;4.2.3)</a></li>
+<li><b>NCO 5.0.1</b>: (<i>Distant Future</i>)
+netCDF4 user-defined types support;
+<tt>ncks --xtn</tt> better extensive variable treatment?;
+<tt>ncclimo -v</tt> splitter support for regular expressions?;
+<tt>ncremap</tt> support <tt>mbtempest</tt>?;</li>
+<li><b>NCO 5.0.0</b>: (<i>Future</i>)
+<tt>ncks --bsa</tt> Byte-swap algoritm;
+<tt>ncremap</tt> small-circle weights;</li>
+<li><b>NCO 4.9.9</b>: (<i>In Progress, features in-progress or complete include</i>)
+<tt>all</tt> re-tune digit rounding;
+<tt>ncclimo --day_[srt/end]</tt> in splitter;
+<li><b>NCO 4.9.8</b>: 
+<tt>ncclimo/ncremap</tt> MALI climos;
+<tt>ncclimo --mth_[srt/end]</tt> in splitter;
+<tt>ncremap</tt> fix MPAS grid inferral;
+<tt>ncremap</tt> deconvolve S1D sparse matrix fields (for CLM/ELM);
+<li><b>NCO 4.9.7</b>: (<i>Current Stable Release</i>)
+<tt>ncap2 --ccr=Filter</tt> link to CCR filters;
+<tt>ncclimo --glb_avg</tt> Fixed;</li>
+<tt>ncclimo --tpd</tt> Fixed;</li>
+<tt>ncremap</tt> Infer MPAS grids from restart files;</li>
+<li><b>NCO 4.9.6</b>: 
+<tt>ncclimo/ncremap</tt> Cori MPI/cmem support;
+<tt>ncclimo/ncremap --prc_typ</tt> harmonization;
+<tt>ncclimo --var_xtr</tt> extra timeseries variables;
+<tt>ncra -N</tt> Numerator-only support for integration;</li>
+<li><b>NCO 4.9.5</b>: 
+<tt>ncclimo --area/--hrz_dmn</tt> (for CAM/EAM);</li>
+<li><b>NCO 4.9.4</b>:
+<tt>ncclimo</tt> high-frequency climos;
+<tt>nces --wgt</tt> per-file weights;
+<tt>nces --prw</tt> per-record weights;
+<tt>nces/ncra/ncrcat --cb</tt> climatology bounds;
+<tt>ncra --prm_ints</tt> promote integers;
+<tt>ncks, ncremap</tt> regridding vectorization;
+<tt>ncra, ncrcat ilv</tt> interleave output;
+<tt>ncremap</tt> distance-weighted extrapolation weight generation algorithm;</li>
+<li><b>NCO 4.9.3</b>:
+<tt>ncks --frac_b_fix</tt> map-file correction;
+<tt>ncremap --correct_areas</tt> for TR FV destination maps;
+<tt>ncremap</tt> parallelize K-D tree loading;</li>
+<li><b>NCO 4.9.2</b>:
+<tt>ncks --chk_map</tt> improvements;
+<tt>ncclimo/ncremap HDF5_USE_FILE_LOCKING='FALSE'</tt>;
+<tt>ncpdq -U</tt> unpacks all coordinates;
+<tt>ncremap</tt> pressure->hybrid flexibility;
+<tt>ncremap</tt> small-circle weights;</li>
+<li><b>NCO 4.9.1</b>: 
+<tt>ncclimo --glb_avg</tt> spatial average timeseries;
+<tt>ncpdq --flt_dbl</tt> map;
+<tt>ncremap --vrt_xtr=mss_val</tt> bugfix</li>
+<li><b>NCO 4.9.0</b>: 
+<tt>ncks --chk_map</tt> map-file evaluation;
+<tt>ncks --chk_nan</tt> find all NaNs;
+<tt>ncremap</tt> simulaneous horizontal and vertical regridding;
+<tt>ncremap</tt> invokes NCO weight-generator;
+<tt>ncremap --job_nbr</tt> parallelism;
+<tt>ncremap --sgs_frc</tt> sub-gridscale acceleration;
+<tt>ncremap --vrt</tt> vertical grid flexibility</li>
+<li><b>NCO 4.8.1</b>: 
+<tt>ncap2</tt> fixes single-file handling;
+<tt>ncclimo</tt> fine-grained seasonal parallelism;
+<tt>ncclimo</tt> supports vertical interpolation;
+<tt>ncremap --xtr_mth=mss_val</tt> interpolation;
+<tt>ncremap --msh_fl=msh.nc</tt> mesh-file output;
+<tt>ncremap</tt> infers n2s Gaussian grids;
+<tt>ncremap</tt> outputs n2s grids in CCW order;
+<tt>ncremap</tt> vertical interpolation supports ECMWF IFS;</li>
+<li><b>NCO 4.8.0</b>: 
+<tt>ncap2</tt> allows no input file;
+<tt>ncclimo --job_nbr</tt> climo granularity;
+<tt>ncclimo</tt> ~20x faster on Cori;
+<tt>ncclimo</tt> kill not orphan children;
+<tt>ncks --rgr</tt> NCO generates intersection meshes and weights;
+<tt>ncks --chk_nan</tt> Check file for NaNs;
+<tt>ncremap --no_stdin</tt> for Conda-feedstock tests;
+<tt>ncremap --vrt_fl</tt> Vertical interpolation/regridding;</li>
+<li><b>NCO 4.7.9</b>: 
+<tt>ncatted --hdn</tt> Improved compliance;
+<tt>ncrcat --rec_apn</tt> Re-basing;
+<tt>ncclimo --dpt_fl</tt> depth-coordinates;
+<tt>ncremap</tt> SGS fix, lat/lon_dmn_nm;</li>
+<li><b>NCO 4.7.8</b>: 
+<tt>ncremap/ncclimo --d2f</tt> Double->Float map;</li>
+<li><b>NCO 4.7.7</b>: 
+<tt>ncpdq -M dbl_flt</tt> Double->Float map;
+<tt>ncremap --skl</tt> skeleton files;
+<tt>ncremap</tt> symmetric Gaussian interfaces;
+<tt>ncremap</tt> North-to-South grids;
+Deprecate filename sanitization whitelist;
+ERWG <tt>--ignore_degenerate</tt>;
+Extract <tt>ilev</tt> with <tt>lev</tt>;</li>
+<li><b>NCO 4.7.6</b>: 
+HPSS opt-in on all operators;
+<tt>ncap2</tt> strings under Windows;
+<tt>ncks</tt> ENUM, VLEN subsetting;
+<tt>ncks</tt> VLEN missing value braces;
+<tt>ncremap</tt> RRG, MWF modes;</li>
+<li><b>NCO 4.7.5</b>: 
+<tt>ncclimo</tt> supports mpassi name and <tt>yyyy-mm-01-00000</tt> rx's;
+<tt>ncremap</tt> fix CLM PJCS bug;
+<tt>ncks</tt> XML <tt>ncml:</tt> prefixes;
+<tt>ncks</tt> ENUM, VLEN CDL/XML/JSON support;
+Sanitize exceptions for DAP4 protocol;
+<tt>ncap2</tt> pack() arguments;</li>
+<li><b>NCO 4.7.4</b>: 
+<tt>ncks</tt> printing gracefully skips non-atomic types;
+<tt>ncremap</tt> supports ERWG 7.1.0r features conserve2nd, extrapolation;
+<tt>ncremap</tt> guesses column dimension for unstructured grids;
+Support absolute/relative Out-of-Group (OOG) variables in CF2-Group;</li>
+<li><b>NCO 4.7.3</b>:
+Sanitize input/output filenames;
+<tt>ncclimo</tt> Support <tt>YYYY-MM</tt> and <tt>YYYY-MM-01</tt> rx's;
+<tt>ncks --fmt_val --fl_prn</tt> for printing;
+<tt>ncremap --a2o</tt> for TempestRemap2 ordering;
+<tt>ncap2</tt> silence compiler warnings;</li>
+<li><b>NCO 4.7.2</b>:
+<tt>ncclimo</tt> splitter <i>ypf</i> bugfix;
+<tt>ncremap</tt> canonical positional arguments;
+<tt>ncremap</tt> TempestRemap2 support;</li>
+<li><a href="./highlights_old.shtml">Release Highlights from 200001&ndash;201712 (versions 1.1.47&ndash;4.7.1)</a></li>
 </ul>
 <hr></p>
 <!-- End http://nco.sf.net#hgh -->
@@ -813,8 +665,14 @@ Intersection/union <a href="http://nco.sf.net/nco.html#unn">modes</a>;
 <!-- http://nco.sf.net#bnr -->
 <!-- http://nco.sf.net#binaries -->
 <!-- http://nco.sf.net#Binaries -->
-<dt><a name="Binaries"></a><a name="bnr"><a name="binaries"></a></dt>
-<h2>Get NCO Binary Executables</h2>
+<!-- http://nco.sf.net#exe -->
+<!-- http://nco.sf.net#executables -->
+<!-- http://nco.sf.net#install -->
+<!-- http://nco.sf.net#Install -->
+<dt><a name="Install"></a><a name="install"></a><a name="Install"></a></dt>
+<dt><a name="Binaries"></a><a name="bnr"></a><a name="binaries"></a><a name="Binaries"></a><a name="binary"></a></dt>
+<dt><a name="Executables"></a><a name="exe"></a><a name="executables"></a></dt>
+<h2>Pre-built Executables</h2>
 
 <p>Pre-built binary executables are available for many platforms.
 Our source tarballs are always up-to-date, and work on our
@@ -825,15 +683,36 @@ Below are one-line installation instructions and links to these and to
 packages for other platforms created by volunteers.
 Anyone willing to perform regular regression testing and porting 
 of NCO to other platforms is welcome.  
-Previous versions of these binaries are still available by searching
+We highly recommend the Anaconda method to first-time users, as it
+works on all platforms and is perhaps the most up-to-date pre-packaged version.
+Previous versions of these executables are still available by searching
 the directory index <a href="src">here</a>.
 
 <a name="aix"></a><a name="ibm"></a> <!-- http://nco.sf.net#aix -->
 <h3><a href="http://www.ibm.com/servers/aix">AIX</a> on IBM mainframes</h3>
 <ul> <!-- http://nco.sf.net/src/nco-4.2.5.aix53.tar.gz -->
 <li><a href="src/nco-4.2.5.aix53.tar.gz">nco-4.2.5.aix53.tar.gz</a> (<!--#fsize file="src/nco-4.2.5.aix53.tar.gz"-->): Executables AIX 5.3-compatible (last updated <!--#flastmod file="src/nco-4.2.5.aix53.tar.gz"-->). Maintained by NCO Project.</li>
-Newer (beta- or pre-release) packages are sometimes available for AIX users as described <a href="https://github.com/czender/nco/tree/master/doc/beta.txt">here</a>.
+Newer (beta- or pre-release) packages are sometimes available for AIX users as described <a href="https://github.com/nco/nco/tree/master/doc/beta.txt">here</a>.
 Thanks to NSF for supporting AIX machines at NCAR over the years. 
+</ul>
+
+<a name="anaconda"></a> <!-- http://nco.sf.net#anaconda -->
+<a name="conda"></a> <!-- http://nco.sf.net#conda -->
+<h3><a href="https://www.continuum.io/why-anaconda">Anaconda (for *NIX, MacOS, and Windows)</a></h3>
+<ul>
+<a href="https://www.continuum.io/why-anaconda">Anaconda</a> is a coordinated,
+cross-platform Python environment that utilizes the <tt>conda</tt> package manager.
+Anaconda can be easily installed into a user-owned directory.
+This bypasses the normal headache of relying on system-administrators to install the latest NCO on shared systems like supercomputers.
+Miniconda (rather than the full Anaconda install) suffices for most purposes.
+Up-to-date Anaconda-compatible versions of NCO for Linux, MacOS, and Windows are maintained at <a href="https://github.com/conda-forge/nco-feedstock">conda-forge</a>.
+Install NCO in your Anaconda framework with one command &lsquo;<tt>conda install -c conda-forge nco</tt>&rsquo;.
+Or, alternatively, permanently add conda-forge (which teems with goodies besides NCO) to your automatically-searched channels with
+&lsquo;<tt>conda config --add channels conda-forge</tt>&rsquo;, then
+install NCO with &lsquo;<tt>conda install nco</tt>&rsquo;.
+The default NCO installed by <tt>conda</tt> is generally within a month of the latest release. 
+<li><a href="https://github.com/conda-forge/nco-feedstock">nco-4.9.8</a> Executables Anaconda-compatible. Maintained by Filipe Fernandes.</li>
+Thanks to Rich Signell, Filipe Fernandes, Pedro Vicente, Xylar Asay-Davis and others for developing and maintaining the NCO package for conda.
 </ul>
 
 <a name="debian"></a><a name="dbn"></a> <!-- http://nco.sf.net#debian -->
@@ -841,21 +720,17 @@ Thanks to NSF for supporting AIX machines at NCAR over the years.
 <h3><a href="http://www.debian.org">Debian</a> and <a href="http://www.ubuntu.com">Ubuntu</a> GNU/Linux</a></h3>
 <ul>
 <!--
-<li><a href="http://www.debian.org">Debian</a> and <a href="http://www.ubuntu.com">Ubuntu</a> GNU/Linux-compatible Intel systems, prebuilt binary executable <a href="http://www.debian.org">deb</a>: <a href="http://packages.debian.org/testing/math/nco.html">nco-4.5.1</a></li>
+<li><a href="http://www.debian.org">Debian</a> and <a href="http://www.ubuntu.com">Ubuntu</a> GNU/Linux-compatible Intel systems, prebuilt binary executable <a href="http://www.debian.org">deb</a>: <a href="http://packages.debian.org/testing/math/nco.html">nco-4.9.8</a></li>
 -->
 <a href="http://packages.debian.org/unstable/science/nco">Debian NCO</a> and 
-<a href="http://packages.ubuntu.com/natty/nco">Ubuntu NCO</a> homepages.
+<a href="https://launchpad.net/ubuntu/+source/nco">Ubuntu NCO</a> homepages.
 &lsquo;<tt>aptitude install nco</tt>&rsquo; installs the standard NCO for your Debian-compatible&nbsp;OS.
-NCO packages in the Debian/Ubuntu repositories (i.e., Sid and Raring) generally lag the packages distributed here by 6&ndash;12 months.
+NCO packages in the Debian/Ubuntu repositories (e.g., Sid and Raring) generally lag the packages distributed here by 6&ndash;12 months.
 <a name="beta"></a><a name="prerelease"> <!-- http://nco.sf.net#beta -->
-Newer (beta- or pre-release) packages are often available for intrepid Debian/Ubuntu users as described <a href="https://github.com/czender/nco/tree/master/doc/beta.txt">here</a>.
-<dt>Debian package for most recent NCO release (install with, e.g., &lsquo;<tt>dpkg --install nco_4.5.1-1_i386.deb</tt>&rsquo;):</dt>
-<li><a href="src/nco_4.5.1-1_amd64.deb">nco_4.5.1-1_amd64.deb</a> (<!--#fsize file="src/nco_4.5.1-1_amd64.deb"-->): Executables AMD64-compatible (last updated <!--#flastmod file="src/nco_4.5.1-1_amd64.deb"-->)</li>
-<li><a href="src/nco_4.5.1-1.dsc">nco_4.5.1-1.dsc</a> (<!--#fsize file="src/nco_4.5.1-1.dsc"-->): Description (last updated <!--#flastmod file="src/nco_4.5.1-1.dsc"-->)</li>
-<li><a href="src/nco_4.5.1-1_amd64.changes">nco_4.5.1-1_amd64.changes</a> (<!--#fsize file="src/nco_4.5.1-1_amd64.changes"-->): Changes since last deb package (last updated <!--#flastmod file="src/nco_4.5.1-1_amd64.changes"-->)</li>
-<li><a href="src/nco_4.5.1.orig.tar.gz">nco_4.5.1.orig.tar.gz</a> (<!--#fsize file="src/nco_4.5.1.orig.tar.gz"-->): Upstream Source (last updated <!--#flastmod file="src/nco_4.5.1.orig.tar.gz"-->)</li>
-<li><a href="src/nco_4.5.1-1.diff.gz">nco_4.5.1-1.diff.gz</a> (<!--#fsize file="src/nco_4.5.1-1_amd64.changes"-->): Debian patch to upstream source (last updated <!--#flastmod file="src/nco_4.5.1-1_amd64.changes"-->)</li>
-Thanks to Daniel Baumann, Barry deFreese, Francesco Lovergine, 
+Newer (beta- or pre-release) packages are often available for intrepid Debian/Ubuntu users as described <a href="https://github.com/nco/nco/tree/master/doc/beta.txt">here</a>.
+<dt>Debian package for most recent NCO release (install with, e.g., &lsquo;<tt>dpkg --install nco_4.9.8-1_i386.deb</tt>&rsquo;):</dt>
+<li><a href="https://launchpad.net/ubuntu/+source/nco/4.9.8-1">nco_4.9.8-1_amd64.deb</a> : Executables AMD64-compatible</li>
+Thanks to Daniel Baumann, Sebastian Couwenberg, Barry deFreese, Francesco Lovergine, 
 Brian Mays, Rorik Peterson, and Matej Vela for their help packaging
 NCO for Debian over the years. 
 </ul>
@@ -865,15 +740,12 @@ NCO for Debian over the years.
 <a name="centos"></a><a name="cnt"></a><a name="rhel"></a> <!-- http://nco.sf.net#centos --> <!-- http://nco.sf.net#cnt --> <!-- http://nco.sf.net#rhel -->
 <h3><a href="http://fedora.redhat.com">Fedora</a>, RedHat Enterprise Linux (<a href="http://www.redhat.com/rhel">RHEL</a>), and Community ENTerprise Operating System (<a href="http://www.centos.org">CentOS</a>) GNU/Linux</h3>
 <ul>
-<dt>The <a href="https://admin.fedoraproject.org/pkgdb/package/nco">Fedora NCO</a> RPMs are usually up-to-date so that &lsquo;<tt>dnf install nco</tt>&rsquo; will install a recent version. 
-A comprehensive list of pre-built RPMs for many OS's is <a href="http://rpmfind.net/linux/rpm2html/search.php?query=nco">here</a>.
-<li><a href="ftp://rpmfind.net/linux/fedora/linux/development/rawhide/x86_64/os/Packages/n/nco-4.3.2-1.fc20.x86_64.rpm">nco-4.3.2-1.fc20.x86_64.rpm</a>: Executables for x86_64/Fedora Core&nbsp;20-compatible environments</li></dt>
-<dt>If not, try our own most recent (we stopped building RPMs many years ago and are looking for a volunteer to do this instead) self-built NCO RPMs (install with, e.g., &lsquo;<tt>dnf install nco-3.9.5-1.fc7.i386.rpm</tt>&rsquo;):
-<li><a href="src/nco-3.9.5-1.fc7.i386.rpm">nco-3.9.5-1.fc7.i386.rpm</a> (<!--#fsize file="src/nco-3.9.5-1.fc7.i386.rpm"-->): Executables for i386/Fedora Core&nbsp;7-compatible environments (last updated <!--#flastmod file="src/nco-3.9.5-1.fc7.i386.rpm"-->)</li>
-<li><a href="src/nco-3.9.5-1.fc7.src.rpm">nco-3.9.5-1.fc7.src.rpm</a> (<!--#fsize file="src/nco-3.9.5-1.fc7.src.rpm"-->): Source (last updated <!--#flastmod file="src/nco-3.9.5-1.fc7.src.rpm"-->)</li>
-<li><a href="src/nco-3.9.5-1.x86_64.rpm">nco-3.9.5-1.x86_64.rpm</a> (<!--#fsize file="src/nco-3.9.5-1.x86_64.rpm"-->): Executables for x86_64/CentOS&nbsp;5-compatible environments (last updated <!--#flastmod file="src/nco-3.9.5-1.x86_64.rpm"-->)</li>
+<dt>The <a href="https://admin.fedoraproject.org/pkgdb/package/nco">Fedora NCO</a> RPMs are usually up-to-date so that &lsquo;<tt>sudo dnf install nco</tt>&rsquo; installs a recent version. 
+RHEL NCO RPMs are documented at the Fedora site.
+OpenSUSE keeps NCO RPMs <a href="http://software.opensuse.org/package/nco">here</a>.
+A comprehensive list of pre-built RPMs for many OS&rsquo;s is <a href="http://rpmfind.net/linux/rpm2html/search.php?query=nco">here</a>.
 Volunteers have updated and maintained fairly up-to-date NCO packages in Fedora since it was added by Ed Hill in about 2004.
-Thanks to Patrice Dumas, Ed Hill, and Orion Poplawski for packaging NCO RPMs over the years.
+Thanks to Patrice Dumas, Ed Hill, Orion Poplawski, and Manfred Schwarb for packaging NCO RPMs over the years.
 Thanks to Gavin Burris and Kyle Wilcox for documenting build procedures for RHEL and CentOS.
 </ul>
 
@@ -899,38 +771,49 @@ Thanks to Gavin Burris and Kyle Wilcox for documenting build procedures for RHEL
 <h3><a href="http://www.apple.com/macosx/">Mac&nbsp;OS&nbsp;X/Darwin</a></h3>
 <ul>
 <!-- 
-# Mac OS X 10.10 (Yosemite) systems (aerosol):
+# Mac OS X 11.0 (Big Sur) systems (firn, sastrugi):
 /usr/bin/scp ~/nco/doc/index.shtml zender,nco@web.sf.net:/home/project-web/nco/htdocs
-cd ~/bin;tar cvzf ${DATA}/nco-4.5.1.macosx.10.10.tar.gz nc*;scp ${DATA}/nco-4.5.1.macosx.10.10.tar.gz zender,nco@web.sf.net:/home/project-web/nco/htdocs/src
+cd ~/bin;tar cvzf ${DATA}/nco-4.9.8.macosx.11.2.tar.gz nc*;scp ${DATA}/nco-4.9.8.macosx.11.2.tar.gz zender,nco@web.sf.net:/home/project-web/nco/htdocs/src
 -->
-The most up-to-date binaries are probably those in the tarball below. Those unfamiliar with installing executables from tarballs may try the (older) <a href="http://en.wikipedia.org/wiki/Apple_Disk_Image">DMG</a> files (you may need to add <tt>/opt/local/bin</tt> to your executable path to access those operators).
-<li><a href="src/nco-4.5.1.macosx.10.10.tar.gz">nco-4.5.1.macosx.10.10.tar.gz</a> (<!--#fsize file="src/nco-4.5.1.macosx.10.10.tar.gz"-->): Executables MacOSX 10.10-compatible (last updated <!--#flastmod file="src/nco-4.5.1.macosx.10.10.tar.gz"-->). 
+The most up-to-date executables are probably those in the tarball below. Those unfamiliar with installing executables from tarballs may try the (older) <a href="http://en.wikipedia.org/wiki/Apple_Disk_Image">DMG</a> files (you may need to add <tt>/opt/local/bin</tt> to your executable path to access those operators).
+<li><a href="src/nco-4.9.8.macosx.11.0.tar.gz">nco-4.9.8.macosx.11.0.tar.gz</a> (<!--#fsize file="src/nco-4.9.8.macosx.11.0.tar.gz"-->): Executables MacOSX 11.0-compatible (last updated <!--#flastmod file="src/nco-4.9.8.macosx.11.0.tar.gz"-->). 
 (NB: These executables require
   the <a href="http://trac.macosforge.org/projects/macports/wiki">MacPorts</a>
   <a href="#bld_macports">dependencies</a> for <a href="http://svn.macports.org/repository/macports/trunk/dports/science/nco">NCO</a>). Maintained by NCO Project.</li>
-<li><a href="src/nco-4.0.3_x86_10.6.dmg">nco-4.0.3_x86_10.6.dmg</a> (<!--#fsize file="src/nco-4.0.3_x86_10.6.dmg"-->): For Mac OS 10.6 (last updated <!--#flastmod file="src/nco-4.0.3_x86_10.6.dmg"-->). Maintained by Chad Cantwell.</li>
 <li><a href="src/nco-4.0.7_x86_10.6.dmg">nco-4.0.7_x86_10.6.dmg</a> (<!--#fsize file="src/nco-4.0.7_x86_10.6.dmg"-->): For Mac OS 10.6 (last updated <!--#flastmod file="src/nco-4.0.7_x86_10.6.dmg"-->). Maintained by Chad Cantwell.</li>
 <li><a href="http://fink.sf.net">Fink</a> packages for <a href="http://fink.sf.net/pdb/package.php/nco">NCO</a>: Currently NCO 3.9.5. Maintained by Alexander Hansen.</li> 
-<li><a href="http://brew.sh">Homebrew</a> packages for <a href="https://github.com/Homebrew/homebrew-science/nco.rb">NCO</a>: Currently NCO 4.4.2. Maintained by Ian Lancaster (Alejandro Soto's instructions <a href="http://alejandrosoto.net/blog/2014/01/22/setting-up-my-mac-for-scientific-research">here</a>).</li> 
-<li><a href="http://trac.macosforge.org/projects/macports/wiki">MacPorts</a> infrastructure for <a href="http://svn.macports.org/repository/macports/trunk/dports/science/nco">NCO</a>: <a href="http://svn.macports.org/repository/macports/trunk/dports/science/nco">Portfile</a> for NCO 4.4.4. Maintained by Takeshi Enomoto.</li>
+<li><a href="http://brew.sh">Homebrew</a> packages for <a href="https://github.com/Homebrew/homebrew-science/nco.rb">NCO</a>: Currently NCO 4.6.X. Install with &lsquo;<tt>brew install nco</tt>&rsquo;. Maintained by Ian Lancaster (Alejandro Soto&rsquo;s instructions <a href="http://alejandrosoto.net/blog/2014/01/22/setting-up-my-mac-for-scientific-research">here</a>).</li> 
+<li><a href="http://trac.macosforge.org/projects/macports/wiki">MacPorts</a> infrastructure for <a href="http://svn.macports.org/repository/macports/trunk/dports/science/nco">NCO</a>: <a href="http://svn.macports.org/repository/macports/trunk/dports/science/nco">Portfile</a>: Currently NCO 4.6.6. Install with &lsquo;<tt>sudo port install nco</tt>&rsquo;. Maintained by Takeshi Enomoto.</li>
 </ul>
 
 <a name="visual"></a> <!-- http://nco.sf.net#visual -->
 <a name="mvs"></a> <!-- http://nco.sf.net#mvs -->
 <a name="windows"></a> <!-- http://nco.sf.net#windows -->
-<h3><a href="http://www.microsoft.com">Microsoft Windows</a>
-(native build, compiled with <a href="http://www.microsoft.com/visualstudio/en-us/products/2010-editions/express">Visual Studio 2010</a>, use this if unsure)</h3>
-These native Windows executables should be stand-alone, i.e., not
-require users to have any additional software. 
+<h3><a href="http://www.microsoft.com">Microsoft Windows (version 10 and later)</a> via Linux install</h3>
+Installing a full linux subsystem in Windows&nbsp;10 is straightforward:
+Search (e.g., in Google) for "install linux in windows 10".
+The first link, for example, is 
+<a href="http://windowscentral.com/how-install-linux-distros-windows-10">here</a>.
+Follow those instructions.
+We suggest installing Ubuntu.
+Once you have, open a shell window and enter <tt>sudo apt-get install nco</tt>, just as you
+would do on any Debian or Ubuntu Linux platform.
+(These instructions are copied from Adrian Tompkins.)
+
+<a name="visual"></a> <!-- http://nco.sf.net#visual -->
+<a name="mvs"></a> <!-- http://nco.sf.net#mvs -->
+<a name="windows"></a> <!-- http://nco.sf.net#windows -->
+<h3><a href="http://www.microsoft.com">Microsoft Windows (version 9 and earlier)</a>
+(native build, compiled with <a href="https://www.visualstudio.com/en-us/visual-studio-homepage-vs.aspx">Visual Studio 2019</a>, use this if unsure)</h3>
+These native Windows executables (64bit) are stand-alone, i.e., do not require users to have any additional software. 
 This is a new feature as of 20120615, please send us feedback. 
-To build NCO from source yourself using MSVC or Qt, please see the <a href="nco_qt_msvc.shtml">NCO Qt/MSVC build</a> page.
+To build NCO from source yourself using MSVC with CMake, please see example in <tt>nco/cmake/build.bat</tt>.
 <ul>
 <!-- Copy files from http://glace.ess.uci.edu
 /usr/bin/scp /home/pvicente/nco/doc/index.shtml pvicente,nco@web.sf.net:/home/project-web/nco/htdocs
-/usr/bin/scp /home/pvicente/windows_setup/nco-4.5.1.windows.mvs.exe pvicente,nco@web.sf.net:/home/project-web/nco/htdocs/src
-/usr/bin/scp /home/pvicente/windows_setup/nco-4.4.5.win32.cygwin.tar.gz pvicente,nco@web.sf.net:/home/project-web/nco/htdocs/src
+/usr/bin/scp /home/pvicente/windows_setup/nco-4.9.8.windows.mvs.exe pvicente,nco@web.sf.net:/home/project-web/nco/htdocs/src
 -->
-<li><a href="src/nco-4.5.1.windows.mvs.exe">nco-4.5.1.windows.mvs.exe</a> (<!--#fsize file="src/nco-4.5.1.windows.mvs.exe"-->) : Windows Self-Extracting Installer (last updated <!--#flastmod file="src/nco-4.5.1.windows.mvs.exe"-->). Maintained by Pedro Vicente.</li>
+<li><a href="src/nco-4.9.5.windows.mvs.exe">nco-4.9.5.windows.mvs.exe</a> (<!--#fsize file="src/nco-4.9.5.windows.mvs.exe"-->): Windows Self-Extracting Installer (last updated <!--#flastmod file="src/nco-4.9.5.windows.mvs.exe"-->). Maintained by Pedro Vicente.</li>
 </ul>
 
 <a name="cygwin"></a> <!-- http://nco.sf.net#cygwin -->
@@ -945,7 +828,9 @@ Thanks to Cygnus Solutions and RedHat Inc. for developing and supporting Cygwin 
 <a name="python"></a> <!-- http://nco.sf.net#python -->
 <a name="NCOpy"></a> <!-- http://nco.sf.net#NCOpy -->
 <a name="pyt"></a> <!-- http://nco.sf.net#pyt -->
-<h3><a href="http://www.python.org">Python</a> Bindings <a href="https://github.com/jhamman/nco-bindings">Source</a> and <a href="http://www.hydro.washington.edu/~jhamman/hydro-logic/blog/2014/01/29/NCOpy">Documentation</a>
+<a name="pynco"></a> <!-- http://nco.sf.net#pynco -->
+<a name="PyNCO"></a> <!-- http://nco.sf.net#PyNCO -->
+<h3><a href="http://www.python.org">Python</a> Bindings <a href="https://github.com/nco/pynco">Source</a> and <a href="http://pynco.readthedocs.org">Documentation</a>
 
 <hr></p>
 <!-- End http://nco.sf.net#bnr -->
@@ -953,8 +838,8 @@ Thanks to Cygnus Solutions and RedHat Inc. for developing and supporting Cygwin 
 <!-- http://nco.sf.net#RTFM -->
 <dt><a name="RTFM"></a></dt>
 <dt><a name="rtfm"></a></dt>
-<h2>Documentation and User's Guide</h2> 
-<p>The NCO User's Guide is available for reading in these formats:
+<h2>Documentation and Users Guide</h2> 
+<p>The NCO Users Guide is available for reading in these formats:
 <ul>
 <li><a href="./nco.dvi">DVI</a> Device Independent (<tt>kdvi</tt>, <tt>xdvi</tt>)</li>
 <li><a href="./nco.html">HTML</a> Hypertext (any browser)</li>
@@ -966,12 +851,16 @@ Thanks to Cygnus Solutions and RedHat Inc. for developing and supporting Cygwin 
 <li><a href="./nco.xml">XML</a> Extensible Markup Language (<tt>firefox</tt>)</h2></li>
 </ul>
 <tt>nco.texi</tt> is the most up-to-date.
-Files <tt>nco.dvi</tt>, <tt>nco.ps</tt>, and <tt>nco.pdf</tt> are
+Files <tt>nco.dvi</tt>, <tt>nco.ps</tt>, and <tt>nco.pdf</tt> 
 contain all the mathematical formulae (typeset with TeX) missing from
 the screen-oriented formats. 
 The screen-oriented formats&mdash;<tt>nco.html</tt>,
 <tt>nco.info</tt>, <tt>nco.txt</tt>, and <tt>nco.xml</tt>&mdash;contain 
 all the documentation except the highly mathematical sections.
+
+Wenshan Wang of UCI contributed a <a href="./nco_rfr_crd.pdf">Quick Reference Card</a> 
+(last updated <!--#flastmod file="./nco_rfr_crd.pdf"-->) suitable for
+printing, framing, and/or carrying on your person at all times.
 
 <!--
 <h3>Wiki:</h3>
@@ -1063,25 +952,25 @@ Please read the Guide's suggestions for productive
 <a href="./nco.html#help">Help Requests and Bug Reports</a>.
 <ul>
 <li><i>Where should I ask my questions on how to use NCO?</i>
-On the <a href="http://sf.net/p/nco/discussion/9830">Help</a> site.
-</li>
+On the <a href="http://sf.net/p/nco/discussion/9830">Help</a> site.</li>
 <li><i>Where should I post suggestions/comments on NCO features and usage?</i>
-On the <a href="http://sf.net/p/nco/discussion/9829">Discussion</a> site.
-</li>
-<li><i>Where are NCO development and bug-squashing discussed?</i>
-At the <a href="http://sf.net/p/nco/discussion/9831">Developer</a>
-site.</li>
+On the <a href="http://sf.net/p/nco/discussion/9829">Discussion</a> site.</li>
+<li><i>Where are NCO development and new features discussed?</i>
+On the <a href="http://sf.net/p/nco/discussion/9831">Developer</a> site.</li>
+<li><i>Where do I file an NCO bug-report?</i>
+On the <a href="https://sourceforge.net/p/nco/bugs">Bug Tickets</a> site.</li>
 </ul>
 <hr></p>
 <!-- End Support -->
 
 <!-- http://nco.sf.net#README -->
-<dt><a name="README/ChangeLog/TODO"></a></dt>
-<h2>README/ChangeLog/TODO</h2>
+<dt><a name="ANNOUNCE/ChangeLog/READMELog/TODO"></a></dt>
+<h2>ANNOUNCE/ChangeLog/README/TODO</h2>
 <p>Files containing useful information about the current distribution:
 <ul>
-<li><a href="./README"><tt>README</tt></a> Platforms and software required</li>
+<li><a href="./ANNOUNCE"><tt>ANNOUNCE</tt></a> Notes on current release</li>
 <li><a href="./ChangeLog"><tt>ChangeLog</tt></a> Change History since 1997 (version 0.9)</li>
+<li><a href="./README"><tt>README</tt></a> Platforms and software required</li>
 <li><a href="./TODO"><tt>TODO</tt></a> An unordered list of features and fixes we plan</li> 
 </ul>
 <hr></p>
@@ -1094,11 +983,12 @@ site.</li>
 The simplest way to acquire the source is to download the compressed tarball:
 <ul>
 <li>
-<!-- scp ${DATA}/nco-4.5.1.tar.gz zender,nco@web.sf.net:/home/project-web/nco/htdocs/src -->
-<a href="src/nco-4.5.1.tar.gz">nco-4.5.1.tar.gz</a> 
-(<!--#fsize file="src/nco-4.5.1.tar.gz"--> compressed tar-file)<br>
-<!--#exec cmd="openssl dgst -md5 src/nco-4.5.1.tar.gz"--><br>
-<!--#exec cmd="openssl dgst -sha1 src/nco-4.5.1.tar.gz"--> 
+<!-- scp ${DATA}/nco-4.9.8.tar.gz zender,nco@web.sf.net:/home/project-web/nco/htdocs/src -->
+<a href="https://github.com/nco/nco/archive/4.9.8.tar.gz">nco-4.9.8.tar.gz</a> 
+(<!--#fsize file="src/nco-4.9.8.tar.gz"--> compressed tar-file)<br>
+<!--#exec cmd="openssl dgst -md5 src/nco-4.9.8.tar.gz"--><br>
+<!--#exec cmd="openssl dgst -sha1 src/nco-4.9.8.tar.gz"--><br>
+<!--#exec cmd="openssl dgst -sha256 src/nco-4.9.8.tar.gz"--> 
 </li>
 </ul>
 
@@ -1106,33 +996,36 @@ The simplest way to acquire the source is to download the compressed tarball:
      http://svn.unidata.ucar.edu/repos/netcdf/trunk/ncdump/nccopy.c -->
 <p>The best way to acquire the source and occasionally update to the
 latest features is with <a href="http://git-scm.com/book/en/v2">Git</a>. 
-The browsable <a href="https://github.com/czender/nco/tree/master">Repository</a> 
+The browsable <a href="https://github.com/nco/nco/tree/master">Repository</a> 
 contains up-to-the-minute sources and is the easiest way to stay
 synchronized with NCO features.
 Updating NCO source requires some familiarity with development tools,
 especially <a href="http://git-scm.com/book/en/v2">Git</a> and  
 <a href="http://www.gnu.org/software/make/make.html">Make</a>.
 
-You may retrieve any NCO distribution you wish from 
+You may retrieve any NCO source code distribution you wish from 
 <a href="https://help.github.com">GitHub</a>. 
-Usually you wish to retrieve a recent tagged (i.e., released) version.
+To avoid the churn that comes with using the latest snapshot,
+potential contributors may wish to retrieve a recent tagged (i.e.,
+stable and released) version, 
 This command retrieves the entire NCO repository (&lt; 20&nbsp;MB) and
-then checks out NCO version <tt>4.5.1</tt>:
-<p><tt>git clone https://github.com/czender/nco.git;cd nco;git checkout -b 4.5.1</tt></p>
-This command retrieves the current (&ldquo;bleeding edge&rdquo;)
-development version of NCO into a local directory named <tt>nco</tt>:
-<p><tt>git clone https://github.com/czender/nco.git ~/nco</tt></p>
+then checks out NCO version <tt>4.9.8</tt>:
+<p><tt>git clone https://github.com/nco/nco.git;cd nco;git checkout 4.9.8</tt></p>
+However, the most efficient way to actively track and develop NCO is to
+retrieve the current (&ldquo;bleeding edge&rdquo;) NCO snapshot.
+This command retrieves the latest NCO master branch into a local
+directory named <tt>nco</tt>:
+<p><tt>git clone git@github.com:/nco/nco.git</tt></p>, or
+<p><tt>git clone https://github.com/nco/nco.git ~/nco</tt></p>
 Track changes to the development version using
-<p><tt>cd ~/nco;git pull</tt></p>
+<p><tt>cd nco;git pull</tt></p>
 One difference between running a "tagged" release 
-(e.g., <tt>4.5.1</tt>) and the development version is that the
+(e.g., <tt>4.9.8</tt>) and the development version is that the
 tagged release operators will print a valid version number (e.g.,
-<tt>4.5.1</tt>) when asked to do so with the <tt>-r</tt> flag
+<tt>4.9.8</tt>) when asked to do so with the <tt>-r</tt> flag
 (e.g., <tt>ncks -r</tt>).
-The development version simply places today's date in place of the
-version.
-Once the autotools builds are working more robustly, the confusion
-over versions should largely disappear.
+Snapshots will include the sub-version and patch-level in the version
+information (e.g., <tt>4.9.8-alpha06</tt>). 
 
 <a name="doxy"></a>
 <h3>Developer NCO Source Documentation</h3>
@@ -1152,6 +1045,7 @@ Source documentation for NCO and netCDF4(alpha13)</a></li>
 <!-- http://nco.sf.net#bld -->
 <dt><a name="Rqr"></a><a name="rqr"></a></dt> <!-- http://nco.sf.net#rqr -->
 <dt><a name="bld"></a></dt> <!-- http://nco.sf.net#bld -->
+<dt><a name="build"></a></dt> <!-- http://nco.sf.net#build -->
 <dt><a name="cmp"></a></dt> <!-- http://nco.sf.net#cmp -->
 <h2>Compilation Requirements</h2>
 
@@ -1159,34 +1053,38 @@ Source documentation for NCO and netCDF4(alpha13)</a></li>
 
 <a name="bld_rqr"></a> <!-- http://nco.sf.net#bld_rqr -->
 <li>Although building NCO yourself can be easy, sexy, and lucrative,
-we recommend that you first try the pre-built binaries for your
+we recommend that you first try the pre-built executables for your
 system, e.g.,  
 <tt>
-<dt>sudo aptitude install nco # Debian-based systems like Debian, Mint, Ubuntu</dt>
-<dt>sudo dnf-install nco      # Newer RPM-based systems like CentOS, Fedora, openSUSE, RHEL</dt>
-<dt>sudo yum-install nco      # Older RPM-based systems like CentOS, Fedora, openSUSE, RHEL</dt>
-<dt>sudo port install nco     # MacPorts (after installing MacPorts on Mac OS X)</dt>
+<dt>brew install nco          # Mac (after installing Homebrew)</dt>
+<dt>conda install -c conda-forge nco # Any Linux or Mac (after installing Anaconda)</dt>
+<dt>sudo aptitude install nco # Debian-based Linux systems like Debian, Mint, Ubuntu</dt>
+<dt>sudo dnf-install nco      # Newer RPM-based Linux systems like CentOS, Fedora, openSUSE, RHEL</dt>
+<dt>sudo yum-install nco      # Older RPM-based Linux systems like CentOS, Fedora, openSUSE, RHEL</dt>
+<dt>sudo port install nco     # Mac (after installing MacPorts on Mac OS X)</dt>
 </tt>
 If pre-built executables do not satisfy you (e.g., are out-of-date)
 and you want the latest, greatest features, then the first steps to
 build (i.e., compile, for the most part) NCO from source code are to
-install the prerequisites:
-<a href="http://www.antlr.org">ANTLR</a> version 2.7.7 (like <a href="http://glace.ess.uci.edu/libs/antlr-2.7.7.tar.gz">this one</a> <i>not</i> version 3.x or 4.x!) (required for <tt>ncap2</tt>), 
+install the pre-requisites:
+<a href="http://www.antlr.org">ANTLR</a> version 2.7.7 (like <a href="http://dust.ess.uci.edu/nco/antlr-2.7.7.tar.gz">this one</a> <i>not</i> version 3.x or 4.x!) (required for <tt>ncap2</tt>), 
 <a href="http://www.gnu.org/software/gsl">GSL</a> (desirable for <tt>ncap2</tt>), 
-<a href="http://www.unidata.ucar.edu/packages/netcdf">netCDF</a> (absolutely required), 
+<a href="http://www.unidata.ucar.edu/netcdf">netCDF</a> (absolutely required), 
 <a href="http://opendap.org">OPeNDAP</a> (enables network transparency), and
 <a href="http://www.unidata.ucar.edu/packages/udunits">UDUnits</a> (allows dimensional unit transformations).
-If possible, install this software stack from pre-built binaries 
-(commands to do so on Debian and RPM systems are given just below).
-ANTLR binaries from major distributions are pre-built with the source
+If possible, install this software stack from pre-built executables 
+(commands to do so on Debian, Mac, and RPM systems follow below).
+ANTLR executables from major distributions are pre-built with the source
 patch necessary to allow NCO to link to ANTLR.
 If you must build the source stack yourself (e.g., due to lack of root
 access, or systems without packages such as AIX), build all libraries
 with the same compiler and switches.
-The ANTLR distributions must be built with the source file
-<tt>CharScanner.hpp</tt> patched to include this line:
-<tt>#include <cstring></tt> or else <tt>ncap2</tt> will not compile.
-Recent versions of netCDF automatically build OPeNDAP and UDUnits.
+The ANTLR 2.x source file <tt>CharScanner.hpp</tt> must include this line:
+<tt>#include &lt;cstring&gt;</tt> or else <tt>ncap2</tt> will not
+compile (<a href="http://dust.ess.uci.edu/nco/antlr-2.7.7.tar.gz">this</a>
+ANTLR tarball is already patched).
+Recent versions of netCDF will automatically build OPeNDAP and UDUnits.
+Be sure your netCDF was built with <tt>--enable-dap --enable-logging</t>.
 NCO is mostly written in&nbsp;C99, and although you <i>may</i> mix and
 match compilers, this is often difficult in practice and is not recommended.
 The exception is <tt>ncap2</tt> which is written in&nbsp;C++.
@@ -1202,14 +1100,36 @@ For the reasons explained above (compiler compatibility) install as
 much pre-requisite and optional software as possible from pre-compiled
 packages. 
 This is easy on modern package-oriented OSs. 
-For Debian-based systems:
+The NCL/ESMF packages provide ESMF_RegridWeightGen for use
+by <tt>ncremap</tt>, they are not required to <i>build</i> NCO. 
+Remember, to compile NCO from source, you need not only the library
+dependencies the "devel" versions 
+(which include the header files) of the 
+
+<dt><a name="conda"></a></dt> <!-- http://nco.sf.net#conda_bld -->
+<dt><a name="anaconda"></a></dt> <!-- http://nco.sf.net#anaconda_bld -->
+For Conda-based systems (any OS, particularly useful for building NCO with newer versions of base libraries in personal directories):
+<tt>
+<dt>conda install antlr # ANTLR</dt>
+<dt>conda install curl # DAP-prereqs</dt>
+<dt>conda install expat # expat XML parser, a UDUnits-prereq (RHEL only?)</dt>
+<dt>conda install bison cmake flex # GNU toolchain</dt>
+<dt>conda install esmf # ESMF_RegridWeightGen (external executable for ncremap)</dt>
+<dt>conda install gsl # GSL</dt>
+<dt>conda install netcdf # netCDF</dt>
+<dt>conda install tempest-remap # (external executables for ncremap)</dt>
+<dt>conda install udunits2 # UDUnits</dt>
+</tt>
+
+For Debian-based systems (like Ubuntu) (<tt>aptitude</tt> is similar to and interchangeable with <tt>apt-get</tt>):
 <tt>
 <dt>sudo aptitude install antlr libantlr-dev # ANTLR</dt>
 <dt>sudo aptitude install libcurl4-gnutls-dev libexpat1-dev libxml2-dev # DAP-prereqs (curl, expat XML parser) </dt>
-<dt>sudo aptitude install bison flex gcc g++ # GNU toolchain</dt>
-<dt>sudo aptitude install gsl-bin libgsl0-dev # GSL</dt>
-<dt>sudo aptitude install libnetcdf6 libnetcdf-dev netcdf-bin # netCDF and DAP</dt>
+<dt>sudo aptitude install bison cmake flex gcc g++ # GNU toolchain</dt>
+<dt>sudo aptitude install gsl-bin libgsl-dev # GSL</dt>
+<dt>sudo aptitude install libnetcdf15 libnetcdf-dev netcdf-bin # netCDF and DAP</dt>
 <dt>sudo aptitude install libhdf5-serial-dev # HDF5</dt>
+<dt>sudo aptitude install ncl-ncarg # ESMF_RegridWeightGen (for ncremap)</dt>
 <dt>sudo aptitude install udunits-bin libudunits2-0 libudunits2-dev # UDUnits</dt>
 </tt>
 
@@ -1217,15 +1137,17 @@ For Debian-based systems:
 <dt><a name="bld_yum"></a></dt> <!-- http://nco.sf.net#bld_yum -->
 <dt><a name="dnf"></a></dt> <!-- http://nco.sf.net#dnf -->
 <dt><a name="bld_dnf"></a></dt> <!-- http://nco.sf.net#bld_dnf -->
-For RPM-based systems (substitute <tt>yum</tt> for <tt>dnf</tt> on older Fedora systems):
+For RPM-based systems like Fedora and CentOS (substitute <tt>yum</tt> for <tt>dnf</tt> on older systems):
 <tt>
 <dt>sudo dnf install antlr antlr-C++ -y # ANTLR</dt>
 <dt>sudo dnf install curl-devel libxml2-devel -y # DAP-prereqs</dt>
 <dt>sudo dnf install expat expat-devel -y # expat XML parser, a UDUnits-prereq (RHEL only?)</dt>
 <dt>sudo dnf install libdap libdap-devel -y # DAP</dt>
-<dt>sudo dnf install bison flex gcc gcc-c++ -y # GNU toolchain</dt>
+<dt>sudo dnf install bison cmake flex gcc gcc-c++ -y # GNU toolchain</dt>
+<dt>sudo dnf install ncl # ESMF_RegridWeightGen (for ncremap)</dt>
 <dt>sudo dnf install gsl gsl-devel -y # GSL</dt>
 <dt>sudo dnf install netcdf netcdf-devel -y # netCDF</dt>
+<dt>sudo dnf install zlib-devel -y # zlib</dt>
 <dt>sudo dnf install librx librx-devel -y # RX</dt>
 <dt>sudo dnf install udunits2 udunits2-devel -y # UDUnits</dt>
 </tt>
@@ -1235,11 +1157,17 @@ For RPM-based systems (substitute <tt>yum</tt> for <tt>dnf</tt> on older Fedora 
 For Mac OS X with MacPorts:
 <tt>
 <dt>sudo port install antlr # Antlr</dt>
+<dt>sudo port install cmake # CMake</dt>
+<dt>sudo port install esmf # ESMF_RegridWeightGen (for ncremap)</dt>
 <dt>sudo port install libdap # DAP</dt>
 <dt>sudo port install gsl # GSL</dt>
 <dt>sudo port install netcdf # netCDF</dt>
+<dt>sudo port install netcdf-fortran # netCDF for ESMF</dt>
 <dt>sudo port install udunits2 # UDUnits</dt>
 </tt>
+Without MacPorts, the system TeXInfo may be too old to build the
+documentation.
+In this case use <tt>configure --disable-doc</tt>.
 
 <dt><a name="bld_cygwin"></a></dt> <!-- http://nco.sf.net#bld_cygwin -->
 For Windows with Cygwin, select and install the following packages with Cygwin Setup:
@@ -1251,23 +1179,50 @@ For Windows with Cygwin, select and install the following packages with Cygwin S
 <dt>netcdf # netCDF</dt>
 <dt>udunits2 # UDUnits</dt>
 </tt>
-As of 20131101 there is no Cygwin package for Antlr, and the netcdf package does not yet support DAP. 
-Users should instead first download and install the Antlr found <a href="http://nco.sourceforge.net/nco_qt_msvc.shtml">here</a>.
+As of 20131101 there is no Cygwin package for ANTLR, and the Cygwin netCDF package does not yet support DAP. 
 </li>
 
-<li>Once you have installed the pre-requisites as shown above, you may
-  then build the latest stable NCO and install it in,
-  e.g., <tt>/usr/local</tt> with: 
+<li>Once you have installed the pre-requisites as shown above, you may then build the latest stable NCO and install it in, e.g., <tt>/usr/local</tt> with: 
 <tt>
-<dt>wget https://github.com/czender/nco/archive/4.5.1.tar.gz</dt>
-<dt>tar xvzf 4.5.1.tar.gz</dt>
-<dt>cd nco-4.5.1</dt>
+<dt>wget https://github.com/nco/nco/archive/4.9.8.tar.gz</dt>
+<dt>tar xvzf 4.9.8.tar.gz</dt>
+<dt>cd nco-4.9.8</dt>
 <dt>./configure --prefix=/usr/local</dt>
 <dt>make</dt>
 <dt>sudo make install</dt>
 <dt>export PATH=/usr/local/bin\:${PATH}</dt>
 <dt>export LD_LIBRARY_PATH=/usr/local/lib\:${LD_LIBRARY_PATH}</dt>
 </tt>
+<dt><a name="cmake"></a></dt> <!-- http://nco.sf.net#cmake -->
+<dt><a name="CMake"></a></dt> <!-- http://nco.sf.net#CMake -->
+<li>The CMake-equivalent to the autoconf/configure build-engine example above is:
+<tt>
+<dt>cd ~/nco/cmake</dt>
+<dt>cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local</dt>
+<dt>make</dt>
+<dt>sudo make install</dt>
+</tt>
+Unlike autoconf/configure, CMake works well on MS Windows. 
+CMake tries to find header and dependency libraries in standard locations.
+Override these manually with, e.g., 
+<tt>
+<dt>cmake .. -DNETCDF_INCLUDE:PATH=/my/netcdf/include/path 
+-DNETCDF_LIBRARY=/my/netcdf/library/file 
+-DHDF5_LIBRARY=/my/hdf5/library/file 
+-DHDF5_HL_LIBRARY=/my/hdf5 high level/library/file 
+-DSZIP_LIBRARY=/my/szip/library/file 
+-DZLIB_LIBRARY=/my/zlib/library/file 
+-DCURL_LIBRARY=/my/curl/library/file 
+-DANTLR_INCLUDE:PATH=/my/antlr/include/path 
+-DANTLR_LIBRARY:FILE=/my/antlr/library/file 
+-DUDUNITS2_INCLUDE:PATH=/my/udunits2/include/path 
+-DUDUNITS2_LIBRARY:FILE=/my/udunits2/library/file 
+-DEXPAT_LIBRARY:FILE=/my/expat/library/file 
+-DGSL_INCLUDE:PATH=/my/gsl/include/path 
+-DGSL_LIBRARY:FILE=/my/gsl/library/file 
+-DGSL_CBLAS_LIBRARY:FILE=/my/cblas/library/file</dt>
+</tt>
+</p>
 <dt><a name="bonobo"></a></dt> <!-- http://nco.sf.net#bonobo -->
 <dt><a name="bnb"></a></dt> <!-- http://nco.sf.net#bnb -->
 Please post questions about building or installing NCO to the 
@@ -1283,7 +1238,7 @@ For more sophisticated build/install options, see the next section.
 <dt><a name="Makefile"></a></dt> <!-- http://nco.sf.net#Makefile -->
 <dt><a name="hnt"></a></dt> <!-- http://nco.sf.net#hnt -->
 <dt><a name="bld_hnt"></a></dt> <!-- http://nco.sf.net#bld_hnt -->
-Still having trouble building NCO from source? Read these 
+Still having trouble building NCO from source? Read these (much older)
 <a href="./build_hints.shtml">Build Hints</a>
 
 </ul>
@@ -1294,21 +1249,31 @@ Still having trouble building NCO from source? Read these
 <!-- http://nco.sf.net#NCAR -->
 <dt><a name="NCAR"></a></dt>
 <h2>Using NCO at UCI, NCAR, and other High Performance Computing Centers (HPCCs)</h2>
-<p>UC Irvine, NCAR, and DOE ORNL/OLCF users <i>may</i> find pre-built,
-<i>almost</i> up-to-date NCO executables in the following locations.
-Users at NCAR/NWSC and ORNL/OLCF should first try the institution-<i>supported</i>
-executables with <tt>module load nco</tt>.
-These stable releases are usually a few versions and up to two years old.
-The unsatisfied or adventurous may try my personal executables which
-are built from the &ldquo;master branch&rdquo; of NCO, not a tagged
-version, and therefore may behave slightly differently.
+HPCCs unfortunately do not utilize modern package systems like RPMs or
+.debs, or do so on old OSs with no access to newer RPMs and .debs.
+Institution-<i>supported</i> executables are usually available with <tt>module load nco</tt>.
+These stable releases are often many versions (up to two years) old.
+Thanks to funding from external grants, <p>DOE, NCAR, and UCI HPCC
+users <i>may</i> find more recent pre-built NCO executableses the
+personal directories shown below. 
+These are usually built from a recent tagged-version of NCO (e.g.,
+4.9.X-alphaY) not from the &ldquo;bleeding-edge&rdquo; of master which
+is usually untagged.
+  One way to use these pre-built executables is to prepend them to
+  your executable and library search paths, e.g., 
+  <tt>export PATH="~zender/bin:${PATH}"</tt>,
+  <tt>export LD_LIBRARY_PATH="~zender/lib:${LD_LIBRARY_PATH}"</tt>
 <ul>
-<li>ANL Cooley <tt></tt> (Linux 2.6.x): <tt>~zender/bin</tt></li>
-<li>NCAR CISL <tt>yellowstone.ucar.edu</tt> (Linux 2.6.x): <tt>~zender/bin</tt></li>
-<li>NCAR CISL <tt>mirage0.ucar.edu</tt> (Linux 2.6.x): <tt>~zender/bin</tt></li>
-<li>ORNL Rhea <tt></tt> (Linux 2.6.x): <tt>~zender/bin</tt></li>
-<li>UCI ESS <tt>greenplanet.ps.uci.edu</tt> (Linux 2.6.x): <tt>~zender/bin</tt></li>
-<li>UCI ESS <tt>dust.ess.uci.edu</tt> (Linux 3.2.x): <tt>~zender/bin</tt></li>
+<li>ANL ALCF Cooley <tt>cooley.alcf.anl.gov</tt>: <tt>~zender/bin</tt></li>
+<li>ANL ALCF Mira <tt>mira.alcf.anl.gov</tt>: <tt>~zender/bin</tt></li>
+<li>ANL LCRC Blues <tt>blues.lcrc.anl.gov</tt>: <tt>~zender/bin</tt></li>
+<li>LLNL <tt>acme1.llnl.gov</tt>: <tt>~zender1/bin</tt></li>
+<li>NCAR CISL <tt>cheyenne.ucar.edu</tt>: <tt>~zender/bin</tt></li>
+<li>NERSC Cori <tt>cori.nersc.gov</tt>: <tt>~zender/bin_cori</tt></li>
+<li>ORNL OLCF Rhea <tt>rhea.ccs.ornl.gov</tt>: <tt>~zender/bin_rhea</tt></li>
+<li>ORNL OLCF Titan <tt>titan.ccs.ornl.gov</tt>: <tt>~zender/bin_titan</tt></li>
+<li>PNNL Compy <tt>compy.pnl.gov</tt>: <tt>~zender/bin</tt></li>
+<li>UCI ESS <tt>greenplanet.ps.uci.edu</tt>: <tt>~zender/bin</tt></li>
 </ul>
 <hr></p>
 <!-- End http://nco.sf.net#NCAR -->
@@ -1354,7 +1319,47 @@ LAM installs easily with our own testing environment (latest Ubuntu).
 <h2>Known Problems from 2013 (version 4.2.4) Onwards</h2>
 
 <ul><b>Recent Generic Run-time Problems:</b>
-<!-- http://nco.sf.net#bug_nc4_srd -->
+
+<!-- http://nco.sf.net#bug_cdf5 -->
+<a name="bug_cdf5"></a>
+<li><i>netCDF CDF5 corruption:</i>
+  netCDF libraries 4.4.0+ supports the CDF5 binary format.
+  Unfortunately the CDF5 implementation is buggy for large (> 4&nbsp;GiB)
+  variables in library versions 4.4.0&ndash;4.6.0. 
+  We identified this netCDF CDF5 bug on 20170906. 
+  Writing CDF5 files with large variables is buggy unless there is
+  only one such &ldquo;large&rdquo; variable and it is the last to be defined.
+  If the file is an input dataset (i.e., NCO <i>reads</i> it) written
+  by PnetCDF then the input data are fine (because PnetCDF writes CDF5
+  through a different mechanism than serial programs like NCO&rsquo;s
+  writer).
+  And if the CDF5 dataset was originally written by any netCDF version
+  4.6.1 or greater, then it is unaffected by this bug.
+  However, a CDF5 input file with large variables written by any serial
+  netCDF writer (like NCO) employing netCDF library 4.4.0&ndash;4.6.0, is likely
+  corrupt and variables were silently truncated when writing it.
+  Output files (that NCO wrote) with large variables will definitely
+  be corrupt if NCO was linked to netCDF library version 4.4.0&ndash;4.6.0 (so
+  upgrade to netCDF 4.6.1+ ASAP).
+  Here are two potential workarounds for data affected by this bug:
+  1. Re-write (using any netCDF version) original input files in
+  netCDF4 format instead of CDF5, then process these as normal and
+  write netCDF4 output (instead of CDF5); 
+  2. Re-compile NCO with netCDF library 4.6.1+ or later and use it to
+  convert non-corrupt datasets to netCDF4 format, then process the
+  data.
+  For more information on this nasty bug, see
+  <a href="https://github.com/Unidata/netcdf-c/issues/463">here</a> and
+  <a href="https://github.com/Unidata/netcdf-c/pull/478">here</a>.
+  <b>UPDATE</b>: Unidata released netCDF 4.5.0 on 20171020.
+  Unfortunately the patch to fix the CDF5 bug was not included.
+  <b>UPDATE</b>: Unidata released netCDF 4.6.0 on 20180124.
+  Unfortunately the patch to fix the CDF5 bug was not included.
+  <b>UPDATE</b>: Unidata released netCDF 4.6.1 on 20180319.
+  netCDF version 4.6.1 includes the patch that fixes the CDF5 bug. Yay!
+</li>
+  
+  <!-- http://nco.sf.net#bug_nc4_srd -->
 <a name="bug_nc4_srd"></a>
 <li><i>netCDF4 Strided Hyperslab bug:</i>
 Multiple users complain that access to strided hyperslabs of
@@ -1391,12 +1396,27 @@ A summary of renaming limitations associated with particular versions
 of netCDF4 is maintained in the online manual   
 <a href="http://nco.sf.net/nco.html#bug_nc4_rename">here</a>.
 Important updates will also be posted here on the homepage.
-There are no known bugs with renaming features as of netCDF library
-version 4.3.3.1 (March, 2015). 
+There are still known bugs with renaming features as of netCDF library
+version 4.4.1.1 (November, 2016). 
 </li>
 </ul>
 
 <ul><b>Recent Operator-specific Run-time Problems:</b>
+<!-- http://nco.sf.net#bug_ncwa_hyp_msk_wgt -->
+<a name="bug_ncwa_hyp_msk_wgt"></a>
+<li><i>Hyperslabbing masked and/or weighted variables bug:</i>
+Versions 4.2.4&mdash;4.6.7 of <tt>ncwa</tt> incorrectly handle
+masking and weighting of hyperslabbed variables.
+Performing these actions simultaneously causes subtle arithmetic
+errors (the worst kind!), unless the hyperslab happens to start
+with the first element of the variable.
+In other words, results from commands of the form
+<tt>ncwa -d ... -m ... </tt> and
+<tt>ncwa -d ... -w ... </tt> are suspect.
+The workaround is to downgrade to NCO&nbsp;4.2.3.
+The solution is to upgrade to NCO&nbsp;4.6.8.
+</li>
+
 <!-- http://nco.sf.net#bug_ncwa_pck_min_max -->
 <a name="bug_ncwa_pck_min_max"></a>
 <li><i>Minimization/maximization of packed variables bug:</i>
@@ -1543,16 +1563,16 @@ Computer Science
 2.&nbsp;Extend empirically verified analytic model
 (described <a href="http://www.ess.uci.edu/~zender#ZeM07">here</a>)
 for terascale data reduction of gridded datasets to account for
-cluster- and network-effects.  
+cluster- and network-effects.
 3.&nbsp;Enable and optimize NCO for intra-file-level parallelism using   
 netCDF4/HDF5 parallel filesystem features.
-<i>Other Interests</i>: Atmospheric Physics, Climate Change.
+<i>Other Interests</i>: Atmospheric Physics, Climate Change
 </li>
 
 <li><dt>
 <a name="butowsky"></a><a name="Butowsky"></a> <!-- http://nco.sf.net#butowsky -->
 <a href="http://dust.ess.uci.edu/hbutowsk">Henry Butowsky</a>, 
-software engineer.
+software engineer
 <i>Roles</i>: Scientific programmer
 <i>Current Research</i>: 
 1.&nbsp;Efficient complex data analysis with storage-layer constraints.
@@ -1560,14 +1580,17 @@ software engineer.
 <i>Other Interests</i>: Compilers and interpreters.
 </li>
 
-<li><dt>
-<a name="wenshan"></a><a name="Wenshan"></a> <!-- http://nco.sf.net#wenshan -->
-<a href="http://dust.ess.uci.edu/wenshanw">Wenshan Wang</a>, 
-<i>Roles</i>: PhD Candidate
+<li>
+<a name="vicente"></a><a name="Vicente"></a> <!-- http://nco.sf.net#vicente -->
+<a href="http://dust.ess.uci.edu/pvicente">Pedro Vicente</a>, 
+software engineer, 201206&mdash;201405, then NOAA, continues as volunteer contributor
+<!--
+<i>Roles</i>: Scientific programmer
 <i>Current Research</i>: 
-1.&nbsp;Causes and implications of Greenland snowmelt.
-2.&nbsp;Rapid evaluation and exploitation of multi-model datasets.
-<i>Other Interests</i>: Advancing to candidacy.
+1.&nbsp;Support for hierarchical datasets.
+2.&nbsp;Optimization of hierarchical access.
+<i>Other Interests</i>: HDF and netCDF data visualization.
+-->
 </li>
 
 </ul>
@@ -1579,7 +1602,7 @@ software engineer.
 <a name="capps"></a><a name="Capps"></a> <!-- http://nco.sf.net#capps -->
 <a href="http://dust.ess.uci.edu/scapps/web">Dr.&nbsp;Scott Capps</a>, 
 earned Earth System Science Ph.D. (2009) with Zender at UCI, then
-postdoc at UCLA, now at Vertum Partners.
+postdoc at UCLA, then Vertum Partners, now founder/CEO Atmospheric Data Solutions 
 <!--
 <i>Related Research</i>: 
 1.&nbsp;Test NCO on real tera-scale geoscience analysis problems and
@@ -1594,7 +1617,7 @@ on air-surface exchange.
 <a name="jenks"></a><a name="Jenks"></a> <!-- http://nco.sf.net#jenks -->
 <a href="http://spds.ece.uci.edu/~sjenks">Stephen Jenks</a>,
 former Assistant Professor of Electrical Engineering and Computer Science
-(<a href="http://www.eecs.uci.edu">EECS</a>).
+(<a href="http://www.eecs.uci.edu">EECS</a>)
 <!--
 <i>Roles</i>: Collaborator. Thesis advisor.
 <i>Related Research</i>: 
@@ -1604,22 +1627,9 @@ former Assistant Professor of Electrical Engineering and Computer Science
 </li>
 
 <li>
-<a name="vicente"></a><a name="Vicente"></a> <!-- http://nco.sf.net#vicente -->
-<a href="http://dust.ess.uci.edu/pvicente">Pedro Vicente</a>, 
-software engineer, 201206&mdash;201405.
-<!--
-<i>Roles</i>: Scientific programmer
-<i>Current Research</i>: 
-1.&nbsp;Support for hierarchical datasets.
-2.&nbsp;Optimization of hierarchical access.
-<i>Other Interests</i>: HDF and netCDF data visualization.
--->
-</li>
-
-<li>
 <a name="wang"></a><a name="Wang"></a> <!-- http://nco.sf.net#wang -->
 <a href="http://dust.ess.uci.edu/~wangd">Dr.&nbsp;Daniel Wang</a>:
-earned EECS Ph.D. (2008) with Jenks and Zender at UCI, now at SLAC.
+earned EECS Ph.D. (2008) with Jenks and Zender at UCI, now at SLAC
 <!--
 <i>Role</i>: Architect distributed data reduction and analysis
 solutions for geoscience workflows
@@ -1628,15 +1638,25 @@ solutions for geoscience workflows
 discover and exploit parallelism in scripted workflows.
 2.&nbsp;Resource management in combined computation-data service environments.
 3.&nbsp;Design and implement 
-<a href="http://swamp.googlecode.com">SWAMP</a> to provide
+<a href="http://github.com/nco/swamp">SWAMP</a> to provide
 automated server-side data analysis capabilities to the geoscience 
 community. 
 <i>Other Interests</i>: Large data, data management, programming languages and practice.
 -->
 </li>
 
+<li><dt>
+<a name="wenshan"></a><a name="Wenshan"></a> <!-- http://nco.sf.net#wenshan -->
+<a href="http://dust.ess.uci.edu/wenshanw">Dr. Wenshan Wang</a>, 
+<i>Roles</i>: Postdoc
+<i>Current Research</i>: 
+1.&nbsp;Causes and implications of Greenland snowmelt.
+2.&nbsp;Rapid evaluation and exploitation of multi-model datasets.
+<i>Other Interests</i>: Automated Weather Station workflows
+</li>
+
 <p>Thanks also to 
-<a href="http://nco.sf.net/nco.html#ppl">past NCO contributors</a>.
+<a href="http://nco.sf.net/nco.html#ppl">past NCO contributors</a>
 
 </ul>
 <hr></p>
@@ -1651,7 +1671,7 @@ community.
 <a href="http://sf.net/p/nco/discussion/9830">Help</a> /
 <a href="#RTFM">Manual</a> /
 <a href="http://sf.net/projects/nco">Project</a> /
-<a href="https://github.com/czender/nco/tree/master/src/nco/">Source</a> /
+<a href="https://github.com/nco/nco/tree/master/src/nco/">Source</a> /
 </td>
 
 <td align="right" valign="top">
@@ -1660,9 +1680,9 @@ community.
 [<a href="http://cfconventions.org/1.6.html">CF</a>] 
 [<a href="https://wiki.earthdata.nasa.gov/display/ESDSWG/Dataset+Interoperability+Working+Group">DIWG</a>] 
 [<a href="http://www.gnu.org/software/gsl">GSL</a>] 
-[<a href="http://www.unidata.ucar.edu/packages/netcdf">netCDF</a>] 
+[<a href="http://www.unidata.ucar.edu/netcdf">netCDF</a>] 
 [<a href="http://opendap.org">OPeNDAP</a>] 
-[<a href="http://swamp.googlecode.com">SWAMP</a>]
+[<a href="http://github.com/nco/swamp">SWAMP</a>]
 [<a href="http://www.unidata.ucar.edu/packages/udunits">UDUnits</a>] 
 </td></tr></table>
 

@@ -110,25 +110,22 @@ netcdf in_grp_3 {
     
     //coordinate variable (/g8/lev)
     float lev(lev); 
-    lev:bounds = "ilev";
+    lev:bounds = "lev_bnd";
     
     //coordinate variable (/g8/vrt_nbr)
     float vrt_nbr(vrt_nbr);
     
-    float ilev(lev,vrt_nbr);
+    float lev_bnd(lev,vrt_nbr);
 	float lev_wgt(lev);
   data:
     lon=-180,0; 
     lev=100,500,1000;
-    ilev=0,300,300,750,750,1013.25;
+    lev_bnd=0,300,300,750,750,1013.25;
     vrt_nbr=1,2;
-	lev_wgt=9,2,1;
+    lev_wgt=9,2,1;
   } // end g8
-  
- 
-  //
+
   //g16 
-  //
   // Test variables and dimensions in and out of scope
   // Use case of variable in scope of dimension:
   // dimension /lon 
@@ -136,22 +133,25 @@ netcdf in_grp_3 {
   // Use case of variable NOT in scope of dimension:
   // variable /lon
   // dimension /g1/lon
-  //
   // Test dimensions with no associated coordinate variable
-  //
   group: g16 { 
     dimensions:
     lat=2;
-    lon1=4;  //dimension that has a coordinate variable down in scope at /g16/g16g1/lon1(lon1)
-    lon2=4;  //dimension that does NOT have a coordinate variable anywhere 
-    lon3=4;  //dimension that has a coordinate "out of scope" (with group depth greater than the variable that uses the coordinate, g16g3g3)
-    lon4=2;  //dimension that has several intermediate "in scope" coordinates
+    lon1=4; // dimension that has a coordinate variable down in scope at /g16/g16g1/lon1(lon1)
+    lon2=4; // dimension that does NOT have a coordinate variable anywhere 
+    lon3=4; // dimension that has a coordinate "out of scope" (with group depth greater than the variable that uses the coordinate, g16g3g3)
+    lon4=2; // dimension that has several intermediate "in scope" coordinates
+    lat4=2;
     variables:
     float lat1(lat);
     float lon2_var(lon2); //variable with no associated coordinate variable
+    float blon2;
+    float blat3;
     data:
     lat1=0.,1.;
     lon2_var=0.,1.,2.,3.; 
+    blon2=8.0;
+    blat3=3.0;
     
     group: g16g1 { 
      dimensions:
@@ -160,9 +160,11 @@ netcdf in_grp_3 {
      // MSA test -v lon1_var -d lon1,3.0, result is 3.
      float lon1(lon1);  //coordinate variable /g16/g16g1/lon1 that has dimension (/g16/lon1) in scope
      float lon1_var(lon1); // variable /g16/g16g1/lon1_var that has dimension (/g16/lon1) in scope *and* coordinate (/g16/g16g1/lon1) in scope
+     float blat4;
      data:
      lon1=0.,1.,2.,3.;
-     lon1_var=0.,1.,2.,3.;  
+     lon1_var=0.,1.,2.,3.;
+     blat4=4.0;
       } // end g16g1 
 
     group: g16g2 { 
@@ -192,24 +194,44 @@ netcdf in_grp_3 {
     
     group: g16g4 { 
      variables:
-     //intermediate "in scope " coordinate
+     // intermediate "in scope" coordinate
      float lon4(lon4);
+     float blon3;
      data:
      lon4=1.,2.;     
-     
+     blon3=8.0;
       group: g16g4g1 { 
       variables:
-      //intermediate "in scope " coordinate
+      // intermediate "in scope " coordinate
       float lon4(lon4);
       data:
       lon4=3.,4.; 
       
         group: g16g4g1g1 { 
         variables:
-        //variable that uses one of the intermediate "in scope " coordinate
+        // variable that uses one of the intermediate "in scope" coordinates
+	float blon4;
+	float blat2;
         float lon4_var(lon4);
+        // check retrieval of bounds var(s) -scope, scope, absolute path, relative path
+        lon4_var:bounds="blon4 blon3 /g16/blon2 ../g16g4g1g1/g16g4g1g1g1/blon1";
         data:
-        lon4_var=0.,1.; 
+	blon4=10.0;
+	blat2=2.0;
+        lon4_var=0.,1.;
+
+        group: g16g4g1g1g1 {
+	 variables:
+	  float lat4_var(lat4);
+          // check retrieval of "coordinate vars" current directory, relative path, absolute path, absolute path
+          lat4_var:coordinates="./blat1 ../blat2 /g16/blat3 /g16/g16g1/blat4"; 
+	  float blon1;
+	  float blat1;
+	data:
+	  lat4_var=10.0,11.0;
+	  blon1=1.0;
+	  blat1=1.0;
+	} // end g16g4g1g1g1
        } // end g16g4g1g1
      } // end g16g4g1
     } // end g16g4
@@ -494,21 +516,20 @@ netcdf in_grp_3 {
    dimensions:
     lat=2;
     lon=3;
-	time=unlimited;
+    time=unlimited;
     variables:
     float lat(lat);
     lat:units = "degrees_north";
     float lon(lon);
     lon:units = "degrees_east";
-	double time(time);
+    double time(time);
     float snd(time,lat,lon);
     snd:long_name = "Snow Depth timeseries";
     data:
     lat=-60,0;
     lon=0,120,240;
-	time=1,2;
-    snd=1,2,3,4,5,6,
-	    7,8,9,10,11,12;
+    time=1,2;
+    snd=1,2,3,4,5,6,7,8,9,10,11,12;
   } // end g23
   
   //
@@ -518,19 +539,19 @@ netcdf in_grp_3 {
    dimensions:
     lat=2;
     lon=3;
-	time=unlimited;
+    time=unlimited;
     variables:
     float lat(lat);
     lat:units = "degrees_north";
     float lon(lon);
     lon:units = "degrees_east";
-	double time(time);
+    double time(time);
     float snd(time,lat,lon);
     snd:long_name = "Snow Depth timeseries";
     data:
     lat=-60,0;
     lon=0,120,240;
-	time=4;
+    time=4;
     snd=1,2,3,4,5,6;
   } // end g24
   

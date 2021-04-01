@@ -2,13 +2,13 @@
 
 /* Purpose: netCDF arithmetic processor class methods for GSL */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "fmc_gsl_cls.hh"
-#include "nco_gsl.h"
+#include "nco_gsl.hh"
 
 // GSL Functions
 #ifdef ENABLE_GSL
@@ -18,7 +18,7 @@ int  ncap_void(void){
   return 10;
 }
 
-gsl_cls::gsl_cls(bool flg_dbg){
+gsl_cls::gsl_cls(bool ){
     // populate gpr_vtr
   gsl_ini_sf();    // Special Functions 
   gsl_ini_cdf();   // Cumulative distribution Functions
@@ -117,10 +117,10 @@ void gsl_cls::gsl_ini_sf(void) {
     gpr_vtr.push_back(gpr_cls("gsl_sf_debye_3",f_unn(gsl_sf_debye_3_e),hnd_fnc_x,NC_DOUBLE));
     gpr_vtr.push_back(gpr_cls("gsl_sf_debye_4",f_unn(gsl_sf_debye_4_e),hnd_fnc_x,NC_DOUBLE));
 
-# if NCO_GSL_MINOR_VERSION >= 8
+# if NCO_GSL_VERSION >= 108
       gpr_vtr.push_back(gpr_cls("gsl_sf_debye_5",f_unn(gsl_sf_debye_5_e),hnd_fnc_x,NC_DOUBLE));
       gpr_vtr.push_back(gpr_cls("gsl_sf_debye_6",f_unn(gsl_sf_debye_6_e),hnd_fnc_x,NC_DOUBLE));
-# endif // NCO_GSL_MINOR_VERSION < 8
+# endif // NCO_GSL_VERSION < 108
     
     // Dilogarithm
     // not implemented as all involve complex numbers
@@ -131,10 +131,10 @@ void gsl_cls::gsl_ini_sf(void) {
     gpr_vtr.push_back(gpr_cls("gsl_sf_ellint_Kcomp",f_unn(gsl_sf_ellint_Kcomp_e),hnd_fnc_nd,P1DBLMD));
     gpr_vtr.push_back(gpr_cls("gsl_sf_ellint_Ecomp",f_unn(gsl_sf_ellint_Ecomp_e),hnd_fnc_nd,P1DBLMD));
 
-# if NCO_GSL_MINOR_VERSION >= 9 
+# if NCO_GSL_VERSION >= 109 
       gpr_vtr.push_back(gpr_cls("gsl_sf_ellint_Pcomp",f_unn(gsl_sf_ellint_Pcomp_e),hnd_fnc_nd,P2DBLMD));
       gpr_vtr.push_back(gpr_cls("gsl_sf_ellint_Dcomp",f_unn(gsl_sf_ellint_Dcomp_e),hnd_fnc_nd,P1DBLMD));
-# endif // NCO_GSL_MINOR_VERSION < 9
+# endif // NCO_GSL_VERSION < 9
  
     gpr_vtr.push_back(gpr_cls("gsl_sf_ellint_F",f_unn(gsl_sf_ellint_F_e),hnd_fnc_nd,P2DBLMD));
     gpr_vtr.push_back(gpr_cls("gsl_sf_ellint_E",f_unn(gsl_sf_ellint_E_e),hnd_fnc_nd,P2DBLMD));
@@ -178,10 +178,10 @@ void gsl_cls::gsl_ini_sf(void) {
     gpr_vtr.push_back(gpr_cls("gsl_sf_expint_E1_scaled",f_unn(gsl_sf_expint_E1_scaled_e),hnd_fnc_x,NC_DOUBLE));
     gpr_vtr.push_back(gpr_cls("gsl_sf_expint_E2_scaled",f_unn(gsl_sf_expint_E2_scaled_e),hnd_fnc_x,NC_DOUBLE));
 
-# if NCO_GSL_MINOR_VERSION >= 10 
+# if NCO_GSL_VERSION >= 110 
       gpr_vtr.push_back(gpr_cls("gsl_sf_expint_En",f_unn(gsl_sf_expint_En_e),hnd_fnc_xd,NC_INT));
       gpr_vtr.push_back(gpr_cls("gsl_sf_expint_En_scaled",f_unn(gsl_sf_expint_En_scaled_e),hnd_fnc_xd,NC_INT));
-# endif // NCO_GSL_MINOR_VERSION < 10
+# endif // NCO_GSL_VERSION < 10
 
     gpr_vtr.push_back(gpr_cls("gsl_sf_expint_Ei",f_unn(gsl_sf_expint_Ei_e),hnd_fnc_x,NC_DOUBLE));
     gpr_vtr.push_back(gpr_cls("gsl_sf_expint_Ei_scaled",f_unn(gsl_sf_expint_Ei_scaled_e),hnd_fnc_x,NC_DOUBLE));
@@ -271,10 +271,17 @@ void gsl_cls::gsl_ini_sf(void) {
     gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_Q1",f_unn(gsl_sf_legendre_Q1_e),hnd_fnc_x,NC_DOUBLE));
     gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_Ql",f_unn(gsl_sf_legendre_Ql_e),hnd_fnc_xd,NC_INT));
     gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_Plm",f_unn(gsl_sf_legendre_Plm_e),hnd_fnc_iid));
-    gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_Plm_array",f_unn(gsl_sf_legendre_Plm_array),hnd_fnc_iidpd,PLEGEND));
+
     // gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_Plm_deriv_array",f_unn(gsl_sf_legendre_Plm_deriv_array),));
     gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_sphPlm",f_unn(gsl_sf_legendre_sphPlm_e),hnd_fnc_iid));
-    gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_sphPlm_array",f_unn(gsl_sf_legendre_sphPlm_array),hnd_fnc_iidpd,PLEGEND));
+
+    // 20161118: These two functions were deprecated after GSL version 1.x
+    // Unable them working on grele with bld/Makefile, temporarily disable
+    #if NCO_GSL_VERSION < 200    
+    //    gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_Plm_array",f_unn(gsl_sf_legendre_Plm_array),hnd_fnc_iidpd,PLEGEND));
+    //    gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_sphPlm_array",f_unn(gsl_sf_legendre_sphPlm_array),hnd_fnc_iidpd,PLEGEND));
+    #endif
+
     // gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_sphPlm_deriv_array",f_unn(gsl_sf_legendre_sphPlm_deriv_array),));
     // gpr_vtr.push_back(gpr_cls("gsl_sf_legendre_array_size",f_unn(gsl_sf_legendre_array_size),));
     gpr_vtr.push_back(gpr_cls("gsl_sf_conicalP_half",f_unn(gsl_sf_conicalP_half_e),hnd_fnc_nd,P2DBL));
@@ -309,9 +316,9 @@ void gsl_cls::gsl_ini_sf(void) {
     // gpr_vtr.push_back(gpr_cls("gsl_sf_complex_psi",f_unn(gsl_sf_complex_psi_e),hnd_fnc_x,NC_DOUBLE));
     gpr_vtr.push_back(gpr_cls("gsl_sf_psi_1_int",f_unn(gsl_sf_psi_1_int_e),hnd_fnc_x,NC_INT));
    
-# if NCO_GSL_MINOR_VERSION >= 5 
+# if NCO_GSL_VERSION >= 105 
       gpr_vtr.push_back(gpr_cls("gsl_sf_psi_1",f_unn(gsl_sf_psi_1_e),hnd_fnc_x,NC_DOUBLE));
-# endif // NCO_GSL_MINOR_VERSION < 5
+# endif // NCO_GSL_VERSION < 105
 
     gpr_vtr.push_back(gpr_cls("gsl_sf_psi_n",f_unn(gsl_sf_psi_n_e),hnd_fnc_xd,NC_INT));
     
@@ -332,10 +339,10 @@ void gsl_cls::gsl_ini_sf(void) {
     gpr_vtr.push_back(gpr_cls("gsl_sf_zeta_int",f_unn(gsl_sf_zeta_int_e),hnd_fnc_x,NC_INT));
     gpr_vtr.push_back(gpr_cls("gsl_sf_zeta",f_unn(gsl_sf_zeta_e),hnd_fnc_x,NC_DOUBLE));
 
-# if NCO_GSL_MINOR_VERSION >= 5 
+# if NCO_GSL_VERSION >= 105 
       gpr_vtr.push_back(gpr_cls("gsl_sf_zetam1",f_unn(gsl_sf_zetam1_e),hnd_fnc_x,NC_DOUBLE));
       gpr_vtr.push_back(gpr_cls("gsl_sf_zetam1_int",f_unn(gsl_sf_zetam1_int_e),hnd_fnc_x,NC_INT));
-# endif // NCO_GSL_MINOR_VERSION < 5
+# endif // NCO_GSL_VERSION < 105
     
     gpr_vtr.push_back(gpr_cls("gsl_sf_hzeta",f_unn(gsl_sf_hzeta_e),hnd_fnc_nd,P2DBL));
     gpr_vtr.push_back(gpr_cls("gsl_sf_eta_int",f_unn(gsl_sf_eta_int_e),hnd_fnc_x,NC_INT));
@@ -386,7 +393,7 @@ void gsl_cls::gsl_ini_cdf(void){
     gpr_vtr.push_back(gpr_cls("gsl_cdf_exponential_Q",f_unn(gsl_cdf_exponential_Q),hnd_fnc_nd,P2DBLX));
     gpr_vtr.push_back(gpr_cls("gsl_cdf_exponential_Pinv",f_unn(gsl_cdf_exponential_Pinv),hnd_fnc_nd,P2DBLX));
     gpr_vtr.push_back(gpr_cls("gsl_cdf_exponential_Qinv",f_unn(gsl_cdf_exponential_Qinv),hnd_fnc_nd,P2DBLX));
-# if NCO_GSL_MINOR_VERSION >= 6
+# if NCO_GSL_VERSION >= 106
     gpr_vtr.push_back(gpr_cls("gsl_cdf_exppow_P",f_unn(gsl_cdf_exppow_P),hnd_fnc_nd,P3DBLX));
     gpr_vtr.push_back(gpr_cls("gsl_cdf_exppow_Q",f_unn(gsl_cdf_exppow_Q),hnd_fnc_nd,P3DBLX));
 # endif
@@ -397,17 +404,17 @@ void gsl_cls::gsl_ini_cdf(void){
 
     gpr_vtr.push_back(gpr_cls("gsl_cdf_fdist_P",f_unn(gsl_cdf_fdist_P),hnd_fnc_nd,P3DBLX));
     gpr_vtr.push_back(gpr_cls("gsl_cdf_fdist_Q",f_unn(gsl_cdf_fdist_Q),hnd_fnc_nd,P3DBLX));
-# if NCO_GSL_MINOR_VERSION >= 8 
+# if NCO_GSL_VERSION >= 108 
     gpr_vtr.push_back(gpr_cls("gsl_cdf_fdist_Pinv",f_unn(gsl_cdf_fdist_Pinv),hnd_fnc_nd,P3DBLX));
     gpr_vtr.push_back(gpr_cls("gsl_cdf_fdist_Qinv",f_unn(gsl_cdf_fdist_Qinv),hnd_fnc_nd,P3DBLX));
-# endif // NCO_GSL_MINOR_VERSION < 8
+# endif // NCO_GSL_VERSION < 108
 
     gpr_vtr.push_back(gpr_cls("gsl_cdf_beta_P",f_unn(gsl_cdf_beta_P),hnd_fnc_nd,P3DBLX));
     gpr_vtr.push_back(gpr_cls("gsl_cdf_beta_Q",f_unn(gsl_cdf_beta_Q),hnd_fnc_nd,P3DBLX));
-# if NCO_GSL_MINOR_VERSION >= 8 
+# if NCO_GSL_MAJOR_VERSION >= 2 || ( NCO_GSL_MAJOR_VERSION == 1 && NCO_GSL_MINOR_VERSION >= 8 )
     gpr_vtr.push_back(gpr_cls("gsl_cdf_beta_Pinv",f_unn(gsl_cdf_beta_Pinv),hnd_fnc_nd,P3DBLX));
     gpr_vtr.push_back(gpr_cls("gsl_cdf_beta_Qinv",f_unn(gsl_cdf_beta_Qinv),hnd_fnc_nd,P3DBLX));
-# endif // NCO_GSL_MINOR_VERSION < 8
+# endif // GSL VERSION > 1.8
 
     gpr_vtr.push_back(gpr_cls("gsl_cdf_flat_P",f_unn(gsl_cdf_flat_P),hnd_fnc_nd,P3DBLX));
     gpr_vtr.push_back(gpr_cls("gsl_cdf_flat_Q",f_unn(gsl_cdf_flat_Q),hnd_fnc_nd,P3DBLX));
@@ -474,7 +481,7 @@ void gsl_cls::gsl_ini_ran(void){
   gpr_vtr.push_back(gpr_cls("gsl_ran_beta_pdf",f_unn(gsl_ran_beta_pdf),hnd_fnc_nd,P3DBLX));
 
   gpr_vtr.push_back(gpr_cls("gsl_ran_binomial",f_unn(gsl_ran_binomial),hnd_fnc_udrdu));
-# if NCO_GSL_MINOR_VERSION >= 7 
+# if NCO_GSL_VERSION >= 107 
   gpr_vtr.push_back(gpr_cls("gsl_ran_binomial_knuth",f_unn(gsl_ran_binomial_knuth),hnd_fnc_udrdu));
 # endif
   gpr_vtr.push_back(gpr_cls("gsl_ran_binomial_tpe",f_unn(gsl_ran_binomial_tpe),hnd_fnc_udrdu));
@@ -508,16 +515,18 @@ void gsl_cls::gsl_ini_ran(void){
   gpr_vtr.push_back(gpr_cls("gsl_ran_gamma",f_unn(gsl_ran_gamma),hnd_fnc_rnd,P2DBLX));
   gpr_vtr.push_back(gpr_cls("gsl_ran_gamma_int",f_unn(gsl_ran_gamma_int),hnd_fnc_ru));
   gpr_vtr.push_back(gpr_cls("gsl_ran_gamma_pdf",f_unn(gsl_ran_gamma_pdf),hnd_fnc_nd,P3DBLX));
-# if NCO_GSL_MINOR_VERSION >= 8 
+# if NCO_GSL_VERSION >= 108 
   gpr_vtr.push_back(gpr_cls("gsl_ran_gamma_mt",f_unn(gsl_ran_gamma_mt),hnd_fnc_rnd,P2DBLX));
   gpr_vtr.push_back(gpr_cls("gsl_ran_gamma_knuth",f_unn(gsl_ran_gamma_knuth),hnd_fnc_rnd,P2DBLX));
-# endif // NCO_GSL_MINOR_VERSION < 8
+# endif // NCO_GSL_VERSION < 108
 
   gpr_vtr.push_back(gpr_cls("gsl_ran_gaussian",f_unn(gsl_ran_gaussian),hnd_fnc_rnd,P1DBLX));
   gpr_vtr.push_back(gpr_cls("gsl_ran_gaussian_ratio_method",f_unn(gsl_ran_gaussian_ratio_method),hnd_fnc_rnd,P1DBLX));
-# if NCO_GSL_MINOR_VERSION >= 8 
+
+# if NCO_GSL_VERSION >= 108 
   gpr_vtr.push_back(gpr_cls("gsl_ran_gaussian_ziggurat",f_unn(gsl_ran_gaussian_ziggurat),hnd_fnc_rnd,P1DBLX));
-# endif // NCO_GSL_MINOR_VERSION < 8
+# endif // NCO_GSL_VERSION < 108
+
   gpr_vtr.push_back(gpr_cls("gsl_ran_gaussian_pdf",f_unn(gsl_ran_gaussian_pdf),hnd_fnc_nd,P2DBLX));
 
   gpr_vtr.push_back(gpr_cls("gsl_ran_ugaussian",f_unn(gsl_ran_ugaussian),hnd_fnc_rnd,P0DBLX));
@@ -742,14 +751,16 @@ void gsl_cls::gsl_ini_stats(void){
 
     
 { f_unn lcl_arr[]={ f_unn(gsl_stats_char_quantile_from_sorted_data), f_unn(gsl_stats_short_quantile_from_sorted_data), f_unn(gsl_stats_int_quantile_from_sorted_data), f_unn(gsl_stats_float_quantile_from_sorted_data), f_unn(gsl_stats_quantile_from_sorted_data), f_unn(gsl_stats_uchar_quantile_from_sorted_data), f_unn(gsl_stats_ushort_quantile_from_sorted_data), f_unn(gsl_stats_uint_quantile_from_sorted_data), f_unn(gsl_stats_long_quantile_from_sorted_data),f_unn(gsl_stats_ulong_quantile_from_sorted_data) };   
-  gpr_vtr.push_back(gpr_cls("gsl_stats_quantile_from_sorted_data",ARR2VTR(lcl_arr),hnd_fnc_stat1));
+  gpr_vtr.push_back(gpr_cls("gsl_stats_quantile_from_sorted_data",ARR2VTR(lcl_arr),hnd_fnc_stat2));
 
   }
 
   gpr_vtr.push_back(gpr_cls("gsl_stats_covariance",f_unn(ncap_void),hnd_fnc_stat4,PS_COV));
-# if NCO_GSL_MINOR_VERSION >= 10
+
+# if NCO_GSL_VERSION >= 110
   gpr_vtr.push_back(gpr_cls("gsl_stats_correlation",f_unn(ncap_void),hnd_fnc_stat4,PS_COR));
-# endif // NCO_GSL_MINOR_VERSION < 10
+# endif // NCO_GSL_VERSION < 110
+
   gpr_vtr.push_back(gpr_cls("gsl_stats_pvariance",f_unn(ncap_void),hnd_fnc_stat4,PS_PVAR));
   gpr_vtr.push_back(gpr_cls("gsl_stats_ttest",f_unn(ncap_void),hnd_fnc_stat4,PS_TTST));
 
@@ -775,10 +786,10 @@ var_sct * gsl_cls::fnd(RefAST expr, RefAST fargs,fmc_cls &fmc_obj, ncoTree &walk
   if(expr)
     args_vtr.push_back(expr);
   
-  if(tr=fargs->getFirstChild()) {
+  if((tr=fargs->getFirstChild())) {
     do  
       args_vtr.push_back(tr);
-    while(tr=tr->getNextSibling());    
+    while((tr=tr->getNextSibling()));    
   } 
   
   hnd_fnc=gpr_vtr[fdx]._hnd_fnc;
@@ -824,7 +835,7 @@ var_sct *gsl_cls::hnd_fnc_x(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&gp
       nco_uint *uip;
       double *dp;
       
-      var_sct *var_out;
+      var_sct *var_out=NULL_CEWI;
       
       gsl_sf_result rslt;  /* structure for result from gsl lib call */
       
@@ -879,7 +890,7 @@ var_sct *gsl_cls::hnd_fnc_x(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&gp
       nco_int *ip;
       double *dp;
       
-      var_sct *var_out;
+      var_sct *var_out=NULL_CEWI;
       
       gsl_sf_result rslt;  /* structure for result from gsl lib call */
       
@@ -1025,14 +1036,13 @@ var_sct *gsl_cls::hnd_fnc_xd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&g
   case NC_DOUBLE:
     // This is handled in hnd_fnc_nd,P2DBL
      break;
-    
+
+     
   case NC_INT: { 
     bool has_mss_val=false;
     int sz;
-    nco_int mss_val_ntg; 
     nco_int *ip1; 
     double *dp2;
-    
     double mss_val_dbl;
     gsl_sf_result rslt;  /* structure for result from gsl lib call */
     int (*fnc_int)(int,double, gsl_sf_result*);
@@ -1056,7 +1066,7 @@ var_sct *gsl_cls::hnd_fnc_xd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&g
     if(var1->has_mss_val){
       //has_mss_val=true; 
       (void)cast_void_nctype(NC_INT,&var1->mss_val);
-      mss_val_ntg=*var1->mss_val.ip;
+      // mss_val_ntg=*var1->mss_val.ip;
       (void)cast_nctype_void(NC_INT,&(var1->mss_val));
     } 
     
@@ -1154,7 +1164,7 @@ var_sct *gsl_cls::hnd_fnc_iidpd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     else     
       (void)prs_arg->ncap_var_write(var_out,false); 
     
-    return ncap_sclr_var_mk(static_cast<std::string>("~gsl_function"),(nc_type)NC_INT,false); 
+    return ncap_sclr_var_mk(SCS("~gsl_function"),(nc_type)NC_INT,false); 
   }
   
   // Do the real thing 
@@ -1222,7 +1232,7 @@ var_sct *gsl_cls::hnd_fnc_iidpd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     // Free args                
     for(idx=0;idx<3;idx++) (void)nco_var_free(var_arr[idx]);
     
-    var_tmp=ncap_sclr_var_mk(static_cast<std::string>("~gsl_function"),(nco_int)status);
+    var_tmp=ncap_sclr_var_mk(SCS("~gsl_function"),(nco_int)status);
   }  
   // return status
   return var_tmp;
@@ -1238,7 +1248,7 @@ var_sct *gsl_cls::hnd_fnc_idpd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls
   std::string sfnm=gpr_obj.fnm();
   std::string susg;        // usage string;   
   std::string var_nm;
-  var_sct *var_arr[2];
+  var_sct *var_arr[2]={NULL_CEWI};
   var_sct *var_out=NULL_CEWI;
   var_sct *var_tmp=NULL_CEWI;
   
@@ -1280,7 +1290,7 @@ var_sct *gsl_cls::hnd_fnc_idpd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls
     else     
       (void)prs_arg->ncap_var_write(var_out,false); 
     
-    return ncap_sclr_var_mk(static_cast<std::string>("~gsl_function"),(nc_type)NC_INT,false);   
+    return ncap_sclr_var_mk(SCS("~gsl_function"),(nc_type)NC_INT,false);   
   } 
   
   // Do the real thing 
@@ -1337,7 +1347,7 @@ var_sct *gsl_cls::hnd_fnc_idpd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls
     (void)nco_var_free(var_arr[0]);
     (void)nco_var_free(var_arr[1]);
     
-    var_tmp=ncap_sclr_var_mk(static_cast<std::string>("~gsl_function"),(nco_int)status);
+    var_tmp=ncap_sclr_var_mk(SCS("~gsl_function"),(nco_int)status);
   }  
   return var_tmp;
 } // end function hnd_fnc_idpd
@@ -1350,16 +1360,14 @@ var_sct *gsl_cls::hnd_fnc_nd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&g
   int fdx=gpr_obj.type(); // very important 
   int args_nbr;
   int args_in_nbr(-1); // CEWI
-  nc_type type;
   std::string styp=(is_mtd ? "method":"function");
   std::string sfnm=gpr_obj.fnm();
-  var_sct *var_ret; 
-  var_sct **var_arr;
-  var_sct ***var_arr_ptr;
+  var_sct *var_ret=NULL_CEWI; 
+  var_sct **var_arr=NULL_CEWI;
+  var_sct ***var_arr_ptr=NULL_CEWI;
   
   // de-reference 
   prs_cls *prs_arg=walker.prs_arg;
-  type=gpr_obj.type();  
   
   args_nbr=args_vtr.size();
   
@@ -1897,7 +1905,7 @@ var_sct *gsl_cls::hnd_fnc_idd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&
   int args_nbr;
   std::string styp=(is_mtd ? "method":"function");
   std::string sfnm=gpr_obj.fnm();
-  var_sct *var_ret;
+  var_sct *var_ret=NULL_CEWI;
   var_sct *var_arr[3];
   var_sct **var_arr_ptr[3]; 
   
@@ -2004,7 +2012,6 @@ var_sct *gsl_cls::hnd_fnc_ud(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&g
   const std::string fnc_nm("hnd_fnc_ud");
   long idx;
   int args_nbr;
-  nc_type type;
   std::string styp=(is_mtd ? "method":"function");
   std::string sfnm=gpr_obj.fnm();
   var_sct *var1=NULL_CEWI;
@@ -2013,7 +2020,6 @@ var_sct *gsl_cls::hnd_fnc_ud(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&g
   
   // de-reference 
   prs_cls *prs_arg=walker.prs_arg;
-  type=gpr_obj.type();  
   
   args_nbr=args_vtr.size();
   
@@ -2206,7 +2212,6 @@ var_sct *gsl_cls::hnd_fnc_rnd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&
   int fdx=gpr_obj.type(); // very important 
   int args_nbr;
   int args_in_nbr(-1); // CEWI
-  nc_type type;
   std::string styp=(is_mtd ? "method":"function");
   std::string sfnm=gpr_obj.fnm();
   var_sct *var_ret; 
@@ -2217,7 +2222,6 @@ var_sct *gsl_cls::hnd_fnc_rnd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&
 
   // de-reference 
   prs_cls *prs_arg=walker.prs_arg;
-  type=gpr_obj.type();  
   
   args_nbr=args_vtr.size();
   
@@ -2289,8 +2293,6 @@ var_sct *gsl_cls::hnd_fnc_rnd(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&
     double **dp;
     double mss_val_dbl=0.0;
               
-    gsl_mode_t mde_t=ncap_gsl_mode_prec; // initialize local from global variable */
-    gsl_sf_result rslt;  /* structure for result from gsl lib call */
 
     dp=(double**)nco_malloc(sizeof(double*)*args_in_nbr);
     
@@ -2423,7 +2425,6 @@ var_sct *gsl_cls::hnd_fnc_ru(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&g
   const std::string fnc_nm("hnd_fnc_ru");
   int idx;
   int args_nbr;
-  nc_type type;
   std::string styp=(is_mtd ? "method":"function");
   std::string sfnm=gpr_obj.fnm();
   var_sct *var=NULL_CEWI;
@@ -2435,7 +2436,6 @@ var_sct *gsl_cls::hnd_fnc_ru(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&g
   
   args_nbr=args_vtr.size();
   
-  type=gpr_obj.type(); 
   
   if(args_nbr==0) err_prn(fnc_nm,styp+" \""+sfnm+"\" has been called with no arguments"); 
   
@@ -2858,7 +2858,6 @@ var_sct *gsl_cls::hnd_fnc_uerx(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls
       long sz=var->sz;
       nco_uint64 *ui64p;
       nco_uint64 mss_val_uint64;
-      double *dp; 
 
       unsigned long int(*fnc_int)(const gsl_rng*,unsigned long int);
       
@@ -2876,7 +2875,7 @@ var_sct *gsl_cls::hnd_fnc_uerx(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls
           if( ui64p[idx]>INT_MAX ) {
 	    // bomb out if necessary  
             ostringstream os; 
-            os<<"Possible integer overflow. You have rquested the generation of integers up to the value of " <<ui64p[idx]<<" .This is greater than "<<INT_MAX<<" - the maximum value that can be stored in the netcdf datatype NC_INT. Consider using another random number generator e.g., ran0,fishman18 or knuthran. Consult the GSL manual for details. Alternatively recompile nco for netcdf4 and set the compile flag NCO_TYP_GSL_UINT=NC_UINT\n"; 
+            os<<"Possible integer overflow. You have requested the generation of integers up to the value of " <<ui64p[idx]<<" .This is greater than "<<INT_MAX<<" - the maximum value that can be stored in the netcdf datatype NC_INT. Consider using another random number generator e.g., ran0,fishman18 or knuthran. Consult the GSL manual for details. Alternatively recompile nco for netcdf4 and set the compile flag NCO_TYP_GSL_UINT=NC_UINT\n"; 
             err_prn(sfnm,os.str());
           }
           
@@ -2917,12 +2916,11 @@ var_sct *gsl_cls::hnd_fnc_uerx(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls
 } // end hnd_fnc_uerx
 
      
-var_sct *gsl_cls::hnd_fnc_stat1(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&gpr_obj,ncoTree&walker ){
+var_sct *gsl_cls::hnd_fnc_stat1(bool&,std::vector<RefAST>&args_vtr,gpr_cls&gpr_obj,ncoTree&walker ){
   const std::string fnc_nm("hnd_fnc_stat1");
   int idx;
   int nbr_args;
   int in_nbr_args;
-  nc_type type;
   std::string susg;
   std::string sfnm=gpr_obj.fnm();
   var_sct *var[3];
@@ -2933,12 +2931,13 @@ var_sct *gsl_cls::hnd_fnc_stat1(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
   
   // de-reference 
   prs_cls *prs_arg=walker.prs_arg;
-  type=gpr_obj.type();  
   
   nbr_args=args_vtr.size();
   
   susg=susg="usage: double_val="+sfnm+"(var_data, data_stride?, n?)";
 
+  r_val=0.0;
+  
   if(nbr_args <1){
     err_prn(sfnm,"Function requires at least one argument.\n"+susg  ); 
   }
@@ -2994,7 +2993,7 @@ var_sct *gsl_cls::hnd_fnc_stat1(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
    }
    
    // Check hyperslab limits
-   if( 1+ (sz-1)*d_srd >var[0]->sz){
+   if( 1+ (sz-1)*d_srd >(size_t)var[0]->sz){
      err_prn(sfnm,"Requested hyperslab with stride="+nbr2sng(d_srd)+" and n="+ nbr2sng(sz)+" doesn't fit into variable \""+string(var[0]->nm)+"\" with size="+nbr2sng(var[0]->sz)); 
     }
    
@@ -3049,24 +3048,23 @@ var_sct *gsl_cls::hnd_fnc_stat1(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
  var[0]=nco_var_free(var[0]);
 
 
- return ncap_sclr_var_mk(static_cast<std::string>("~gsl_stt2_function"),r_val);  
+ return ncap_sclr_var_mk(SCS("~gsl_stt2_function"),r_val);  
 }
 
 
-var_sct *gsl_cls::hnd_fnc_stat2(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&gpr_obj,ncoTree&walker ){
+var_sct *gsl_cls::hnd_fnc_stat2(bool&,std::vector<RefAST>&args_vtr,gpr_cls&gpr_obj,ncoTree&walker ){
   const std::string fnc_nm("hnd_fnc_stat2");
   int idx;
   int args_nbr;
-  nc_type type;
   std::string susg;
   std::string sfnm=gpr_obj.fnm();
   var_sct *var_arr[4];
   double r_val;
-   
-    
+
   // de-reference 
   prs_cls *prs_arg=walker.prs_arg;
-  type=gpr_obj.type();  
+  
+  r_val=0.0;
   
   args_nbr=args_vtr.size();
   
@@ -3122,7 +3120,7 @@ var_sct *gsl_cls::hnd_fnc_stat2(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 
    
    // Check hyperslab limits
-   if( 1+ (sz-1)*d_srd >var_arr[0]->sz){
+   if( 1+ (sz-1)*d_srd > (size_t)var_arr[0]->sz){
      err_prn(sfnm,"Requested hyperslab with stride="+nbr2sng(d_srd)+" and n="+ nbr2sng(sz)+" doesn't fit into variable \""+string(var_arr[0]->nm)+"\" with size="+nbr2sng(var_arr[0]->sz)); 
     }
 
@@ -3183,30 +3181,27 @@ var_sct *gsl_cls::hnd_fnc_stat2(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     var_arr[idx]=nco_var_free(var_arr[idx]);
    
 
- return ncap_sclr_var_mk(static_cast<std::string>("~gsl_stt2_function"),r_val);  
+ return ncap_sclr_var_mk(SCS("~gsl_stt2_function"),r_val);  
 
 }
 
 
-var_sct *gsl_cls::hnd_fnc_stat3(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&gpr_obj,ncoTree&walker ){
+var_sct *gsl_cls::hnd_fnc_stat3(bool&,std::vector<RefAST>&args_vtr,gpr_cls&gpr_obj,ncoTree&walker ){
   const std::string fnc_nm("hnd_fnc_stat3");
   int idx;
   int nbr_args;
   int in_nbr_args;
   int fdx=gpr_obj.type(); // very important
-  nc_type type;
   std::string susg;
   std::string sfnm=gpr_obj.fnm();
   var_sct *var[3];
-  var_sct *var_ret;
-  double r_val;
+  var_sct *var_ret=NULL_CEWI;
    
   
   var[0]=var[1]=var[2]=(var_sct*)NULL;    
   
   // de-reference 
   prs_cls *prs_arg=walker.prs_arg;
-  type=gpr_obj.type();  
   
   nbr_args=args_vtr.size();
   
@@ -3288,21 +3283,20 @@ var_sct *gsl_cls::hnd_fnc_stat3(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
      (void)cast_nctype_void((nc_type)NC_UINT64,&(var[2]->val));
      var[2]=nco_var_free(var[2]);   
    }else{
-     sz=1+ (var[0]->sz-1)/d_srd;
+     sz=1L+(var[0]->sz-1)/d_srd;
    }
    
    // Check hyperslab limits
-   if( 1+ (sz-1)*d_srd >var[0]->sz){
-     err_prn(sfnm,"Requested hyperslab with stride="+nbr2sng(d_srd)+" and n="+ nbr2sng(sz)+" doesn't fit into variable \""+string(var[0]->nm)+"\" with size="+nbr2sng(var[0]->sz)); 
+   if(1L+(sz-1)*d_srd > (size_t)var[0]->sz){
+     err_prn(sfnm,"Requested hyperslab with stride="+nbr2sng(d_srd)+" and n="+ nbr2sng(sz)+" does not fit into variable \""+string(var[0]->nm)+"\" with size="+nbr2sng(var[0]->sz)); 
     }
-
-
   
    switch(fdx){
-
     
    case PS_MAX_IDX:{
-     nco_int r_val; 
+     nco_int r_val;
+     r_val=0;
+
      switch(var[0]->type){
        case NC_FLOAT:  r_val=gsl_stats_float_max_index( var[0]->val.fp,d_srd,sz);break;
        case NC_DOUBLE: r_val=gsl_stats_max_index( var[0]->val.dp,d_srd,sz);break;
@@ -3329,12 +3323,14 @@ var_sct *gsl_cls::hnd_fnc_stat3(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 #endif /* !ENABLE_NETCDF4 */
      default: nco_dfl_case_nc_type_err(); break;    
     } 
-    var_ret=ncap_sclr_var_mk(static_cast<std::string>("~gsl_stt3_function"),r_val);    
+    var_ret=ncap_sclr_var_mk(SCS("~gsl_stt3_function"),r_val);    
    } break;  
    
     
    case PS_MIN_IDX:{
-     nco_int r_val; 
+     nco_int r_val;
+     r_val=0;
+
      switch(var[0]->type){
        case NC_FLOAT:  r_val=gsl_stats_float_min_index( var[0]->val.fp,d_srd,sz);break;
        case NC_DOUBLE: r_val=gsl_stats_min_index( var[0]->val.dp,d_srd,sz);break;
@@ -3361,7 +3357,7 @@ var_sct *gsl_cls::hnd_fnc_stat3(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 #endif /* !ENABLE_NETCDF4 */
      default: nco_dfl_case_nc_type_err(); break;    
      } 
-    var_ret=ncap_sclr_var_mk(static_cast<std::string>("~gsl_stt3_function"),r_val);    
+    var_ret=ncap_sclr_var_mk(SCS("~gsl_stt3_function"),r_val);    
    } break;  
    
     
@@ -3481,12 +3477,11 @@ var_sct *gsl_cls::hnd_fnc_stat3(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 
 
      
-var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cls&gpr_obj,ncoTree&walker ){
+var_sct *gsl_cls::hnd_fnc_stat4(bool&,std::vector<RefAST>&args_vtr,gpr_cls&gpr_obj,ncoTree&walker ){
   const std::string fnc_nm("hnd_fnc_stat4");
   int idx;
   int fdx=gpr_obj.type(); // very important
   int args_nbr;
-  nc_type type;
   std::string susg;
   std::string sfnm=gpr_obj.fnm();
   var_sct *var_arr[6];
@@ -3495,7 +3490,6 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     
   // de-reference 
   prs_cls *prs_arg=walker.prs_arg;
-  type=gpr_obj.type();  
   
   args_nbr=args_vtr.size();
   
@@ -3620,7 +3614,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
      default: nco_dfl_case_nc_type_err(); break;    
      }  break;  
   
-# if NCO_GSL_MINOR_VERSION >= 10
+# if NCO_GSL_VERSION >= 110
    case PS_COR:
      switch(var_arr[0]->type){
        case NC_FLOAT:  r_val=gsl_stats_float_correlation( var_arr[0]->val.fp,d1_srd,var_arr[3]->val.fp,d2_srd,sz1 );break;
@@ -3648,7 +3642,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 #endif /* !ENABLE_NETCDF4 */
      default: nco_dfl_case_nc_type_err(); break;    
      }  break;  
-# endif // NCO_GSL_MINOR_VERSION < 10
+# endif // NCO_GSL_VERSION < 110
     
    case PS_PVAR:
      switch(var_arr[0]->type){
@@ -3730,7 +3724,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     var_arr[idx]=nco_var_free(var_arr[idx]);
 
 
-  return ncap_sclr_var_mk(static_cast<std::string>("~gsl_stt2_function"),r_val);  
+  return ncap_sclr_var_mk(SCS("~gsl_stt2_function"),r_val);  
 
 
 }
@@ -3738,7 +3732,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 
 
 //GSL2 Class /******************************************/
-  gsl2_cls::gsl2_cls(bool  flg_dbg){
+  gsl2_cls::gsl2_cls(bool  ){
     //Populate only on first constructor call
     if(fmc_vtr.empty()){
       fmc_vtr.push_back( fmc_cls("gsl_rng_min",this,(int)PGSL_RNG_MIN));
@@ -3756,7 +3750,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     int fdx=fmc_obj.fdx();   //index
     int nbr_args;
     unsigned long vlng;
-    var_sct *var;
+    var_sct *var=NULL_CEWI;
     prs_cls* prs_arg=walker.prs_arg;
     std::string sfnm =fmc_obj.fnm(); //method name
     std::string styp;
@@ -3774,10 +3768,10 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     if(expr)
       vtr_args.push_back(expr);
 
-    if(tr=fargs->getFirstChild()) {
+    if((tr=fargs->getFirstChild())) {
       do  
 	vtr_args.push_back(tr);
-      while(tr=tr->getNextSibling());    
+      while((tr=tr->getNextSibling()));    
     } 
       
      nbr_args=vtr_args.size();  
@@ -3793,7 +3787,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
       switch(fdx) {
        case  PGSL_RNG_MIN:
        case  PGSL_RNG_MAX:
-        return ncap_sclr_var_mk(static_cast<std::string>("~gsl2_functions"),(nc_type)NC_DOUBLE,false);        
+        return ncap_sclr_var_mk(SCS("~gsl2_functions"),(nc_type)NC_DOUBLE,false);        
         break;
       
        case PGSL_RNG_NAME:
@@ -3810,14 +3804,14 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     switch(fdx){ 
            case PGSL_RNG_MIN:
              vlng= gsl_rng_min(ncap_rng);
-             var=ncap_sclr_var_mk(static_cast<std::string>("~gsl2_function"),(double)(vlng));
+             var=ncap_sclr_var_mk(SCS("~gsl2_function"),(double)(vlng));
              break;
            case PGSL_RNG_MAX:
              vlng= gsl_rng_max(ncap_rng);
-             var=ncap_sclr_var_mk(static_cast<std::string>("~gsl2_function"),(double)(vlng));
+             var=ncap_sclr_var_mk(SCS("~gsl2_function"),(double)(vlng));
              break;
            case PGSL_RNG_NAME:
-	    //var=ncap_sclr_var_mk(static_cast<std::string>("~gsl2_functions"),(nco_int)var1->nbr_dim);            
+	    //var=ncap_sclr_var_mk(SCS("~gsl2_functions"),(nco_int)var1->nbr_dim);            
 	    break;
 
     }// end switch        
@@ -3837,7 +3831,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 
 //GSL STATISTICS 2  /****************************************/
 // gsl statistic functions for floating points only
-  gsl_stt2_cls::gsl_stt2_cls(bool  flg_dbg){
+  gsl_stt2_cls::gsl_stt2_cls(bool  ){
     //Populate only on first constructor call
     if(fmc_vtr.empty()){
      fmc_vtr.push_back( fmc_cls("gsl_stats_wmean",this,(int)PWMEAN));
@@ -3863,30 +3857,28 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
   const std::string fnc_nm("gsl_stt2_cls::fnd");
     int idx;
     int fdx=fmc_obj.fdx();   //index
-    int nbr_args;
-    int in_nbr_args;
+    int nbr_args=0;
+    int in_nbr_args=0;
     double r_val;
-    var_sct *var;
     prs_cls* prs_arg=walker.prs_arg;
     std::string sfnm =fmc_obj.fnm(); //method name
     std::string susg;
     RefAST tr;
     std::vector<RefAST> vtr_args; 
     var_sct **var_arr;
-    var_sct ***var_arr_ptr;
 
 
     nbr_args=0;
-
-
+    r_val=0.0; 
+     
 
     if(expr)
       vtr_args.push_back(expr);
 
-    if(tr=fargs->getFirstChild()) {
+    if((tr=fargs->getFirstChild())) {
       do  
 	vtr_args.push_back(tr);
-      while(tr=tr->getNextSibling());    
+      while((tr=tr->getNextSibling()));    
     } 
       
      nbr_args=vtr_args.size();  
@@ -3950,7 +3942,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
   
  // check weight type and data type 
  
- if(var_arr[0]->type != var_arr[2]->type || var_arr[2]->type != NC_FLOAT && var_arr[2]->type != NC_DOUBLE  ){   
+  if(var_arr[0]->type != var_arr[2]->type || (var_arr[2]->type != NC_FLOAT && var_arr[2]->type != NC_DOUBLE  )){   
    ostringstream os;  
    os<<"The data type and the weight type most both be NC_FLOAT or NC_DOUBLE. In your arguments the data is type "<<nco_typ_sng(var_arr[2]->type)<< " and the weight is type "<<nco_typ_sng(var_arr[0]->type);
 
@@ -4023,7 +4015,7 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 
    
    // Check hyperslab limits
-   if( 1+ (sz-1)*d_srd >var_arr[0]->sz){
+   if( 1+ (sz-1)*d_srd > (size_t)var_arr[0]->sz){
      err_prn(sfnm,"Requested hyperslab with stride="+nbr2sng(d_srd)+" and n="+ nbr2sng(sz)+" doesn't fit into variable \""+string(var_arr[0]->nm)+"\" with size="+nbr2sng(var_arr[0]->sz)); 
     }
 
@@ -4167,14 +4159,14 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
 
 
 
-    return ncap_sclr_var_mk(static_cast<std::string>("~gsl_stt2_function"),r_val);  
+    return ncap_sclr_var_mk(SCS("~gsl_stt2_function"),r_val);  
 
 }
 
 
 //GSL  /****************************************/
 // gsl spline interpolation 
-  gsl_spl_cls::gsl_spl_cls(bool  flg_dbg){
+  gsl_spl_cls::gsl_spl_cls(bool  ){
     //Populate only on first constructor call
     if(fmc_vtr.empty()){
      fmc_vtr.push_back( fmc_cls("gsl_interp_linear",this,(int)PLINEAR));
@@ -4199,10 +4191,10 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
     if(expr)
       vtr_args.push_back(expr);
 
-    if(tr=fargs->getFirstChild()) {
+    if((tr=fargs->getFirstChild())) {
       do  
 	vtr_args.push_back(tr);
-      while(tr=tr->getNextSibling());    
+      while((tr=tr->getNextSibling()));    
     }
  
 
@@ -4221,14 +4213,18 @@ var_sct *gsl_cls::hnd_fnc_stat4(bool& is_mtd,std::vector<RefAST>&args_vtr,gpr_cl
       case PEVAL:
         return eval_fnd(is_mtd,vtr_args,fmc_obj,walker);  
         break;
+	// 20161205: Always return value to non-void functions: good practice and required by rpmlint
+    default:
+      return NULL;
+      break;
     }// end switch  
-
+    
   }
 
 // nb this method is only call with fdx==PEVAL
-var_sct *gsl_spl_cls::eval_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker){
+var_sct *gsl_spl_cls::eval_fnd(bool &, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker){
   const std::string fnc_nm("gsl_spl_cls::eval_fnd");
-    int fdx=fmc_obj.fdx();   //index
+    // int fdx=fmc_obj.fdx();   //index
     int nbr_args;
     int in_nbr_args;
     prs_cls* prs_arg=walker.prs_arg;
@@ -4338,7 +4334,7 @@ var_sct *gsl_spl_cls::eval_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_
 } // end gsl_spl_cls::eval_fnd 
 
 
-var_sct *gsl_spl_cls::spl_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker){  
+var_sct *gsl_spl_cls::spl_fnd(bool &, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker){  
   const std::string fnc_nm("gsl_spl_cls::spl_fnd");
     int fdx=fmc_obj.fdx();   //index
     int nbr_args;
@@ -4357,7 +4353,7 @@ var_sct *gsl_spl_cls::spl_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_c
 
     
     NcapVar *Nvar;       
-    const gsl_interp_type *ts;
+    const gsl_interp_type *ts=NULL_CEWI;
     gsl_spline *spline;   
  
     nbr_args=args_vtr.size();  
@@ -4488,22 +4484,14 @@ var_sct *gsl_spl_cls::spl_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_c
       Nvar->var->val.cp=(char*)spline;  
       (void)cast_nctype_void(NC_CHAR,&Nvar->var->val); 
 
-
-
-
-
       // return true
       return ncap_sclr_var_mk("~gsl_spl_cls",(nco_int)1); 
 
-
 } // end gsl_spl_cls::spl_fnd 
-
-
-
 
 //GSL  /****************************************/
 // gsl Least Squares Fitting
-  gsl_fit_cls::gsl_fit_cls(bool  flg_dbg){
+  gsl_fit_cls::gsl_fit_cls(bool  ){
     //Populate only on first constructor call
     if(fmc_vtr.empty()){
      fmc_vtr.push_back( fmc_cls("gsl_fit_linear",this,(int)PLIN));
@@ -4527,10 +4515,10 @@ var_sct *gsl_spl_cls::spl_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_c
     if(expr)
       vtr_args.push_back(expr);
 
-    if(tr=fargs->getFirstChild()) {
+    if((tr=fargs->getFirstChild())) {
       do  
 	vtr_args.push_back(tr);
-      while(tr=tr->getNextSibling());    
+      while((tr=tr->getNextSibling()));    
     }
  
 
@@ -4547,20 +4535,22 @@ var_sct *gsl_spl_cls::spl_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_c
       case PMUL_EST:
         return fit_est_fnd(is_mtd,vtr_args,fmc_obj,walker);  
         break;
+	// 20161205: Always return value to non-void functions: good practice and required by rpmlint
+    default:
+      return NULL;
+      break;
     }
-
-
 
 } // end gsl_fit_cls::fnd 
 
 
-var_sct *gsl_fit_cls::fit_fnd(bool &is_mtd, std::vector<RefAST> &vtr_args, fmc_cls &fmc_obj, ncoTree &walker){
+var_sct *gsl_fit_cls::fit_fnd(bool &, std::vector<RefAST> &vtr_args, fmc_cls &fmc_obj, ncoTree &walker){
   const std::string fnc_nm("gsl_fit_cls::fit_fnd");
     int idx;
     int fdx=fmc_obj.fdx();   //index
     int nbr_args;    // actual nunber of args
-    int in_nbr_args; // target number of args
-    int in_val_nbr_args; // number of expressions
+    int in_nbr_args=0; // target number of args
+    int in_val_nbr_args=0; // number of expressions
     int ret; 
     prs_cls* prs_arg=walker.prs_arg;
     std::string sfnm =fmc_obj.fnm(); //method name
@@ -4570,7 +4560,8 @@ var_sct *gsl_fit_cls::fit_fnd(bool &is_mtd, std::vector<RefAST> &vtr_args, fmc_c
     
     var_sct *var_in[13];  
        
- 
+    ret=NCO_GSL_SUCCESS;
+    
     nbr_args=vtr_args.size();  
 
     switch(fdx){
@@ -4890,23 +4881,22 @@ var_sct *gsl_fit_cls::fit_fnd(bool &is_mtd, std::vector<RefAST> &vtr_args, fmc_c
 } // end gsl_fit_cls::fit_fnd 
 
 
-var_sct *gsl_fit_cls::fit_est_fnd(bool &is_mtd, std::vector<RefAST> &vtr_args, fmc_cls &fmc_obj, ncoTree &walker){
+var_sct *gsl_fit_cls::fit_est_fnd(bool &, std::vector<RefAST> &vtr_args, fmc_cls &fmc_obj, ncoTree &walker){
   const std::string fnc_nm("gsl_fit_cls::fit_est_fnd");
     bool has_mss_val; 
     int idx;
     int fdx=fmc_obj.fdx();   //index
-    int nbr_args;    // actual nunber of args
-    int in_nbr_args; // target number of args
-    int in_val_nbr_args; // number of expressions
-    double mss_val_dbl;
+    int nbr_args=0;    // actual nunber of args
+    int in_nbr_args=0; // target number of args
+    double mss_val_dbl=0.0;
 
     prs_cls* prs_arg=walker.prs_arg;
     std::string sfnm =fmc_obj.fnm(); //method name
     std::string susg;
     std::string serr;    
     
-    var_sct *var_in[12];  
-    var_sct *var_out; 
+    var_sct *var_in[12]={NULL_CEWI};  
+    var_sct *var_out=NULL_CEWI; 
        
  
     nbr_args=vtr_args.size();  
@@ -4914,12 +4904,10 @@ var_sct *gsl_fit_cls::fit_est_fnd(bool &is_mtd, std::vector<RefAST> &vtr_args, f
     switch(fdx){
       case PLIN_EST:
 	in_nbr_args=6;
-        in_val_nbr_args=4;
         susg="usage: data_y="+sfnm+"(data_x,c0,c1,cov00,cov01,cov11)";
 	break;   
       case PMUL_EST:
 	in_nbr_args=3;
-        in_val_nbr_args=1;
         susg="usage: data_y="+sfnm+"(data_x,c1,cov11)";
 	break; 
 
@@ -5027,6 +5015,7 @@ var_sct *gsl_fit_cls::fit_est_fnd(bool &is_mtd, std::vector<RefAST> &vtr_args, f
 
 } // end gsl_fit_cls::fit_est_fnd 
 
+/*
 int gsl_fit_cls::rm_miss_arr(
                 double *x_in, long long x_stride,
                 double *y_in, long long y_stride, 
@@ -5037,6 +5026,305 @@ int gsl_fit_cls::rm_miss_arr(
 
   return 0;
 }
+*/
+
+  gsl_mfit_cls::gsl_mfit_cls(bool){
+    //Populate only on first constructor call
+    if(fmc_vtr.empty()){
+     fmc_vtr.push_back( fmc_cls("gsl_multifit_linear",this,(int)PMLIN));
+     fmc_vtr.push_back( fmc_cls("gsl_multifit_wlinear",this,(int)PMWLIN));
+     fmc_vtr.push_back( fmc_cls("gsl_multifit_linear_est",this,(int)PMLIN_EST));
+
+    }
+  }
+
+  var_sct * gsl_mfit_cls::fnd(RefAST expr, RefAST fargs,fmc_cls &fmc_obj, ncoTree &walker){
+
+  const std::string fnc_nm("gsl_mfit_cls::fnd");
+    bool is_mtd;
+    int fdx=fmc_obj.fdx();   //index
+    RefAST tr;    
+    std::vector<RefAST> vtr_args; 
+       
+
+    if(expr)
+      vtr_args.push_back(expr);
+
+    if((tr=fargs->getFirstChild())) {
+      do  
+	vtr_args.push_back(tr);
+      while((tr=tr->getNextSibling()));    
+    }
+ 
+
+    is_mtd=(expr ? true: false);
+
+    switch(fdx){
+      case PMLIN:
+      case PMWLIN:
+        return mfit_fnd(is_mtd,vtr_args,fmc_obj,walker);  
+        break;
+      case PMLIN_EST:
+        return mfit_est_fnd(is_mtd,vtr_args,fmc_obj,walker);  
+        break;
+	// 20161205: Always return value to non-void functions: good practice and required by rpmlint
+    default:
+      return (var_sct*)NULL;
+      break;
+    }
+
+    return (var_sct*)NULL;
+    
+}
+  
+  var_sct *gsl_mfit_cls::mfit_fnd(bool &is_mtd, std::vector<RefAST> &vtr_args, fmc_cls &fmc_obj, ncoTree &walker){
+
+  const std::string fnc_nm("gsl_mfit_cls::mfit_fnd");
+    int idx;
+    int jdx;
+    int fdx=fmc_obj.fdx();   //index
+    int nbr_args;    // actual nunber of args
+    int in_nbr_args=0; // target number of args
+    int in_val_nbr_args=0; // number of expressions
+    int ret; 
+    prs_cls* prs_arg=walker.prs_arg;
+    std::string sfnm =fmc_obj.fnm(); //method name
+    std::string susg;
+    std::string serr;    
+    vtl_typ lcl_typ;
+    
+    var_sct *var_in[13];  
+       
+    ret=NCO_GSL_SUCCESS;
+    
+    nbr_args=vtr_args.size();  
+
+    switch(fdx){
+      case PMLIN:
+	in_nbr_args=5;
+        in_val_nbr_args=2;
+        susg="usage: status="+sfnm+"(matrix_X, vector_y, &vector_c, &matrix_cov, &chisq)"; 
+	break;   
+      case PMWLIN:
+	in_nbr_args=6;
+        in_val_nbr_args=3;
+        susg="usage: status="+sfnm+"(matrix_X, vector_w, vector_y, &vector_c, &matrix_cov, &chisq)"; 
+	break; 
+    }   
+
+
+    if(nbr_args<in_nbr_args){   
+      serr="function requires "+ nbr2sng(in_nbr_args)+" arguments. You have only supplied "+nbr2sng(nbr_args)+ " arguments\n"; 
+      err_prn(sfnm,serr+susg);
+    }
+
+
+    // deal with regular arguments
+    for(idx=0; idx<in_val_nbr_args  ; idx++){
+
+       lcl_typ=expr_typ(vtr_args[idx]);  
+
+       if(lcl_typ == VCALL_REF || lcl_typ == VDIM ){
+           serr="function requires that arg " + nbr2sng(idx+1)+ " be a variable name or an expression\n";
+           err_prn(sfnm,serr+susg);
+       }
+                 
+       var_in[idx] = walker.out(vtr_args[idx]);
+       // convert up
+       var_in[idx]=nco_var_cnf_typ(NC_DOUBLE,var_in[idx]);
+     
+    }
+
+
+    // deal with call-by-ref args
+    for(idx=in_val_nbr_args; idx<in_nbr_args; idx++) 
+    {
+
+         var_sct *var_tmp;
+	 std::string var_nm;
+         NcapVar  *Nvar;
+
+	 
+	 lcl_typ=expr_typ(vtr_args[idx]);  
+         var_nm=vtr_args[idx]->getFirstChild()->getText();
+         Nvar=prs_arg->var_vtr.find(var_nm);
+	 
+	 if(lcl_typ != VCALL_REF) {
+           serr="function requires that arg" + nbr2sng(idx+1)+ " be a call by reference variable\n";
+           err_prn(sfnm,serr+susg);
+         }
+
+	 
+	 // see if var already defined
+         if(prs_arg->ncap_var_init_chk(var_nm))
+	 {
+	   if(Nvar && Nvar->flg_stt==1)
+              var_tmp=Nvar->cpyVarNoData();
+	   else
+	      var_tmp=prs_arg->ncap_var_init(var_nm, !(prs_arg->ntl_scn));
+	 }
+	 else
+	 {
+           switch(idx-in_val_nbr_args)
+	   {  
+
+	     // vector_y
+	     case 0:
+	       {
+		 // make a 1 D var using first dim from first arg
+		 std::vector<std::string> str_vtr;
+		 str_vtr.push_back( var_in[0]->dim[0]->nm );   
+	         var_tmp=ncap_cst_mk(str_vtr,prs_arg);
+                     
+               } 
+	       var_tmp->nm=(char*)nco_free(var_tmp->nm);
+	       var_tmp->nm=strdup(var_nm.c_str());
+	       break;
+
+	     // cov   
+	     case 1:
+	       {
+		 // make a 2 D var using first dim from first arg twice !!
+		 std::vector<std::string> str_vtr;
+		 str_vtr.push_back( var_in[0]->dim[0]->nm );
+		 str_vtr.push_back( var_in[0]->dim[0]->nm );   
+	         var_tmp=ncap_cst_mk(str_vtr,prs_arg);
+                     
+               }
+       	       var_tmp->nm=(char*)nco_free(var_tmp->nm);
+	       var_tmp->nm=strdup(var_nm.c_str());
+
+               break;
+
+	     // chisq  
+	     case 2:   
+               var_tmp=ncap_sclr_var_mk(var_nm,NC_DOUBLE, !(prs_arg->ntl_scn) );
+	       break;
+	   }
+	   
+	 } //  end switch  
+
+        // remember ncap_cst_mk doesnt create vp 
+	if(!prs_arg->ntl_scn && var_tmp->val.vp == NULL)
+	   var_tmp->val.vp=(void *)nco_malloc_flg(var_tmp->sz*nco_typ_lng(var_tmp->type));
+ 
+	 
+	 var_tmp=nco_var_cnf_typ(NC_DOUBLE,var_tmp);
+         var_in[idx]=var_tmp;      
+    }     
+
+ 
+    // inital scan --free up  vars and return 
+    if(prs_arg->ntl_scn){
+      for(idx=0 ; idx<in_nbr_args ;idx++)
+        if(idx<in_val_nbr_args) 
+	  var_in[idx]=nco_var_free(var_in[idx]);
+        else
+          // write newly defined call by ref args
+          // nb this call frees up var_in[idx] 
+          prs_arg->ncap_var_write(var_in[idx],false);
+            
+      return ncap_sclr_var_mk("~gsl_mfit_cls",NC_INT,false);   
+    }
+
+
+     // all vars should now be of type NC_DOUBLE, so cast them  
+    for(idx=0; idx<in_nbr_args; idx++)  
+      (void)cast_void_nctype(var_in[idx]->type,&var_in[idx]->val);
+    
+    // start with PMLIN
+    if( fdx == PMLIN)
+    {
+      // summary of args
+      // I arg 0 matrix X
+      // I arg 1 vector y
+      // O arg 2 vector c  
+      // O arg 3 matrix cov
+      // O arg 4 scalar double chisq
+
+      int rows;
+      int cols;
+
+      // first arg must be a 2D matrix
+      if(var_in[0]->nbr_dim !=2)
+	err_prn(sfnm, "The first argument must be a 2D variable - representing a matrix\n"); 
+
+      
+      cols=var_in[0]->dim[0]->sz;
+      rows=var_in[0]->dim[1]->sz;
+
+      // check that second arg has right number elements
+      if( var_in[1]->sz != rows)
+	err_prn(sfnm, "Size mismatch the size of the second arg must be equal to the number columns in the first arg\n"); 
+
+
+
+      gsl_matrix *mat_x = gsl_matrix_alloc(rows, cols);
+      gsl_vector *vec_y = gsl_vector_alloc(rows);
+      gsl_vector *vec_c = gsl_vector_alloc(cols);
+      gsl_matrix *mat_cov = gsl_matrix_alloc(cols, cols); 
+      gsl_multifit_linear_workspace *my_workspace=gsl_multifit_linear_alloc (rows, cols);
+
+      // stuff first arg into matrix
+      for(idx=0; idx<cols ; idx++)
+        for(jdx=0;jdx<rows;jdx++)   
+          gsl_matrix_set(mat_x, idx,jdx, var_in[0]->val.dp[ idx*rows+jdx]);
+
+      // stuff second arg into vector
+      for(jdx=0; jdx<rows ; jdx++)
+	gsl_vector_set(vec_y, jdx, var_in[1]->val.dp[jdx]);  
+
+      // finally make the big call  
+      ret=gsl_multifit_linear(mat_x, vec_y, vec_c, mat_cov,var_in[4]->val.dp, my_workspace );       
+
+      // extract values from vector
+      for(jdx=0; jdx<cols ; jdx++){
+        var_in[2]->val.dp[jdx]= gsl_vector_get(vec_c, jdx);
+      }
+      
+      // extract values from matrix
+      for(idx=0; idx<cols ; idx++)
+        for(jdx=0;jdx<cols;jdx++)
+	      var_in[3]->val.dp[ idx*cols+jdx] = gsl_matrix_get(mat_cov, idx,jdx); 
+
+      
+
+      gsl_matrix_free(mat_x);
+      gsl_vector_free(vec_y);
+      gsl_vector_free(vec_c);
+      gsl_matrix_free(mat_cov);
+
+      gsl_multifit_linear_free (my_workspace);
+      
+
+    }  
+
+    for(idx=0 ; idx< in_nbr_args ;idx++){
+      //cast pointers to void
+      (void)cast_nctype_void(var_in[idx]->type,&var_in[idx]->val);
+      
+      if(idx<in_val_nbr_args)
+        nco_var_free(var_in[idx]);
+      else
+        // nb this write call also frees up pointer  
+        prs_arg->ncap_var_write(var_in[idx],false);
+    }
+
+    return ncap_sclr_var_mk("~gsl_mfit_cls",(nco_int)ret);   
+    
+}
+  
+  var_sct *gsl_mfit_cls::mfit_est_fnd(bool &is_mtd, std::vector<RefAST> &args_vtr, fmc_cls &fmc_obj, ncoTree &walker){
+
+
+
+  return (var_sct*)NULL;
+}
+
+
+
+
+
 
 
 #else // !ENABLE_GSL
@@ -5050,7 +5338,7 @@ int gsl_dmm_stb(void){return 1;}
 
 #ifdef ENABLE_GSL
 // nco_gsl 
-nco_gsl_cls::nco_gsl_cls(bool  flg_dbg)
+nco_gsl_cls::nco_gsl_cls(bool)
 {
   //Populate only on first constructor call
   if(fmc_vtr.empty())
@@ -5073,11 +5361,11 @@ var_sct *nco_gsl_cls::fnd(RefAST expr,RefAST fargs,fmc_cls &fmc_obj,ncoTree &wal
     vtr_args.push_back(expr);
   }
 
-  if(tr=fargs->getFirstChild()) 
+  if((tr=fargs->getFirstChild())) 
   {
     do  
     vtr_args.push_back(tr);
-    while(tr=tr->getNextSibling());    
+    while((tr=tr->getNextSibling()));    
   }
 
   is_mtd=(expr ? true: false);
@@ -5099,10 +5387,13 @@ var_sct *nco_gsl_cls::fnd(RefAST expr,RefAST fargs,fmc_cls &fmc_obj,ncoTree &wal
     assert(0);
     break;
   }
+  
+  return (var_sct*)NULL;
+
 } // end nco_gsl_cls::fnd 
 
 
-var_sct *nco_gsl_cls::fit_fnd(bool &is_mtd,std::vector<RefAST> &vtr_args,fmc_cls &fmc_obj,ncoTree &walker)
+var_sct *nco_gsl_cls::fit_fnd(bool &,std::vector<RefAST> &vtr_args,fmc_cls &fmc_obj,ncoTree &walker)
 {
   const std::string fnc_nm("nco_gsl_cls::fit_fnd");
   int idx;
@@ -5153,7 +5444,7 @@ var_sct *nco_gsl_cls::fit_fnd(bool &is_mtd,std::vector<RefAST> &vtr_args,fmc_cls
     }
     else // deal with call-by-ref variables      
     {
-      var_sct *var_tmp;
+      var_sct *var_tmp=NULL_CEWI;
       std::string var_nm;
       NcapVar  *Nvar;
       var_nm=vtr_args[idx]->getFirstChild()->getText();
@@ -5256,7 +5547,7 @@ var_sct *nco_gsl_cls::fit_fnd(bool &is_mtd,std::vector<RefAST> &vtr_args,fmc_cls
       (void)cast_void_nctype(var_in[idx]->type,&var_in[idx]->val);
     }
 
-    //get fill value from "y_in" only: assumes type convertion to "double"
+    //get fill value from "y_in" only: assumes type conversion to "double"
     if(nco_dbg_lvl_get() == nco_dbg_old)
     {
       if(var_in[2]->mss_val.dp)
@@ -5297,6 +5588,7 @@ var_sct *nco_gsl_cls::fit_fnd(bool &is_mtd,std::vector<RefAST> &vtr_args,fmc_cls
   // return status flag
   return ncap_sclr_var_mk("~nco_gsl_cls",(nco_int)ret);   
 } // end nco_gsl_cls::fit_fnd 
+
 #endif // !ENABLE_GSL
 
 

@@ -2,7 +2,7 @@
 #define INC_ncoLexer_hpp_
 
 #include <antlr/config.hpp>
-/* $ANTLR 2.7.7 (2006-11-01): "ncoGrammer.g" -> "ncoLexer.hpp"$ */
+/* $ANTLR 2.7.7 (20200513): "ncoGrammer.g" -> "ncoLexer.hpp"$ */
 #include <antlr/CommonToken.hpp>
 #include <antlr/InputBuffer.hpp>
 #include <antlr/BitSet.hpp>
@@ -14,10 +14,10 @@
 
 /* Purpose: ANTLR Grammar and support files for ncap2 */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
     // C Standard Headers
     #include <assert.h>
@@ -35,9 +35,12 @@
     #include <fstream>
     #include <string>
   
+    // custom exception -used for "exit" function
+    #include "ExitException.hpp" 
     // Custom Headers
     #include "prs_cls.hh"
     #include "ncap2_utl.hh"
+    #include "ncap2_att.hh"
     #include "fmc_cls.hh"
     #include "NcapVar.hh"
     #include "NcapVarVector.hh"
@@ -50,19 +53,29 @@
     ANTLR_USING_NAMESPACE(std);
     ANTLR_USING_NAMESPACE(antlr);
 
-#line 54 "ncoLexer.hpp"
+#line 57 "ncoLexer.hpp"
 class CUSTOM_API ncoLexer : public ANTLR_USE_NAMESPACE(antlr)CharScanner, public ncoParserTokenTypes
 {
-#line 336 "ncoGrammer.g"
+#line 348 "ncoGrammer.g"
 
 private:
     prs_cls *prs_arg;
+    std::vector<std::string> paths_vtr;      
+
 public:
 
     // Customized constructor !!
    ncoLexer(ANTLR_USE_NAMESPACE(std)istream& in, prs_cls *prs_in )
    : ANTLR_USE_NAMESPACE(antlr)CharScanner(new ANTLR_USE_NAMESPACE(antlr)CharBuffer(in),true)
-   {
+   {    
+        char *spaths;
+
+        /* a list of include paths delimited by ':' */   
+        /* if nco NCO_PATH then NULL */
+        spaths=getenv("NCO_PATH");  
+        if( spaths &&  strlen(spaths) >0  ) 
+          paths_vtr=ncap_make_include_paths(spaths);
+
         prs_arg=prs_in;
         // This shouldn't really be here 
         // fxm:: should call default constructor
@@ -75,14 +88,17 @@ public:
             // Do not allow EOF until main lexer 
             // Force selector to retry for another token
             parser->inc_vtr.pop_back();
-            std::cout<<"Setting parser(filename)=" <<parser->inc_vtr.back()<<std::endl; 
+
+            if(nco_dbg_lvl_get() >= 1)
+               std::cout<<"Setting parser(filename)=" <<parser->inc_vtr.back()<<std::endl; 
+
             parser->setFilename(parser->inc_vtr.back());
 			selector.pop(); // return to old lexer/stream
 			selector.retry();
 		}
 		// else ANTLR_USE_NAMESPACE(std)cout << "Hit EOF of main file" << ANTLR_USE_NAMESPACE(std)endl;
 	}
-#line 58 "ncoLexer.hpp"
+#line 61 "ncoLexer.hpp"
 private:
 	void initLiterals();
 public:
@@ -146,6 +162,8 @@ public:
 	public: void mNUMBER(bool _createToken);
 	public: void mVAR_ATT(bool _createToken);
 	public: void mVAR_ATT_QT(bool _createToken);
+	public: void mATT_ID(bool _createToken);
+	public: void mSTR_ATT_QT(bool _createToken);
 	public: void mDIM_QT(bool _createToken);
 	public: void mDIM_VAL(bool _createToken);
 	public: void mDIM_MTD_ID(bool _createToken);

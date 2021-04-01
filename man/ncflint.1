@@ -6,24 +6,25 @@
 .SH NAME
 ncflint \- netCDF File Interpolator
 .SH SYNTAX
-ncflint [\-3] [\-4] [\-6] [\-7] [\-A] [\-\-bfr
-.IR sz ] [\-C] [\-c] [\-\-cnk_byt
-.IR sz ] [\-\-cnk_dmn 
-.IR nm,sz ]
+ncflint [\-3] [\-4] [\-5] [\-6] [\-7] [\-A] [\-\-bfr
+.IR sz_byt ] [\-C] [\-c] [\-\-cnk_byt
+.IR sz_byt ] [\-\-cnk_csh
+.IR sz_byt ] [\-\-cnk_dmn 
+.IR nm,sz_lmn ]
 [\-\-cnk_map 
 .IR map ]
 [\-\-cnk_min
-.IR sz ]
+.IR sz_byt ]
 [\-\-cnk_plc 
 .IR plc ]
 [\-\-cnk_scl 
-.IR sz ] [\-D 
+.IR sz_lmn ] [\-D 
 .IR dbg_lvl ]
 [\-d 
 .IR dim ,[
 .IR min ][,[
 .IR max ]]]
-[\-F] [\-\-fix_rec_crd] [\-G
+[-F] [--fl_fmt=fmt] [\-\-fix_rec_crd] [\-G
 .IR gpe_dsc ]
 [\-g  
 .IR grp [,...]]
@@ -31,12 +32,12 @@ ncflint [\-3] [\-4] [\-6] [\-7] [\-A] [\-\-bfr
 .IR att_name=
 .IR att_val ]]
 [\-h] [\-\-hdf] [\-\-hdr_pad
-.IR sz ]
+.IR sz_byt ] [\-\-hpss_try]
 [\-i
 .IR var, val3 ] [\-L 
 .IR dfl_lvl ] [\-l 
 .IR path ]
-[\-\-msa] [\-\-no_tmp_fl] [\-O] [\-p 
+[\-\-msa] [\-N] [\-\-no_cll_msr] [\-\-no_frm_trm] [\-\-no_tmp_fl] [\-O] [\-p 
 .IR path ]
 [\-\-ppc 
 .IR var1 [,
@@ -44,7 +45,7 @@ ncflint [\-3] [\-4] [\-6] [\-7] [\-A] [\-\-bfr
 .IR prc ]]
 [\-R] [\-r] [\-\-ram_all] [\-t
 .IR thr_nbr ]
-[\--unn] [\-v 
+[\-\-uio] [\-\-unn] [\-v 
 .IR var [,...]]
 [\-w 
 .IR wgt[,
@@ -191,7 +192,7 @@ manual pages written by Charlie Zender and originally formatted by Brian Mays.
 Report bugs to <http://sf.net/bugs/?group_id=3331>.
 
 .SH COPYRIGHT
-Copyright \(co 1995-2015 Charlie Zender
+Copyright \(co 1995-2018 Charlie Zender
 .br
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -200,13 +201,13 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 The full documentation for
 .B NCO
 is maintained as a Texinfo manual called the 
-.B NCO User's Guide.
+.B NCO Users Guide.
 Because 
 .B NCO
 is mathematical in nature, the documentation includes TeX-intensive
 portions not viewable on character-based displays. 
 Hence the only complete and authoritative versions of the 
-.B NCO User's Guide 
+.B NCO Users Guide 
 are the PDF (recommended), DVI, and Postscript versions at
 <http://nco.sf.net/nco.pdf>, <http://nco.sf.net/nco.dvi>,
 and <http://nco.sf.net/nco.ps>, respectively.
@@ -224,6 +225,23 @@ programs are properly installed at your site, the command
 .PP
 should give you access to the complete manual, except for the
 TeX-intensive portions.
+
+.BR ncap (1), 
+.BR ncap2 (1), 
+.BR ncatted (1), 
+.BR ncbo (1), 
+.BR ncclimo (1), 
+.BR nces (1), 
+.BR ncecat (1), 
+.BR ncflint (1), 
+.BR ncks (1), 
+.BR nco (1), 
+.BR ncpdq (1), 
+.BR ncra (1), 
+.BR ncrcat (1), 
+.BR ncremap (1), 
+.BR ncrename (1), 
+.BR ncwa (1) 
 
 .SH HOMEPAGE
 The 

@@ -2,10 +2,10 @@
 
 // Implementation (declaration) of C++ interface utilities for netCDF routines
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include <nco_utl.hh> // C++ interface utilities for netCDF routines
 
@@ -40,9 +40,13 @@ nco_create_mode_prs // [fnc] Parse user-specified file format
   if(static_cast<std::string>("classic").find(fl_fmt_sng) != std::string::npos && fl_fmt_sng.find("netcdf4") == std::string::npos){
   // If "classic" contains string and string does not contain "netcdf4"
     fl_fmt_enm=NC_FORMAT_CLASSIC;
-  }else if(static_cast<std::string>("classic").find(fl_fmt_sng) != std::string::npos){
+  }else if(static_cast<std::string>("64bit").find(fl_fmt_sng) != std::string::npos){
     /* If "64bit" contains string */
     fl_fmt_enm=NC_FORMAT_64BIT;
+    //  }else if(static_cast<std::string>("64bit_data").find(fl_fmt_sng) != std::string::npos){
+    /* 20170820: CDF5 not yet supported on Travis CI machines */
+    /* If "64bit_data" contains string */
+    //    fl_fmt_enm=NC_FORMAT_64BIT_DATA;
   }else if(fl_fmt_sng.find("netcdf4") != std::string::npos){
 #ifdef ENABLE_NETCDF4
     if(static_cast<std::string>("classic").find(fl_fmt_sng) != std::string::npos){
@@ -137,7 +141,7 @@ nco_inq_varsz // [fnc] Compute size of variable
 {
   // Purpose: Compute size (number of elements) in specified variable
   int dmn_nbr; // [nbr] Number of dimensions
-  //  int dmn_id[NC_MAX_DIMS]; // [id] Dimension IDs
+  //  int dmn_id[NC_MAX_VAR_DIMS]; // [id] Dimension IDs
   size_t dmn_sz; // [nbr] Dimension size
   int rcd=nco_inq_varndims(nc_id,var_id,dmn_nbr);
   int *dmn_id=new int[dmn_nbr]; // [id] Dimension IDs

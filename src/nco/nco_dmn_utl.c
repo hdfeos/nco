@@ -2,10 +2,10 @@
 
 /* Purpose: Dimension utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_dmn_utl.h" /* Dimension utilities */
 
@@ -240,8 +240,6 @@ nco_dmn_xrf  /* [fnc] Crossreference xrf elements of dimension structures */
   dmn_2->xrf=dmn_1;
 } /* end nco_dmn_xrf() */
 
-
-
 int /* O [flg] Dimension exists in scope of group (if rcd != NC_NOERR) */
 nco_inq_dmn_grp_id /* [fnc] Return location and ID of named dimension in specified group */
 (const int nc_id, /* I [id] netCDF group ID */
@@ -317,7 +315,6 @@ nco_inq_dmn_grp_id /* [fnc] Return location and ID of named dimension in specifi
 
 } /* end nco_inq_dmn_grp_id */
 
-
 void 
 nco_dmn_sct_cmp   /* [fnc] Check that dims in list 2 are a subset of list 1 and that they are the same size */
 (dmn_sct ** const dim_1, /* I [sct] Dimension list 1 */
@@ -330,11 +327,9 @@ nco_dmn_sct_cmp   /* [fnc] Check that dims in list 2 are a subset of list 1 and 
   int idx;
   int jdx;
 
-  for(idx=0;idx<nbr_dmn_2;idx++ ){
+  for(idx=0;idx<nbr_dmn_2;idx++){
     for(jdx=0;jdx<nbr_dmn_1;jdx++) 
-      if(!strcmp(dim_2[idx]->nm,dim_1[jdx]->nm)) {
-        break;
-      }
+      if(!strcmp(dim_2[idx]->nm,dim_1[jdx]->nm)) break;
 		 		
     if(jdx == nbr_dmn_1){
       (void)fprintf(stderr,"%s: ERROR dimension \"%s\" in second file %s is not present in first file %s\n",nco_prg_nm_get(),dim_2[idx]->nm,fl_sng_2,fl_sng_1);
@@ -343,11 +338,11 @@ nco_dmn_sct_cmp   /* [fnc] Check that dims in list 2 are a subset of list 1 and 
 	
     if(dim_2[idx]->cnt != dim_1[jdx]->cnt){
       (void)fprintf(stderr,"%s: ERROR %sdimension size mismatch: dimension %s in file %s is size %li while dimension %s in file %s is size %li\n",nco_prg_nm_get(),(dim_1[jdx]->is_rec_dmn) ? "record " : "",dim_1[jdx]->nm,fl_sng_1,dim_1[jdx]->cnt,dim_2[idx]->nm,fl_sng_2,dim_2[idx]->cnt);
+      if(dim_1[idx]->cnt == 1 || dim_2[jdx]->cnt == 1) (void)fprintf(stderr,"%s: HINT Mismatch is due to degenerate (of size 1) dimension. Re-try command after first removing degenerate dimension from one file with, e.g.,\nncwa -a %s %s %s\n",nco_prg_nm_get(),(dim_1[idx]->cnt == 1) ? dim_1[idx]->nm : dim_2[idx]->nm,(dim_1[idx]->cnt == 1) ? fl_sng_1 : fl_sng_2,(dim_1[idx]->cnt == 1) ? fl_sng_1 : fl_sng_2);
       nco_exit(EXIT_FAILURE); 
     } /* endif size mismatch */
   } /* end loop over dimensions */
 } /* end nco_dmn_sct_cmp() */
-
 
 nm_id_sct * /* O [sct] List of dimensions associated with input variable list */
 nco_dmn_lst_ass_var /* [fnc] Create list of all dimensions associated with input variable list */
@@ -402,7 +397,6 @@ nco_dmn_lst_ass_var /* [fnc] Create list of all dimensions associated with input
             (void)nco_inq_dimname(nc_id,idx_dmn_in,dmn_nm);
             dmn[*nbr_dmn].id=idx_dmn_in;
             dmn[*nbr_dmn].nm=(char *)strdup(dmn_nm);
-
             (*nbr_dmn)++;
           } /* end if dimension was not found in current output dimension list */
           /* ...call off the dogs for this input dimension... */

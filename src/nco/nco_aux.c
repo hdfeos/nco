@@ -1,9 +1,9 @@
 /* $Header$ */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Purpose: Support hyperslabbing cell-based grids over coordinate ranges 
    This works on datasets that contain CF-convention auxiliary coordinate variables.
@@ -11,10 +11,13 @@
    Cells that contain a value within the user-requested range are considered a match.
    Could be useful to look at the CF bounds variable instead but harder.
    
-   Author: Karen Schuchardt
+   Original Author: Karen Schuchardt, PNNL
    
    Example usage:
-   ncks -X 0.,45.,0.,90. -X 180.,225.,-90.,0. ~/nco/data/in.nc ~/foo.nc */
+   ncks -v gds_3dvar -X 0.,45.,0.,90. -X 180.,225.,-90.,0. ~/nco/data/in.nc ~/foo.nc
+   ncks -X -99,-93,28,32 ${DATA}/hdf/nwm.t18z.short_range.channel_rt.f015.conus.nc_georeferenced.nc ~/foo.nc
+   ncatted -O -a standard_name,latitude,o,c,latitude -a standard_name,longitude,o,c,longitude ${DATA}/hdf/nwm.t18z.short_range.channel_rt.f015.conus.nc_georeferenced.nc ~/foo.nc
+   ncks -O -D 3 -X -99,-93,28,32 ~/foo.nc ~/foo2.nc */
 
 #include "nco_aux.h" /* Auxiliary coordinates */
 
@@ -42,65 +45,70 @@ nco_find_lat_lon
   char att_val[NC_MAX_NAME];
 
   int idx;
-  int nvars=0;
+  int var_nbr=0;
   int rcd=NC_NOERR;
   int crd_nbr=0;
-  int var_dimid[NC_MAX_VAR_DIMS]; /* [enm] Dimension ID */
-  int var_att_nbr; /* [nbr] Number of attributes */
   int var_dmn_nbr; /* [nbr] Number of dimensions */
 
   long att_lng;
 
   nc_type var_typ; /* [enm] variable type */
 
+  /* Initialize outputs */
+  *lat_id=NC_MIN_INT;
+  *lon_id=NC_MIN_INT;
+
   /* Make sure CF tag exists. Currently require CF-1.X value */
   if(NCO_GET_ATT_CHAR(nc_id,NC_GLOBAL,"Conventions",att_val) || !strstr(att_val,"CF-1."))
-    if(nco_dbg_lvl_get() >= nco_dbg_dev) (void)fprintf(stderr,"%s: WARNING %s reports file \"Convention\" attribute is missing or is present but not of the form \"CF-1.X\". Auxiliary coordinate support (i.e., the -X option) cannot be expected to behave well file does not support CF-1.X metadata conventions. Continuing anyway...\n",nco_prg_nm_get(),fnc_nm);
+    if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stderr,"%s: WARNING %s reports file \"Convention\" attribute is missing or is present but not of the form \"CF-1.X\". Auxiliary coordinate support (i.e., the -X option) works best when file complies with CF-1.X metadata conventions. Continuing anyway...\n",nco_prg_nm_get(),fnc_nm);
 
   /* Get number of variables */
-  rcd=nco_inq_nvars(nc_id,&nvars);
+  rcd=nco_inq_nvars(nc_id,&var_nbr);
 
   /* For each variable, see if standard name is latitude or longitude */
-  for(idx=0;idx<nvars && crd_nbr<2;idx++){
-    nco_inq_var(nc_id,idx,var_nm,&var_typ,&var_dmn_nbr,var_dimid,&var_att_nbr);
-    att_lng=0;
+  for(idx=0;idx<var_nbr && crd_nbr<2;idx++){
+    nco_inq_var(nc_id,idx,var_nm,NULL,NULL,NULL,NULL);
+    att_lng=0L;
+
     if(!nco_inq_attlen_flg(nc_id,idx,"standard_name",&att_lng)){
       NCO_GET_ATT_CHAR(nc_id,idx,"standard_name",att_val);
       att_val[att_lng]='\0';
       if(!strcmp(att_val,"latitude")){
         strcpy(var_nm_lat,var_nm);
         *lat_id=idx;
-
-        /* Get units; assume same for both lat and lon */
-        rcd=nco_inq_attlen(nc_id,idx,"units",&att_lng);
-        if(rcd != NC_NOERR) nco_err_exit(rcd,"nco_find_lat_lon() reports CF convention requires \"latitude\" to have units attribute\n");
-        *units=(char *)nco_malloc((att_lng+1L)*sizeof(char));
-        NCO_GET_ATT_CHAR(nc_id,idx,"units",*units);
-        (*units)[att_lng]='\0';
-
-        if(var_dmn_nbr > 1) (void)fprintf(stderr,"%s: WARNING %s reports latitude variable %s has %d dimensions. NCO only supports hyperslabbing of auxiliary coordinate variables with a single dimension. Continuing with unpredictable results...\n",nco_prg_nm_get(),fnc_nm,var_nm,var_dmn_nbr);
-
-        /* Assign type; assumed same for both lat and lon */
-        *crd_typ=var_typ;
         crd_nbr++;
       } /* endif latitude */
-
+      
       if(!strcmp(att_val,"longitude")){
         strcpy(var_nm_lon,var_nm);
         *lon_id=idx;
         crd_nbr++;
       } /* endif longitude */
-
-      if(nco_dbg_lvl_get() >= nco_dbg_dev) (void)fprintf(stdout,"%s: DEBUG %s variable <%s>\n",nco_prg_nm_get(),fnc_nm,var_nm); 
-
     } /* endif standard_name */
 
-  } /* end loop over vars */
+  } /* !idx */
+  
 
-  if(crd_nbr != 2){
-    if(nco_dbg_lvl_get() >= nco_dbg_dev) (void)fprintf(stdout,"%s: %s unable to identify lat/lon auxiliary coordinate variables.\n",nco_prg_nm_get(),fnc_nm);
+  if((*lat_id == NC_MIN_INT) || (*lon_id == NC_MIN_INT)){
+    if(nco_dbg_lvl_get() >= nco_dbg_std) (void)fprintf(stdout,"%s: %s unable to identify lat/lon auxiliary coordinate variables.\n",nco_prg_nm_get(),fnc_nm);
     return False;
-  }else return True;
+  } /* !lat_id, !lon_id */
+
+  nco_inq_var(nc_id,*lat_id,NULL,&var_typ,&var_dmn_nbr,NULL,NULL);
+
+  /* Assign type, assumed same for both lat and lon */
+  *crd_typ=var_typ;
+
+  /* Get units, assume same for both lat and lon */
+  rcd=nco_inq_attlen(nc_id,*lat_id,"units",&att_lng);
+  if(rcd != NC_NOERR) nco_err_exit(rcd,"nco_find_lat_lon() reports CF convention requires \"latitude\" to have units attribute\n");
+  *units=(char *)nco_malloc((att_lng+1L)*sizeof(char));
+  NCO_GET_ATT_CHAR(nc_id,*lat_id,"units",*units);
+  (*units)[att_lng]='\0';
+
+  if(var_dmn_nbr > 1) (void)fprintf(stderr,"%s: WARNING %s reports latitude variable %s has %d dimensions. NCO only supports hyperslabbing of auxiliary coordinate variables with a single dimension. Continuing with unpredictable results...\n",nco_prg_nm_get(),fnc_nm,var_nm,var_dmn_nbr);
+
+  return True;
 
 } /* end nco_find_lat_lon() */
 
@@ -143,8 +151,7 @@ nco_aux_evl
  int *lmt_nbr,
  char *nm_dmn)                     /* O [sng] Dimension name */ 
 {
-  /* Purpose: Create lmt structure of slabs of continguous cells that
-     match rectangular region specified by -X arguments.
+  /* Purpose: Create lmt structure of slabs of continguous cells that match rectangular region specified by -X arguments
      Intended for use with non-monotonic grids
      Requires CF-1.0 conventions
      Uses latitude/longitude centers rather than cell_bounds to detect matches
@@ -164,10 +171,10 @@ nco_aux_evl
   double lat_crr; /* [dgr] Current cell latitude */
   double lon_crr; /* [dgr] Current cell longitude */
 
-  float lat_min; /* [dgr] Lower left latitude of bounding rectangle */
-  float lat_max; /* [dgr] Upper right longitude of bounding rectangle */
-  float lon_min; /* [dgr] Lower left longitude of bounding rectangle */
-  float lon_max; /* [dgr] Upper right latitude of bounding rectangle */
+  double lat_min; /* [dgr] Lower left latitude of bounding rectangle */
+  double lat_max; /* [dgr] Upper right longitude of bounding rectangle */
+  double lon_min; /* [dgr] Lower left longitude of bounding rectangle */
+  double lon_max; /* [dgr] Upper right latitude of bounding rectangle */
 
   int aux_idx; /* [idx] Index over user -X options */
   int cll_grp_nbr=0; /* [nbr] Number of groups of cells within this bounding box */
@@ -223,11 +230,11 @@ nco_aux_evl
   lmt_tpl.is_usr_spc_min=True; 
   lmt_tpl.is_usr_spc_max=True;
   lmt_tpl.flg_mro=False;
+  lmt_tpl.flg_ilv=False;
   lmt_tpl.srd_sng=(char *)strdup("1");
   lmt_tpl.ssc_sng=NULL;
   lmt_tpl.ssc_sng=NULL;
-  lmt_tpl.mro_sng=NULL;
-  lmt_tpl.mro_sng=NULL;
+  lmt_tpl.ilv_sng=NULL;
   lmt_tpl.is_rec_dmn=0;
   lmt_tpl.id=dmn_id;
   lmt_tpl.min_idx=0;
@@ -237,6 +244,7 @@ nco_aux_evl
   lmt_tpl.cnt=0L;
   lmt_tpl.srd=1L;
   lmt_tpl.ssc=1L;
+  lmt_tpl.ilv=1L;
 
   /* malloc() lmt structure to return
      No way to know exact size in advance though maximum is about dim_sz/2 */
@@ -286,7 +294,7 @@ nco_aux_evl
         lmt_tpl.max_idx=lmt_tpl.end=cll_idx_min+cll_nbr_cns-1;
         lmt_tpl.cnt=cll_nbr_cns;
         (*lmt_nbr)++;
-        if(*lmt_nbr > MAX_LMT_NBR) nco_err_exit(0,"%s: Number of slabs exceeds allocated mamory");
+        if(*lmt_nbr > MAX_LMT_NBR) nco_err_exit(0,"%s: Number of slabs exceeds allocated memory");
         lmt[(*lmt_nbr)-1]=(lmt_sct *)nco_malloc(sizeof(lmt_sct));
         *lmt[(*lmt_nbr)-1]=lmt_tpl;
         cll_grp_nbr++;
@@ -325,10 +333,10 @@ void
 nco_aux_prs
 (const char *bnd_bx_sng,
  const char *units,
- float *lon_min,
- float *lon_max,
- float *lat_min,
- float *lat_max)
+ double *lon_min,
+ double *lon_max,
+ double *lat_min,
+ double *lat_max)
 {
   /* Purpose: Parse command-line arguments of form:
      lon_min,lon_max,lat_min,lat_max */
@@ -337,20 +345,20 @@ nco_aux_prs
   
   bnd_bx_sng_tmp=strdup(bnd_bx_sng);
   
-  sscanf(bnd_bx_sng,"%f,%f,%f,%f",lon_min,lon_max,lat_min,lat_max);
+  sscanf(bnd_bx_sng,"%lf,%lf,%lf,%lf",lon_min,lon_max,lat_min,lat_max);
   crd_tkn=strtok(bnd_bx_sng_tmp,", ");
-  if(crd_tkn) sscanf(crd_tkn,"%f",lon_min); else nco_err_exit(0,"nco_aux_prs(): Problem with LL longitude string");
+  if(crd_tkn) sscanf(crd_tkn,"%lf",lon_min); else nco_err_exit(0,"nco_aux_prs(): Problem with LL longitude string");
   crd_tkn=strtok(NULL,", ");
-  if(crd_tkn) sscanf(crd_tkn,"%f",lon_max); else nco_err_exit(0,"nco_aux_prs(): Problem with UR longitude string");
+  if(crd_tkn) sscanf(crd_tkn,"%lf",lon_max); else nco_err_exit(0,"nco_aux_prs(): Problem with UR longitude string");
   crd_tkn=strtok(NULL,", ");
-  if(crd_tkn) sscanf(crd_tkn,"%f",lat_min); else nco_err_exit(0,"nco_aux_prs(): Problem with LL latitude string");
+  if(crd_tkn) sscanf(crd_tkn,"%lf",lat_min); else nco_err_exit(0,"nco_aux_prs(): Problem with LL latitude string");
   crd_tkn=strtok(NULL,", ");
-  if(crd_tkn) sscanf(crd_tkn,"%f",lat_max); else nco_err_exit(0,"nco_aux_prs(): Problem with UR latitude string");
+  if(crd_tkn) sscanf(crd_tkn,"%lf",lat_max); else nco_err_exit(0,"nco_aux_prs(): Problem with UR latitude string");
   
   if(bnd_bx_sng_tmp) bnd_bx_sng_tmp=(char *)nco_free(bnd_bx_sng_tmp);
   
   if(!strcmp(units,"radians")){
-    const float dgr2rdn=M_PI/180.0;
+    const double dgr2rdn=M_PI/180.0;
     *lon_min*=dgr2rdn;
     *lon_max*=dgr2rdn;
     *lat_min*=dgr2rdn;
@@ -369,8 +377,7 @@ nco_aux_evl_trv
  const char * const units,           /* I [sng] Units of both "latitude" and "longitude" */
  int *aux_lmt_nbr)                   /* I/O [nbr] Number of coordinate limits */
 {
-  /* Purpose: Create lmt structure of slabs of continguous cells that
-     match rectangular region specified by -X arguments.
+  /* Purpose: Create lmt structure of slabs of continguous cells that match rectangular region specified by -X arguments
      Intended for use with non-monotonic grids
      Requires CF-1.0 conventions
      Uses latitude/longitude centers rather than cell_bounds to detect matches
@@ -389,10 +396,10 @@ nco_aux_evl_trv
   double lat_crr; /* [dgr] Current cell latitude */
   double lon_crr; /* [dgr] Current cell longitude */
 
-  float lat_min; /* [dgr] Lower left latitude of bounding rectangle */
-  float lat_max; /* [dgr] Upper right longitude of bounding rectangle */
-  float lon_min; /* [dgr] Lower left longitude of bounding rectangle */
-  float lon_max; /* [dgr] Upper right latitude of bounding rectangle */
+  double lat_min; /* [dgr] Lower left latitude of bounding rectangle */
+  double lat_max; /* [dgr] Upper right longitude of bounding rectangle */
+  double lon_min; /* [dgr] Lower left longitude of bounding rectangle */
+  double lon_max; /* [dgr] Upper right latitude of bounding rectangle */
 
   int aux_idx; /* [idx] Index over user -X options */
   int cll_grp_nbr=0; /* [nbr] Number of groups of cells within this bounding box */
@@ -447,11 +454,11 @@ nco_aux_evl_trv
   lmt_tpl.is_usr_spc_min=True; 
   lmt_tpl.is_usr_spc_max=True;
   lmt_tpl.flg_mro=False;
+  lmt_tpl.flg_ilv=False;
   lmt_tpl.srd_sng=(char *)strdup("1");
   lmt_tpl.ssc_sng=NULL;
   lmt_tpl.ssc_sng=NULL;
-  lmt_tpl.mro_sng=NULL;
-  lmt_tpl.mro_sng=NULL;
+  lmt_tpl.ilv_sng=NULL;
   lmt_tpl.is_rec_dmn=0;
   lmt_tpl.id=dmn_id;
   lmt_tpl.min_idx=0;
@@ -461,6 +468,7 @@ nco_aux_evl_trv
   lmt_tpl.cnt=0L;
   lmt_tpl.srd=1L;
   lmt_tpl.ssc=1L;
+  lmt_tpl.ilv=1L;
 
   /* malloc() lmt structure to return
      No way to know exact size in advance though maximum is about dim_sz/2 */
@@ -490,8 +498,7 @@ nco_aux_evl_trv
     for(cll_idx=0;cll_idx<dmn_sz;cll_idx++){
       if(lat.type == NC_FLOAT) lat_crr=((float *)vp_lat)[cll_idx]; else lat_crr=((double *)vp_lat)[cll_idx];
       if(lon.type == NC_FLOAT) lon_crr=((float *)vp_lon)[cll_idx]; else lon_crr=((double *)vp_lon)[cll_idx];
-      if(lon_crr >= lon_min && lon_crr <= lon_max &&
-        lat_crr >= lat_min && lat_crr <= lat_max){
+      if(lon_crr >= lon_min && lon_crr <= lon_max && lat_crr >= lat_min && lat_crr <= lat_max){
           if(cll_idx_min == -1){
             /* First cell within current bounding box */
             cll_idx_min=cll_idx;
@@ -510,7 +517,7 @@ nco_aux_evl_trv
         lmt_tpl.max_idx=lmt_tpl.end=cll_idx_min+cll_nbr_cns-1;
         lmt_tpl.cnt=cll_nbr_cns;
         (*aux_lmt_nbr)++;
-        if(*aux_lmt_nbr > MAX_LMT_NBR) nco_err_exit(0,"%s: Number of slabs exceeds allocated mamory");
+        if(*aux_lmt_nbr > MAX_LMT_NBR) nco_err_exit(0,"%s: Number of slabs exceeds allocated memory");
         lmt[(*aux_lmt_nbr)-1]=(lmt_sct *)nco_malloc(sizeof(lmt_sct));
         *lmt[(*aux_lmt_nbr)-1]=lmt_tpl;
         cll_grp_nbr++;
@@ -617,3 +624,73 @@ nco_find_lat_lon_trv
   return False;
 
 } /* end nco_find_lat_lon_trv() */
+
+nco_bool                             /* O [flg] True if all criteria met */  
+nco_check_nm_aux
+(const int nc_id,                    /* I [ID] netCDF file ID */
+ const trv_sct * const var_trv,      /* I [sct] Variable to search for "standard_name" attribute */
+ int *dmn_id,                        /* I/O [id] Dimension ID of "latitude" and "longitude" */
+ nc_type *crd_typ,                   /* I/O [enm] netCDF type of both "latitude" and "longitude" */
+ char units[])                       /* I/O [sng] Units of both "latitude" and "longitude" */
+{
+  /* Purpose: Check that variable var_trv fits the criteria for being an auxiliary coordinate  
+     Must be 1D and NOT a record var and NOT a standard coordinate variable
+     Also must have a "units" attribute   
+     If all critera met - then return some information about variable */
+
+  const char fnc_nm[]="nco_check_nm_aux()";
+
+  char var_nm[NC_MAX_NAME];
+
+  int rcd;
+  int grp_id;               /* [id] Group ID */
+  int var_id;               /* [id] Variable ID */
+  int var_dimid[NC_MAX_VAR_DIMS]; /* [enm] Dimension ID */
+  int var_att_nbr;          /* [nbr] Number of attributes */
+  int var_dmn_nbr;          /* [nbr] Number of dimensions */
+
+  long att_lng; 
+
+  nc_type var_typ;          /* [enm] variable type */
+
+  assert(var_trv->nco_typ == nco_obj_typ_var);
+
+  if(False ||
+     //     var_trv->is_1D_crd || /* 20180807: Not yet defined */
+     //     var_trv->is_1D_rec_crd || /* 20180807: Not yet defined */
+     var_trv->is_crd_var)
+    return False;
+  
+  /* Obtain group ID */
+  (void)nco_inq_grp_full_ncid(nc_id,var_trv->grp_nm_fll,&grp_id);
+
+  /* Obtain variable ID */
+  (void)nco_inq_varid(grp_id,var_trv->nm,&var_id);
+
+  /* Obtain variable meta-data  */
+  (void)nco_inq_var(grp_id,var_id,var_nm,&var_typ,&var_dmn_nbr,var_dimid,&var_att_nbr);
+
+  assert(var_att_nbr == var_trv->nbr_att);
+
+  /* Assume same units (degrees or radians) for both lat and lon */
+  rcd=nco_inq_attlen_flg(grp_id,var_id,"units",&att_lng);
+  
+  if(rcd != NC_NOERR){
+    if(nco_dbg_lvl_get() >= nco_dbg_var) (void)fprintf(stdout,"%s: %s reports CF convention requires \"%s\" to have units attribute\n",nco_prg_nm_get(),fnc_nm,var_nm);
+    return False;
+  } /* endif */
+  
+  NCO_GET_ATT_CHAR(grp_id,var_id,"units",units);
+  units[att_lng]='\0';
+
+  /* Auxiliary coordinates MUST be 1D */
+  if(var_dmn_nbr != 1) return False;
+  
+  /* Copy values to export */
+  *crd_typ=var_typ;
+  *dmn_id=var_dimid[0];
+
+  return True;
+
+} /* !nco_check_nm_aux() */
+

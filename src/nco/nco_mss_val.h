@@ -2,10 +2,10 @@
 
 /* Purpose: Missing value utilities */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 /* Usage:
    #include "nco_mss_val.h" *//* Missing value utilities */
@@ -33,9 +33,9 @@
 #include "nco_cnf_typ.h" /* Conform variable types */
 #include "nco_mmr.h" /* Memory management */
 #include "nco_prn.h" /* Print variables, attributes, metadata */
-#if (defined NEED_STRCASECMP) || (defined NEED_STRDUP)
+#if (defined NEED_STRCASECMP) || (defined NEED_STRNCASECMP) || (defined NEED_STRDUP)
 # include "nco_sng_utl.h" /* String utilities */
-#endif /* NEED_STRCASECMP || NEED_STRDUP */
+#endif /* NEED_STRCASECMP || NEED_STRNCASECMP || NEED_STRDUP */
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,20 +48,20 @@ nco_mss_val_mk /* [fnc] Return default missing value for type type */
 nco_bool /* O [flg] One or both operands have missing value */
 nco_mss_val_cnf /* [fnc] Change missing_value of var2 to missing_value of var1 */
 (var_sct * const var1, /* I [sct] Variable with template missing value to copy */
- var_sct * const var2); /* I/O [sct] Variable with missing value to fill in/overwrite */
+ var_sct * const var2); /* I/O [sct] Variable with missing value to fill-in/overwrite */
 
 void
 nco_mss_val_cp /* [fnc] Copy missing value from var1 to var2 */
 (const var_sct * const var1, /* I [sct] Variable with template missing value to copy */
- var_sct * const var2); /* I/O [sct] Variable with missing value to fill in/overwrite */
+ var_sct * const var2); /* I/O [sct] Variable with missing value to fill-in/overwrite */
 
 int /* O [flg] Variable has missing value on output */
-nco_mss_val_get /* [fnc] Update number of attributes, missing_value of variable */
+nco_mss_val_get /* [fnc] Update number of attributes, missing value of variable */
 (const int nc_id, /* I [id] netCDF input-file ID */
  var_sct * const var); /* I/O [sct] Variable with missing_value to update */
 
 nco_bool /* O [flg] Variable has missing value */
-nco_mss_val_get_dbl /* [fnc] Return missing_value of variable, if any, as double precision number */
+nco_mss_val_get_dbl /* [fnc] Return missing value of variable, if any, as double precision number */
 (const int nc_id, /* I [id] netCDF input-file ID */
  const int var_id, /* I [id] netCDF variable ID */
  double *mss_val_dbl); /* O [frc] Missing value in double precision */

@@ -2,12 +2,162 @@
 
 /* Purpose: CCM/CCSM/CF conventions */
 
-/* Copyright (C) 1995--2015 Charlie Zender
+/* Copyright (C) 1995--present Charlie Zender
    This file is part of NCO, the netCDF Operators. NCO is free software.
    You may redistribute and/or modify NCO under the terms of the 
-   GNU General Public License (GPL) Version 3 with exceptions described in the LICENSE file */
+   3-Clause BSD License with exceptions described in the LICENSE file */
 
 #include "nco_cnv_csm.h" /* CCM/CCSM/CF conventions */
+
+int /* O [rcd] Return code */
+nco_clm_nfo_get /* [fnc] Parse clm_nfo arguments and merge into structure */
+(const char *clm_nfo_sng, /* I [sng] Climatology information string */
+ clm_bnd_sct *cb) /* I/O [sct] Climatology bounds structure */
+{
+  const char fnc_nm[]="nco_clm_nfo_get()"; /* [sng] Function name */
+
+  const char dlm_sng[]=",";
+
+  char **arg_lst;
+
+  char *msg_sng=NULL_CEWI; /* [sng] Error message */
+  char *sng_cnv_rcd=NULL_CEWI; /* [sng] strtol()/strtoul() return code */
+
+  int arg_nbr;
+
+  nco_bool NCO_SYNTAX_ERROR=False; /* [flg] Syntax error in hyperslab specification */
+
+  /* Purpose: Parse user-supplied climatology bounds arguments from clm_nfo_sng and 
+     merge results into climatolgoy bounds (cb) structure */
+  arg_lst=nco_lst_prs_2D(clm_nfo_sng,dlm_sng,&arg_nbr);
+  
+  /* Check syntax */
+  if(arg_nbr < 2){ /* Need more than just dimension name */
+    msg_sng=strdup("Climatology information must specify at least six arguments (the first argument is the start year, the second is the end year, etc.)");
+    NCO_SYNTAX_ERROR=True;
+  }else if(arg_nbr > 7){ /* Too much information */
+    msg_sng=strdup("Too many (more than 7) arguments in climatology information string");
+    NCO_SYNTAX_ERROR=True;
+  }else if(arg_lst[0] == NULL){ /* Start year not specified */
+    msg_sng=strdup("Start year not specified");
+    NCO_SYNTAX_ERROR=True;
+  }else if(arg_nbr == 2 && arg_lst[1] == NULL){ /* End year not specified */
+    msg_sng=strdup("End year not specified");
+    NCO_SYNTAX_ERROR=True;
+  }else if(arg_nbr == 3 && arg_lst[2] == NULL){ /* Start month not specified */
+    msg_sng=strdup("Start month not specified");
+    NCO_SYNTAX_ERROR=True;
+  }else if(arg_nbr == 4 && arg_lst[3] == NULL){ /* End month not specified */
+    msg_sng=strdup("End month not specified");
+    NCO_SYNTAX_ERROR=True;
+  }else if(arg_nbr == 5 && arg_lst[4] == NULL){ /* Timesteps per day not specified */
+    msg_sng=strdup("Timesteps per day not specified");
+    NCO_SYNTAX_ERROR=True;
+  }else if(arg_nbr == 6 && arg_lst[5] == NULL){ /* Units string not specified */
+    msg_sng=strdup("Units string not specified");
+    NCO_SYNTAX_ERROR=True;
+  }else if(arg_nbr == 7 && arg_lst[6] == NULL){ /* Calendar string not specified */
+    msg_sng=strdup("Calendar string not specified");
+    NCO_SYNTAX_ERROR=True;
+  } /* end else */
+  
+  if(NCO_SYNTAX_ERROR){
+    (void)fprintf(stdout,"%s: ERROR parsing climatolgy bounds information from \"%s\": %s\n%s: HINT Conform request to hyperslab documentation at http://nco.sf.net/nco.html#hyp\n",nco_prg_nm_get(),clm_nfo_sng,msg_sng,nco_prg_nm_get());
+    msg_sng=(char *)nco_free(msg_sng);
+    nco_exit(EXIT_FAILURE);
+  } /* !NCO_SYNTAX_ERROR */
+
+  if(arg_lst[0]){
+    cb->yr_srt=strtol(arg_lst[0],&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+    if(*sng_cnv_rcd) nco_sng_cnv_err(arg_lst[0],"strtol",sng_cnv_rcd);
+  } /* !arg_lst[0] */    
+  if(arg_lst[1]){
+    cb->yr_end=strtol(arg_lst[1],&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+    if(*sng_cnv_rcd) nco_sng_cnv_err(arg_lst[1],"strtol",sng_cnv_rcd);
+  } /* !arg_lst[1] */    
+  if(arg_lst[2]){
+    cb->mth_srt=strtol(arg_lst[2],&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+    if(*sng_cnv_rcd) nco_sng_cnv_err(arg_lst[2],"strtol",sng_cnv_rcd);
+  } /* !arg_lst[2] */    
+  if(arg_lst[3]){
+    cb->mth_end=strtol(arg_lst[3],&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+    if(*sng_cnv_rcd) nco_sng_cnv_err(arg_lst[3],"strtol",sng_cnv_rcd);
+  } /* !arg_lst[3] */    
+  if(arg_lst[4]){
+    cb->tpd=strtol(arg_lst[4],&sng_cnv_rcd,NCO_SNG_CNV_BASE10);
+    if(*sng_cnv_rcd) nco_sng_cnv_err(arg_lst[4],"strtol",sng_cnv_rcd);
+  } /* !arg_lst[4] */    
+  //if(arg_lst[5]) cb->unt_val=arg_lst[5];
+  //if(arg_lst[6]) cb->cln_val=arg_lst[6];
+    
+  if(nco_dbg_lvl_get() >= nco_dbg_fl) (void)fprintf(stdout,"%s: DEBUG %s reports variable climatology bounds structure elements yr_srt=%d, yr_end=%d, mth_srt=%d, mth_end=%d, tpd=%d, unt_val=%s, cln_val=%s\n",nco_prg_nm_get(),fnc_nm,cb->yr_srt,cb->yr_end,cb->mth_srt,cb->mth_end,cb->tpd,cb->unt_val,cb->cln_val);
+
+  return NCO_NOERR;
+} /* !nco_clm_nfo_get() */
+
+cnv_sct * /* O [sct] Convention structure */
+nco_cnv_ini /* O [fnc] Determine conventions (ARM/CCM/CCSM/CF/MPAS) for treating file */
+(const int nc_id) /* I [id] netCDF file ID */
+{
+  /* Purpose: Determine conventions (ARM/CCM/CCSM/CF/MPAS) for treating file
+     Based-on and supercedes nco_cnv_ccm_ccsm_cf_inq() */
+
+  // const char fnc_nm[]="nco_cnv_ini()"; /* [sng] Function name */
+
+  char *att_val;
+  char *cnv_sng=NULL_CEWI;
+
+  /* netCDF standard is uppercase Conventions, though some models user lowercase */
+  char cnv_sng_UC[]="Conventions"; /* Unidata standard     string (uppercase) */
+  char cnv_sng_LC[]="conventions"; /* Unidata non-standard string (lowercase) */
+  
+  cnv_sct *cnv; /* [sct] Conventions structure */
+
+  int rcd; /* [rcd] Return code */
+  
+  long att_sz;
+
+  nc_type att_typ;
+
+  /* Allocate */
+  cnv=(cnv_sct *)nco_malloc(sizeof(cnv_sct));
+    
+  /* Look for signature of a CCM/CCSM/CF-format file */
+  cnv_sng=cnv_sng_UC;
+  rcd=nco_inq_att_flg(nc_id,NC_GLOBAL,cnv_sng,&att_typ,&att_sz);
+  if(rcd != NC_NOERR){
+    /* Re-try with lowercase string because some models, e.g., CLM, user lowercase "conventions" */
+    cnv_sng=cnv_sng_LC;
+    rcd=nco_inq_att_flg(nc_id,NC_GLOBAL,cnv_sng,&att_typ,&att_sz);
+  } /* endif lowercase */
+  
+  if(rcd == NC_NOERR && att_typ == NC_CHAR){
+    /* Add one for NUL byte */
+    att_val=(char *)nco_malloc(att_sz*nco_typ_lng(att_typ)+1L);
+    (void)nco_get_att(nc_id,NC_GLOBAL,cnv_sng,att_val,att_typ);
+    /* NUL-terminate convention attribute before using strcmp() */
+    att_val[att_sz]='\0';
+    /* CCM3, CCSM1 conventions */
+    if(strstr(att_val,"NCAR-CSM")) cnv->CCM_CCSM_CF=True; /* Backwards compatibility */
+    /* Climate-Forecast conventions */
+    if(strstr(att_val,"CF-1.")) cnv->CCM_CCSM_CF=True; /* NB: Not fully implemented TODO nco145 */
+    /* As of 20060514, CLM 3.0 uses CF1.0 not CF-1.0 (CAM gets it right) */
+    if(strstr(att_val,"CF1.")) cnv->CCM_CCSM_CF=True; /* NB: Not fully implemented TODO nco145 */
+    if(strstr(att_val,"MPAS")) cnv->MPAS=True; /* This works for all known MPAS versions */
+    if(strstr(att_val,"Group")) cnv->Group=True; /* Untested */
+    cnv->cf_vrs=1.0; /* Untested */
+    if(nco_dbg_lvl_get() >= nco_dbg_scl && (cnv->CCM_CCSM_CF || cnv->MPAS)){
+      (void)fprintf(stderr,"%s: CONVENTION File \"%s\" attribute is \"%s\"\n",nco_prg_nm_get(),cnv_sng,att_val);
+      if(cnv_sng == cnv_sng_LC) (void)fprintf(stderr,"%s: WARNING: This file uses a non-standard attribute (\"%s\") to indicate the netCDF convention. The correct attribute is \"%s\".\n",nco_prg_nm_get(),cnv_sng_LC,cnv_sng_UC);
+      /* Only warn in arithmetic operators where conventions change behavior */
+      if(nco_dbg_lvl_get() >= nco_dbg_fl && nco_dbg_lvl_get() != nco_dbg_dev && nco_is_rth_opr(nco_prg_id_get())) (void)fprintf(stderr,"%s: INFO NCO attempts to abide by many official and unofficial metadata conventions including ARM, CCM, CCSM, CF, and MPAS. To adhere to these conventions, NCO implements variable-specific exceptions in certain operators, e.g., ncbo will not subtract variables named \"date\" or \"gw\" (for CCM/CCSM files) or \"areaCell\" or \"edgesOnCell\" (for MPAS files), and many operators will always leave coordinate variables unchanged. The full list of exceptions is in the manual http://nco.sf.net/nco.html#CF\n",nco_prg_nm_get());
+    } /* endif dbg */
+    att_val=(char *)nco_free(att_val);
+  } /* endif */
+
+  return cnv;
+  
+} /* end nco_cnv_ini() */
 
 nco_bool /* O [flg] File obeys CCM/CCSM/CF conventions */
 nco_cnv_ccm_ccsm_cf_inq /* O [fnc] Check if file obeys CCM/CCSM/CF conventions */
@@ -51,18 +201,18 @@ nco_cnv_ccm_ccsm_cf_inq /* O [fnc] Check if file obeys CCM/CCSM/CF conventions *
     if(strstr(att_val,"CF-1.")) CNV_CCM_CCSM_CF=True; /* NB: Not fully implemented TODO nco145 */
     /* As of 20060514, CLM 3.0 uses CF1.0 not CF-1.0 (CAM gets it right) */
     if(strstr(att_val,"CF1.")) CNV_CCM_CCSM_CF=True; /* NB: Not fully implemented TODO nco145 */
-    if(CNV_CCM_CCSM_CF && nco_dbg_lvl_get() >= nco_dbg_std){
+    if(CNV_CCM_CCSM_CF && nco_dbg_lvl_get() >= nco_dbg_scl){
       (void)fprintf(stderr,"%s: CONVENTION File \"%s\" attribute is \"%s\"\n",nco_prg_nm_get(),cnv_sng,att_val);
       if(cnv_sng == cnv_sng_LC) (void)fprintf(stderr,"%s: WARNING: This file uses a non-standard attribute (\"%s\") to indicate the netCDF convention. The correct attribute is \"%s\".\n",nco_prg_nm_get(),cnv_sng_LC,cnv_sng_UC);
       /* Only warn in arithmetic operators where conventions change behavior */
-      if(nco_dbg_lvl_get() >= nco_dbg_fl && nco_dbg_lvl_get() != nco_dbg_dev && nco_is_rth_opr(nco_prg_id_get())) (void)fprintf(stderr,"%s: INFO NCO attempts to abide by many official and unoffical metadata conventions including ARM, CCM, CCSM, and CF. To adhere to these conventions, NCO implements variable-specific exceptions in certain operators, e.g., ncbo will not subtract variables named \"date\" or \"gw\", and many operators will always leave coordinate variables unchanged. The full list of exceptions is in the manual http://nco.sf.net/nco.html#CF\n",nco_prg_nm_get());
+      if(nco_dbg_lvl_get() >= nco_dbg_fl && nco_dbg_lvl_get() != nco_dbg_dev && nco_is_rth_opr(nco_prg_id_get())) (void)fprintf(stderr,"%s: INFO NCO attempts to abide by many official and unofficial metadata conventions including ARM, CCM, CCSM, and CF. To adhere to these conventions, NCO implements variable-specific exceptions in certain operators, e.g., ncbo will not subtract variables named \"date\" or \"gw\", and many operators will always leave coordinate variables unchanged. The full list of exceptions is in the manual http://nco.sf.net/nco.html#CF\n",nco_prg_nm_get());
     } /* endif dbg */
     att_val=(char *)nco_free(att_val);
   } /* endif */
 
   return CNV_CCM_CCSM_CF;
   
-} /* end nco_cnv_ccm_ccsm_cf_inq */
+} /* end nco_cnv_ccm_ccsm_cf_inq() */
 
 void
 nco_cnv_ccm_ccsm_cf_date /* [fnc] Fix date variable in averaged CCM/CCSM/CF files */
@@ -234,6 +384,7 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
  const int dmn_nbr_rdc,              /* I [sct] Number of dimensions to reduce variable over */
  const int nco_op_typ,               /* I [enm] Operation type, default is average */
  gpe_sct *gpe,                       /* I [sng] Group Path Editing (GPE) structure */
+ const clm_bnd_sct * const cb,       /* I [sct] Climatology bounds structure */
  const trv_tbl_sct * const trv_tbl)  /* I [sct] Traversal table */
 {
   /* Purpose: Add/modify CF cell_methods attribute
@@ -277,6 +428,7 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
   char *att_val_cpy; /* [sng] Copy of attribute */
   char *grp_out_fll=NULL; /* [sng] Group name */
   char *sbs_ptr; /* [sng] Pointer to substring */
+  char *cll_mth_clm; /* [sng] Cell methods for climatology */
   
   int *dmn_mch; /* [idx] Indices of dimensions reduced in this variable */
 
@@ -309,6 +461,16 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
   /* Allocate space for maximum number of matching dimensions */
   dmn_mch=(int *)nco_calloc(dmn_nbr_rdc,sizeof(int));
 
+  if(cb){
+    if(cb->tpd > 1) cll_mth_clm=strdup("time: mean within days time: mean within years time: mean over years");
+    else if(cb->bnd2clm || cb->clm2clm) cll_mth_clm=strdup("time: mean within years time: mean over years");
+    else if(cb->clm2bnd) cll_mth_clm=strdup("time: mean");
+    else{
+      (void)fprintf(stdout,"%s: ERROR %s reports climatology bounds error with variable %s\n",nco_prg_nm_get(),fnc_nm,var_trv->nm);
+      nco_exit(EXIT_FAILURE);
+    } /* !cb->tpd */
+  } /* !cb */
+
   /* Process all variables */
   for(var_idx=0;var_idx<var_nbr;var_idx++){ 
 
@@ -334,7 +496,28 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
     dmn_nbr_mch=0;
     flg_dpl=False;
 
-    /* cell_methods format: blank-separated phrases of form "dmn1[, dmn2[...]]: op_typ" */ 
+    if(nco_dbg_lvl_get() >= nco_dbg_var) (void)fprintf(stdout,"%s: DEBUG %s reports variable %s has cll_mth_clm = %s\n",nco_prg_nm_get(),fnc_nm,var_trv->nm,cll_mth_clm);
+
+    if(cb){
+      /* Does variable use time coordinate? */
+      for(dmn_idx_var=0;dmn_idx_var<var_trv->nbr_dmn;dmn_idx_var++)
+	if(!strcmp(var_trv->var_dmn[dmn_idx_var].dmn_nm,cb->tm_crd_nm)) break;
+      if(dmn_idx_var < var_trv->nbr_dmn){
+	/* Stamp with appropriate cell_methods temporal attribute */
+	att_val=strdup(cll_mth_clm);
+	aed.sz=strlen(att_val);
+	aed.type=NC_CHAR;
+	aed.val.cp=att_val;
+	aed.mode=aed_overwrite;
+	/* Do not add cell_methods to time bounds variables, and delete them if they exist */
+	if(var_out_id == cb->clm_bnd_id_out || var_out_id == cb->tm_bnd_id_out) aed.mode=aed_delete;
+	(void)nco_aed_prc(grp_out_id,var_out_id,aed);
+	if(att_val) att_val=(char *)nco_free(att_val);
+	continue;
+      } /* !dmn_idx_var */
+    } /* !cb */
+
+    /* cell_methods format: blank-separated phrases of form "dmn1[, dmn2[...]]: op_typ", e.g., "lat, lon: mean" */ 
     for(dmn_idx_var=0;dmn_idx_var<var_trv->nbr_dmn;dmn_idx_var++){
       for(dmn_idx_rdc=0;dmn_idx_rdc<dmn_nbr_rdc;dmn_idx_rdc++){
         assert(dmn_rdc[dmn_idx_rdc]->nm_fll);
@@ -365,6 +548,7 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
     case nco_op_mabs: strcpy(att_op_sng,"maximum_absolute_value"); break; /* Maximum absolute value */
     case nco_op_mebs: strcpy(att_op_sng,"mean_absolute_value"); break; /* Mean absolute value */
     case nco_op_mibs: strcpy(att_op_sng,"minimum_absolute_value"); break; /* Minimum absolute value */
+    case nco_op_tabs: strcpy(att_op_sng,"sum absolute_value"); break; /* sum  absolute value */
     case nco_op_sqravg: strcpy(att_op_sng,"square_of_mean"); break; /* Square of mean */
     case nco_op_sqrt: strcpy(att_op_sng,"square_root_of_mean"); break; /* Square root of mean */ 
     case nco_op_rms: strcpy(att_op_sng,"root_mean_square"); break; /* Root-mean-square (normalized by N) */
@@ -390,13 +574,13 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
     (void)strcat(aed.val.cp,": ");
     (void)strcat(aed.val.cp,att_op_sng);
 
-    /* 20150625: Older versions of CAM, e.g., CAM3, used "cell_method" instead of "cell_methods" 
+    /* 20150625: Older versions of CAM, e.g., CAM3 and CLM3, used "cell_method" instead of "cell_methods" 
        If old attribute is not deleted then the output file will contain both attributes
        Does variable already have "cell_method" attribute? */
     strcpy(aed.att_nm,"cell_method");
     rcd=nco_inq_att_flg(grp_out_id,var_out_id,aed.att_nm,&att_typ,&att_lng);
     if(rcd == NC_NOERR){
-      if(FIRST_WARNING) (void)fprintf(stderr,"%s: WARNING: Variable \"%s\" uses the non-standard attribute name \"cell_method\" instead of \"cell_methods\", the correct attribute name. The CAM3 model (and others?) have this problem. Expect \"double attributes\" in output. This message is printed only once per invocation, although the problem likely occurs in more variables.\n",nco_prg_nm_get(),aed.var_nm);
+      if(FIRST_WARNING) (void)fprintf(stderr,"%s: WARNING: Variable \"%s\" uses the non-standard attribute name \"cell_method\" instead of \"cell_methods\", the correct attribute name. The CAM3 and CLM3 models (and others?) have this problem. Expect \"double attributes\" in output. This message is printed only once per invocation, although the problem likely occurs in multiple variables.\n",nco_prg_nm_get(),aed.var_nm);
       FIRST_WARNING=False;
     } /* endif attribute exists */
 
@@ -407,9 +591,15 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
       if(att_typ == NC_STRING) (void)fprintf(stderr,"%s: WARNING %s reports existing cell_methods attribute for variable %s is type NC_STRING. Unpredictable results...\n",nco_prg_nm_get(),fnc_nm,aed.var_nm);
       if(att_typ != NC_STRING && att_typ != NC_CHAR) (void)fprintf(stderr,"%s: WARNING %s reports existing cell_methods attribute for variable %s is type %s. Unpredictable results...\n",nco_prg_nm_get(),fnc_nm,aed.var_nm,nco_typ_sng(att_typ));
 
-      /* 20150625: Often climatologies are multiply-averaged over time
+      /* Often climatologies are multiply-averaged over time
+	 NCO's treatment of this has changed with time
+	 pre-20140131: 
+	 NCO has no special treatment of cell_methods
+	 20140131: 
+	 First NCO implementation (ncra, ncea, ncwa) of cell_methods with 
+	 20150625: 
 	 For example, climate model output is often archived as monthly means in each gridcell
-	 The cell_methods attribute of these monthly data begin as "time: mean" (i.e., monthly mean).
+	 cell_methods attributes of these monthly data begin as "time: mean" (i.e., monthly mean).
 	 We then create a climatology by a sequence of one or two more temporal-averaging steps
 	 The one-step method puts all the months in the hopper and averages those
 	 Variables in the resultiing file may have cell_methods = "time: mean time: mean"
@@ -417,7 +607,25 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
 	 Then it averages those four seasons into the climatological annual mean
 	 Variables in the resultiing file may have cell_methods = "time: mean time: mean time: mean"
 	 To avoid this redundancy, we check that the new cell_method does not duplicate the old 
-	 If it would, then skip adding the new */
+	 If it would, then skip adding the new
+	 20160418: 
+	 Treatment of multiply-time-averaged quantities requires climatology bounds attribute
+	 One-step methods (e.g., monthly mean) should have time-bounds attribute
+	 cell_methods = "time: mean"
+	 Two-step methods (e.g., climatological March) should have climatology-bounds attribute
+	 cell_methods = "time: mean within years time: mean over years"
+	 Three-step methods (e.g., climatological MAM) should have climatology-bounds attribute
+	 cell_methods = "time: mean within years time: mean over years"
+	 Four-step methods (e.g., climatological ANN) with one timestep should have time-bounds attribute
+	 cell_methods = "time: mean"
+	 20200809:
+	 http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics Example 7.13
+	 Two-step methods with multiple timesteps (e.g., climatological diurnal cycle for March) should have climatology-bounds attribute
+	 cell_methods = "time: cell_methods="time: mean within days time: mean over days time: mean over years";
+	 Three-step methods with multiple timesteps (e.g., climatological diurnal cycle for MAM) should have climatology-bounds attribute
+	 cell_methods = "time: cell_methods="time: mean within days time: mean over days time: mean over years";
+	 Four-step methods with multiple timesteps (e.g., climatological diurnal cycle for ANN) should have climatology-bounds attribute
+	 cell_methods = "time: cell_methods="time: mean within days time: mean over years"; */
       ptr_unn val_old; /* [sng] Old cell_methods attribute */
       val_old.vp=(void *)nco_malloc((att_lng+1L)*sizeof(char));
       (void)nco_get_att(grp_out_id,var_out_id,aed.att_nm,val_old.vp,NC_CHAR);
@@ -436,21 +644,21 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
       aed.val.cp[1]='\0';
       (void)strncat(aed.val.cp,att_val_cpy,aed.sz-1L);
       if(att_val_cpy) att_val_cpy=(char *)nco_free(att_val_cpy);
-    }else{
+    }else{ /* !cell_methods attribute already exists */
       aed.mode=aed_create;
-    } /* endif attribute exists */
+    } /* !cell_methods attribute already exists */
 
     /* Edit attribute */
     if(!flg_dpl) (void)nco_aed_prc(grp_out_id,var_out_id,aed);
 
     /* 20150308 */
     /* Does variable already have "coordinates" attribute?
-       NB: This reuses att_nm which has only enough space to hold "cell_methods" */
+       NB: This re-uses att_nm which has only enough space to hold "cell_methods" */
     strcpy(aed.att_nm,"coordinates");
     rcd=nco_inq_att_flg(grp_out_id,var_out_id,aed.att_nm,&att_typ,&att_lng);
     if(rcd == NC_NOERR && att_typ == NC_CHAR){
-      /* Remove reduced dimensions from coordinates string */
-      /* coordinates format: blank-separated names of form "dmn1 [dmn2 [...]] dmnN" */ 
+      /* Remove reduced dimensions from coordinates string
+	 coordinates format: blank-separated names of form "dmn1 [dmn2 [...]] dmnN", e.g., "time lat lon" */ 
       /* Add room for NUL-terminator */
       att_val=(char *)nco_malloc((att_lng+1L)*sizeof(char));
       rcd=nco_get_att(grp_out_id,var_out_id,aed.att_nm,att_val,att_typ);
@@ -481,12 +689,15 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
 		dmn_sng_lng=strlen(dmn_rdc[dmn_idx_rdc]->nm);
 		sbs_sng_lng=(size_t)(sbs_ptr-att_val);
 		aed.mode=aed_overwrite;
+		/* Remove whitespace immediately following excised dimension, i.e., count it as part of dimension string
+		   True for all dimensions except final dimension (trailed by a NUL, not a space) */
+		if(sbs_ptr[dmn_sng_lng] == ' ') dmn_sng_lng++;
 		aed.sz=att_lng-dmn_sng_lng;
+		/* Add one for NUL-terminator */
 		aed.val.cp=(char *)nco_realloc(aed.val.cp,(aed.sz+1L)*sizeof(char));
 		strncpy(aed.val.cp,att_val,sbs_sng_lng);
 		aed.val.cp[sbs_sng_lng]='\0';
-		/* Allow for one space-separator */
-		if((sbs_ptr+dmn_sng_lng)[0] == ' ') strcat(aed.val.cp,sbs_ptr+dmn_sng_lng+1L); else strcat(aed.val.cp,sbs_ptr+dmn_sng_lng);
+		strcat(aed.val.cp,sbs_ptr+dmn_sng_lng);
 	      } /* endelse scalar */
 	      /* Edit attribute */
 	      (void)nco_aed_prc(grp_out_id,var_out_id,aed);
@@ -506,7 +717,6 @@ nco_cnv_cf_cll_mth_add               /* [fnc] Add cell_methods attributes */
   if(dmn_mch) dmn_mch=(int *)nco_free(dmn_mch);
 
   return NC_NOERR;
-
 } /* end nco_cnv_cf_cll_mth_add() */
 
 int
@@ -516,6 +726,7 @@ nco_rdc_sng_to_op_typ /* [fnc] Convert operation string to integer */
   if(!strcmp(att_op_sng,"mabs")) return nco_op_mabs;
   if(!strcmp(att_op_sng,"mebs")) return nco_op_mebs;
   if(!strcmp(att_op_sng,"mibs")) return nco_op_mibs;
+  if(!strcmp(att_op_sng,"tabs")) return nco_op_tabs;
   if(!strcmp(att_op_sng,"mean")) return nco_op_avg;
   if(!strcmp(att_op_sng,"minimum")) return nco_op_min;
   if(!strcmp(att_op_sng,"maximum")) return nco_op_max;
@@ -538,6 +749,7 @@ nco_op_typ_to_rdc_sng /* [fnc] Convert operation type to string */
   case nco_op_mabs: return "mabs";
   case nco_op_mebs: return "mebs";
   case nco_op_mibs: return "mibs";
+  case nco_op_tabs: return "tabs";
   case nco_op_min: return "minimum";
   case nco_op_max: return "maximum";
   case nco_op_ttl: return "sum";
